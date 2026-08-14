@@ -142,9 +142,9 @@ function OficiosPage() {
               <TableRow key={o.id}>
                 <TableCell className="font-medium">{o.numero_formatado}</TableCell>
                 <TableCell>{o.nome}</TableCell>
-                <TableCell className="hidden md:table-cell">{o.instituicao}</TableCell>
+                <TableCell className="hidden md:table-cell">{o.curso}</TableCell>
                 <TableCell className="hidden max-w-xs truncate lg:table-cell">
-                  {o.assunto}
+                  {o.matricula}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {o.data.slice(8, 10)}/{o.data.slice(5, 7)}/{o.data.slice(0, 4)}

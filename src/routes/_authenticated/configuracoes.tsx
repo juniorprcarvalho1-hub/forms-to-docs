@@ -295,6 +295,23 @@ function ConfiguracoesPage() {
   );
 }
 
+function CampoTexto({
+  label,
+  valor,
+  onChange,
+}: {
+  label: string;
+  valor: string;
+  onChange: (valor: string) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Input value={valor} onChange={(e) => onChange(e.target.value)} />
+    </div>
+  );
+}
+
 function CampoCopiavel({ label, valor }: { label: string; valor: string }) {
   return (
     <div className="space-y-1.5">

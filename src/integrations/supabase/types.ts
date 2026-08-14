@@ -14,7 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      configuracoes: {
+        Row: {
+          assinatura_url: string | null
+          digitos: number
+          formato_numeracao: string
+          id: boolean
+          logo_url: string | null
+          modelo: string
+          updated_at: string
+          webhook_token: string
+        }
+        Insert: {
+          assinatura_url?: string | null
+          digitos?: number
+          formato_numeracao?: string
+          id?: boolean
+          logo_url?: string | null
+          modelo?: string
+          updated_at?: string
+          webhook_token?: string
+        }
+        Update: {
+          assinatura_url?: string | null
+          digitos?: number
+          formato_numeracao?: string
+          id?: boolean
+          logo_url?: string | null
+          modelo?: string
+          updated_at?: string
+          webhook_token?: string
+        }
+        Relationships: []
+      }
+      oficios: {
+        Row: {
+          ano: number
+          assunto: string
+          cargo: string
+          corpo: string
+          cpf: string
+          created_at: string
+          data: string
+          id: string
+          instituicao: string
+          nome: string
+          numero: number
+          numero_formatado: string
+          origem: string
+          pdf_path: string | null
+        }
+        Insert: {
+          ano: number
+          assunto?: string
+          cargo?: string
+          corpo?: string
+          cpf?: string
+          created_at?: string
+          data?: string
+          id?: string
+          instituicao?: string
+          nome?: string
+          numero: number
+          numero_formatado: string
+          origem?: string
+          pdf_path?: string | null
+        }
+        Update: {
+          ano?: number
+          assunto?: string
+          cargo?: string
+          corpo?: string
+          cpf?: string
+          created_at?: string
+          data?: string
+          id?: string
+          instituicao?: string
+          nome?: string
+          numero?: number
+          numero_formatado?: string
+          origem?: string
+          pdf_path?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

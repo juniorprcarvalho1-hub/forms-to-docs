@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { formatarNumero, type Configuracoes } from "@/lib/oficios";
+import { formatarNumero, TAGS_MODELO, type Configuracoes } from "@/lib/oficios";
 import { uploadArquivo, urlAssinada } from "@/lib/storage";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({

@@ -196,7 +196,7 @@ function OficiosPage() {
                 {config.logo_url && (
                   <img src={config.logo_url} alt="Logotipo" className="mx-auto mb-6 h-16 object-contain" />
                 )}
-                {renderizarModelo(config.modelo, aberto)}
+                {renderizarModelo(config.modelo, aberto, config)}
                 {config.assinatura_url && (
                   <img
                     src={config.assinatura_url}

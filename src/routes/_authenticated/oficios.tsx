@@ -78,7 +78,7 @@ function OficiosPage() {
     const termo = busca.trim().toLowerCase();
     if (!termo) return oficios;
     return oficios.filter((o) =>
-      [o.numero_formatado, o.nome, o.instituicao, o.assunto, o.cpf, o.cargo]
+      [o.numero_formatado, o.nome, o.curso, o.matricula, o.cpf, o.destinatario]
         .join(" ")
         .toLowerCase()
         .includes(termo),
@@ -120,7 +120,7 @@ function OficiosPage() {
         <Input
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          placeholder="Pesquisar por número, nome, instituição ou assunto"
+          placeholder="Pesquisar por número, aluno, CPF, curso ou matrícula"
           className="border-0 shadow-none focus-visible:ring-0"
         />
       </div>
@@ -130,9 +130,9 @@ function OficiosPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-44">Número</TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead className="hidden md:table-cell">Instituição</TableHead>
-              <TableHead className="hidden lg:table-cell">Assunto</TableHead>
+              <TableHead>Aluno(a)</TableHead>
+              <TableHead className="hidden md:table-cell">Curso</TableHead>
+              <TableHead className="hidden lg:table-cell">Matrícula</TableHead>
               <TableHead className="w-28">Data</TableHead>
               <TableHead className="w-36 text-right">Ações</TableHead>
             </TableRow>
@@ -142,9 +142,9 @@ function OficiosPage() {
               <TableRow key={o.id}>
                 <TableCell className="font-medium">{o.numero_formatado}</TableCell>
                 <TableCell>{o.nome}</TableCell>
-                <TableCell className="hidden md:table-cell">{o.instituicao}</TableCell>
+                <TableCell className="hidden md:table-cell">{o.curso}</TableCell>
                 <TableCell className="hidden max-w-xs truncate lg:table-cell">
-                  {o.assunto}
+                  {o.matricula}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {o.data.slice(8, 10)}/{o.data.slice(5, 7)}/{o.data.slice(0, 4)}
@@ -196,7 +196,7 @@ function OficiosPage() {
                 {config.logo_url && (
                   <img src={config.logo_url} alt="Logotipo" className="mx-auto mb-6 h-16 object-contain" />
                 )}
-                {renderizarModelo(config.modelo, aberto)}
+                {renderizarModelo(config.modelo, aberto, config)}
                 {config.assinatura_url && (
                   <img
                     src={config.assinatura_url}

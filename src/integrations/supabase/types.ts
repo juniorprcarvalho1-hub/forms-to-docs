@@ -17,31 +17,67 @@ export type Database = {
       configuracoes: {
         Row: {
           assinatura_url: string | null
+          cidade: string
           digitos: number
+          form_url: string
           formato_numeracao: string
           id: boolean
           logo_url: string | null
           modelo: string
+          padrao_apolice: string
+          padrao_area_estagio: string
+          padrao_carga_horaria: string
+          padrao_cargo_coordenador: string
+          padrao_coordenador: string
+          padrao_destinatario: string
+          padrao_periodo: string
+          padrao_professor: string
+          padrao_registro_professor: string
+          padrao_seguradora: string
           updated_at: string
           webhook_token: string
         }
         Insert: {
           assinatura_url?: string | null
+          cidade?: string
           digitos?: number
+          form_url?: string
           formato_numeracao?: string
           id?: boolean
           logo_url?: string | null
           modelo?: string
+          padrao_apolice?: string
+          padrao_area_estagio?: string
+          padrao_carga_horaria?: string
+          padrao_cargo_coordenador?: string
+          padrao_coordenador?: string
+          padrao_destinatario?: string
+          padrao_periodo?: string
+          padrao_professor?: string
+          padrao_registro_professor?: string
+          padrao_seguradora?: string
           updated_at?: string
           webhook_token?: string
         }
         Update: {
           assinatura_url?: string | null
+          cidade?: string
           digitos?: number
+          form_url?: string
           formato_numeracao?: string
           id?: boolean
           logo_url?: string | null
           modelo?: string
+          padrao_apolice?: string
+          padrao_area_estagio?: string
+          padrao_carga_horaria?: string
+          padrao_cargo_coordenador?: string
+          padrao_coordenador?: string
+          padrao_destinatario?: string
+          padrao_periodo?: string
+          padrao_professor?: string
+          padrao_registro_professor?: string
+          padrao_seguradora?: string
           updated_at?: string
           webhook_token?: string
         }
@@ -50,51 +86,84 @@ export type Database = {
       oficios: {
         Row: {
           ano: number
+          apolice: string
+          area_estagio: string
           assunto: string
+          carga_horaria: string
           cargo: string
+          coordenador: string
           corpo: string
           cpf: string
           created_at: string
+          curso: string
           data: string
+          destinatario: string
           id: string
           instituicao: string
+          matricula: string
           nome: string
           numero: number
           numero_formatado: string
           origem: string
           pdf_path: string | null
+          periodo: string
+          professor_orientador: string
+          registro_professor: string
+          seguradora: string
         }
         Insert: {
           ano: number
+          apolice?: string
+          area_estagio?: string
           assunto?: string
+          carga_horaria?: string
           cargo?: string
+          coordenador?: string
           corpo?: string
           cpf?: string
           created_at?: string
+          curso?: string
           data?: string
+          destinatario?: string
           id?: string
           instituicao?: string
+          matricula?: string
           nome?: string
           numero: number
           numero_formatado: string
           origem?: string
           pdf_path?: string | null
+          periodo?: string
+          professor_orientador?: string
+          registro_professor?: string
+          seguradora?: string
         }
         Update: {
           ano?: number
+          apolice?: string
+          area_estagio?: string
           assunto?: string
+          carga_horaria?: string
           cargo?: string
+          coordenador?: string
           corpo?: string
           cpf?: string
           created_at?: string
+          curso?: string
           data?: string
+          destinatario?: string
           id?: string
           instituicao?: string
+          matricula?: string
           nome?: string
           numero?: number
           numero_formatado?: string
           origem?: string
           pdf_path?: string | null
+          periodo?: string
+          professor_orientador?: string
+          registro_professor?: string
+          seguradora?: string
         }
         Relationships: []
       }

@@ -8,9 +8,17 @@ function json(body: unknown, status = 200) {
 }
 
 function formatar(formato: string, seq: number, ano: number, digitos: number) {
-  return (formato || "OFÍCIO Nº {{seq}}/{{ano}}")
+  return (formato || "Ofício nº. {{seq}}/{{ano}} Estágio")
     .replaceAll("{{seq}}", String(seq).padStart(digitos, "0"))
     .replaceAll("{{ano}}", String(ano));
+}
+
+function normalizar(chave: string) {
+  return chave
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 }
 
 export const Route = createFileRoute("/api/public/webhooks/oficios")({
@@ -25,28 +33,62 @@ export const Route = createFileRoute("/api/public/webhooks/oficios")({
           .maybeSingle();
         if (!config) return json({ error: "Configuração ausente" }, 500);
 
-        const cfg = config as unknown as {
-          webhook_token: string;
-          formato_numeracao: string;
-          digitos: number;
-        };
+        const cfg = config as unknown as Record<string, string | number>;
 
-        let payload: Record<string, unknown> = {};
+        let bruto: Record<string, unknown> = {};
         try {
-          payload = (await request.json()) as Record<string, unknown>;
+          bruto = (await request.json()) as Record<string, unknown>;
         } catch {
           return json({ error: "JSON inválido" }, 400);
         }
 
+        // Aceita chaves do Google Forms com acento/maiúsculas ("Aluno(a)", "MATRÍCULA"...)
+        const payload: Record<string, unknown> = {};
+        for (const [chave, valor] of Object.entries(bruto)) {
+          payload[normalizar(chave)] = Array.isArray(valor) ? valor[0] : valor;
+        }
+
         const token =
           request.headers.get("x-webhook-token") ?? String(payload["token"] ?? "");
-        if (!token || token !== cfg.webhook_token) {
+        if (!token || token !== cfg["webhook_token"]) {
           return json({ error: "Token inválido" }, 401);
         }
 
-        const texto = (chave: string) => String(payload[chave] ?? "").trim();
+        const texto = (...chaves: string[]) => {
+          for (const chave of chaves) {
+            const valor = payload[normalizar(chave)];
+            if (valor !== undefined && String(valor).trim() !== "") return String(valor).trim();
+          }
+          return "";
+        };
+        const padrao = (chave: string) => String(cfg[chave] ?? "");
+
         const dataStr = texto("data") || new Date().toISOString().slice(0, 10);
         const ano = Number(dataStr.slice(0, 4)) || new Date().getFullYear();
+
+        const nome = texto("aluno", "alunoa", "nome");
+        const registro = {
+          data: dataStr,
+          nome,
+          cpf: texto("cpf"),
+          curso: texto("curso"),
+          matricula: texto("matricula"),
+          instituicao: texto("instituicao"),
+          cargo: texto("cargo"),
+          assunto: texto("assunto") || "Estágio Curricular Obrigatório",
+          corpo: texto("corpo"),
+          destinatario: texto("destinatario") || padrao("padrao_destinatario"),
+          area_estagio: texto("areaestagio", "area") || padrao("padrao_area_estagio"),
+          professor_orientador: texto("professor", "professororientador") || padrao("padrao_professor"),
+          registro_professor:
+            texto("registroprofessor", "conselho") || padrao("padrao_registro_professor"),
+          carga_horaria: texto("cargahoraria") || padrao("padrao_carga_horaria"),
+          periodo: texto("periodo") || padrao("padrao_periodo"),
+          seguradora: texto("seguradora") || padrao("padrao_seguradora"),
+          apolice: texto("apolice") || padrao("padrao_apolice"),
+          coordenador: texto("coordenador") || padrao("padrao_coordenador"),
+          origem: texto("origem") || "google_forms",
+        };
 
         for (let tentativa = 0; tentativa < 5; tentativa++) {
           const { data: ultimo } = await supabaseAdmin
@@ -62,17 +104,15 @@ export const Route = createFileRoute("/api/public/webhooks/oficios")({
           const { data: inserido, error } = await supabaseAdmin
             .from("oficios")
             .insert({
+              ...registro,
               numero: seq,
               ano,
-              numero_formatado: formatar(cfg.formato_numeracao, seq, ano, cfg.digitos ?? 3),
-              data: dataStr,
-              nome: texto("nome"),
-              cpf: texto("cpf"),
-              instituicao: texto("instituicao") || texto("instituição"),
-              cargo: texto("cargo"),
-              assunto: texto("assunto"),
-              corpo: texto("corpo"),
-              origem: texto("origem") || "google_forms",
+              numero_formatado: formatar(
+                String(cfg["formato_numeracao"] ?? ""),
+                seq,
+                ano,
+                Number(cfg["digitos"] ?? 2),
+              ),
             })
             .select("id, numero_formatado")
             .single();

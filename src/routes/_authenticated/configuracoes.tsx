@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { formatarNumero, type Configuracoes } from "@/lib/oficios";
+import { formatarNumero, TAGS_MODELO, type Configuracoes } from "@/lib/oficios";
 import { uploadArquivo, urlAssinada } from "@/lib/storage";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
@@ -56,6 +56,18 @@ function ConfiguracoesPage() {
         digitos: form.digitos,
         logo_url: form.logo_url,
         assinatura_url: form.assinatura_url,
+        cidade: form.cidade,
+        form_url: form.form_url,
+        padrao_destinatario: form.padrao_destinatario,
+        padrao_area_estagio: form.padrao_area_estagio,
+        padrao_professor: form.padrao_professor,
+        padrao_registro_professor: form.padrao_registro_professor,
+        padrao_carga_horaria: form.padrao_carga_horaria,
+        padrao_periodo: form.padrao_periodo,
+        padrao_seguradora: form.padrao_seguradora,
+        padrao_apolice: form.padrao_apolice,
+        padrao_coordenador: form.padrao_coordenador,
+        padrao_cargo_coordenador: form.padrao_cargo_coordenador,
         updated_at: new Date().toISOString(),
       })
       .eq("id", true);
@@ -94,8 +106,8 @@ function ConfiguracoesPage() {
 
       <section className="surface-card space-y-4 p-6">
         <h2 className="text-sm font-medium">Modelo do ofício</h2>
-        <p className="text-xs text-muted-foreground">
-          Campos disponíveis: {"{{numero}} {{data}} {{nome}} {{cpf}} {{instituicao}} {{cargo}} {{assunto}}"}
+        <p className="text-xs break-words text-muted-foreground">
+          Campos disponíveis: {TAGS_MODELO.join(" ")}
         </p>
         <Textarea
           rows={16}
@@ -165,32 +177,113 @@ function ConfiguracoesPage() {
         </div>
       </section>
 
+      <section className="surface-card grid gap-4 p-6 sm:grid-cols-2">
+        <h2 className="text-sm font-medium sm:col-span-2">Dados padrão do ofício de estágio</h2>
+        <p className="text-xs text-muted-foreground sm:col-span-2">
+          Usados quando o Google Forms não envia o campo (o formulário atual envia Aluno, CPF,
+          Curso e Matrícula).
+        </p>
+        <CampoTexto label="Cidade" valor={form.cidade} onChange={(v) => setForm({ ...form, cidade: v })} />
+        <CampoTexto
+          label="Destinatário"
+          valor={form.padrao_destinatario}
+          onChange={(v) => setForm({ ...form, padrao_destinatario: v })}
+        />
+        <CampoTexto
+          label="Área do estágio"
+          valor={form.padrao_area_estagio}
+          onChange={(v) => setForm({ ...form, padrao_area_estagio: v })}
+        />
+        <CampoTexto
+          label="Professor(a) orientador(a)"
+          valor={form.padrao_professor}
+          onChange={(v) => setForm({ ...form, padrao_professor: v })}
+        />
+        <CampoTexto
+          label="Registro do professor (COREN, CRP…)"
+          valor={form.padrao_registro_professor}
+          onChange={(v) => setForm({ ...form, padrao_registro_professor: v })}
+        />
+        <CampoTexto
+          label="Carga horária"
+          valor={form.padrao_carga_horaria}
+          onChange={(v) => setForm({ ...form, padrao_carga_horaria: v })}
+        />
+        <CampoTexto
+          label="Período"
+          valor={form.padrao_periodo}
+          onChange={(v) => setForm({ ...form, padrao_periodo: v })}
+        />
+        <CampoTexto
+          label="Seguradora"
+          valor={form.padrao_seguradora}
+          onChange={(v) => setForm({ ...form, padrao_seguradora: v })}
+        />
+        <CampoTexto
+          label="Apólice"
+          valor={form.padrao_apolice}
+          onChange={(v) => setForm({ ...form, padrao_apolice: v })}
+        />
+        <CampoTexto
+          label="Coordenador(a)"
+          valor={form.padrao_coordenador}
+          onChange={(v) => setForm({ ...form, padrao_coordenador: v })}
+        />
+        <CampoTexto
+          label="Cargo do coordenador"
+          valor={form.padrao_cargo_coordenador}
+          onChange={(v) => setForm({ ...form, padrao_cargo_coordenador: v })}
+        />
+      </section>
+
       <section className="surface-card space-y-4 p-6">
         <h2 className="text-sm font-medium">Integração com o Google Forms</h2>
+        <CampoTexto
+          label="Link do formulário"
+          valor={form.form_url}
+          onChange={(v) => setForm({ ...form, form_url: v })}
+        />
+        {form.form_url && (
+          <a
+            href={form.form_url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-block text-sm text-primary underline"
+          >
+            Abrir formulário em nova aba
+          </a>
+        )}
         <p className="text-sm text-muted-foreground">
-          Envie um POST em JSON para o endereço abaixo a cada nova resposta (Apps Script, n8n ou
-          Make). Campos aceitos: nome, cpf, instituicao, cargo, assunto, data.
+          Cole o script abaixo no editor do formulário (Extensões › Apps Script) e crie o acionador
+          “Ao enviar formulário”. Cada resposta gera automaticamente um ofício numerado.
         </p>
         <CampoCopiavel label="URL do webhook" valor={endpoint} />
         <CampoCopiavel label="Token (header x-webhook-token)" valor={form.webhook_token} />
-        <details className="text-sm">
-          <summary className="cursor-pointer text-primary">Ver exemplo de Google Apps Script</summary>
+        <details className="text-sm" open>
+          <summary className="cursor-pointer text-primary">Ver Google Apps Script</summary>
           <pre className="mt-3 overflow-x-auto rounded-lg bg-muted p-4 text-xs">{`function onFormSubmit(e) {
   var r = e.namedValues;
+  function v(k) { return r[k] ? r[k][0] : ""; }
   UrlFetchApp.fetch("${endpoint}", {
     method: "post",
     contentType: "application/json",
     headers: { "x-webhook-token": "${form.webhook_token}" },
     payload: JSON.stringify({
-      nome: r["Nome"][0],
-      cpf: r["CPF"][0],
-      instituicao: r["Instituição"][0],
-      cargo: r["Cargo"][0],
-      assunto: r["Assunto"][0]
+      nome: v("Aluno(a)"),
+      cpf: v("CPF"),
+      curso: v("CURSO"),
+      matricula: v("MATRÍCULA")
     })
   });
 }`}</pre>
         </details>
+        {form.form_url && (
+          <iframe
+            src={form.form_url.replace("/viewform", "/viewform?embedded=true")}
+            title="Formulário de solicitação de estágio"
+            className="h-[520px] w-full rounded-lg border"
+          />
+        )}
       </section>
 
       <div className="flex justify-end">
@@ -198,6 +291,23 @@ function ConfiguracoesPage() {
           {salvando ? "Salvando…" : "Salvar alterações"}
         </Button>
       </div>
+    </div>
+  );
+}
+
+function CampoTexto({
+  label,
+  valor,
+  onChange,
+}: {
+  label: string;
+  valor: string;
+  onChange: (valor: string) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Input value={valor} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
 }

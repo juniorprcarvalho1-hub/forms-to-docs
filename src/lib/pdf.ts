@@ -39,7 +39,7 @@ export async function gerarPdf(oficio: Oficio, config: Configuracoes): Promise<B
   doc.setFont("times", "normal");
   doc.setFontSize(12);
 
-  const texto = renderizarModelo(config.modelo, oficio);
+  const texto = renderizarModelo(config.modelo, oficio, config);
   const linhas = doc.splitTextToSize(texto, largura) as string[];
 
   for (const linha of linhas) {

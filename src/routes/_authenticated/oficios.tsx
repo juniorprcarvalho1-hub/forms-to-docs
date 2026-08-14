@@ -130,9 +130,9 @@ function OficiosPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-44">Número</TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead className="hidden md:table-cell">Instituição</TableHead>
-              <TableHead className="hidden lg:table-cell">Assunto</TableHead>
+              <TableHead>Aluno(a)</TableHead>
+              <TableHead className="hidden md:table-cell">Curso</TableHead>
+              <TableHead className="hidden lg:table-cell">Matrícula</TableHead>
               <TableHead className="w-28">Data</TableHead>
               <TableHead className="w-36 text-right">Ações</TableHead>
             </TableRow>

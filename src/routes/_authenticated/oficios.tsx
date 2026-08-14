@@ -120,7 +120,7 @@ function OficiosPage() {
         <Input
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          placeholder="Pesquisar por número, nome, instituição ou assunto"
+          placeholder="Pesquisar por número, aluno, CPF, curso ou matrícula"
           className="border-0 shadow-none focus-visible:ring-0"
         />
       </div>

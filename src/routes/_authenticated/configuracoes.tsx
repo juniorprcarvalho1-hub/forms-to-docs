@@ -106,8 +106,8 @@ function ConfiguracoesPage() {
 
       <section className="surface-card space-y-4 p-6">
         <h2 className="text-sm font-medium">Modelo do ofício</h2>
-        <p className="text-xs text-muted-foreground">
-          Campos disponíveis: {"{{numero}} {{data}} {{nome}} {{cpf}} {{instituicao}} {{cargo}} {{assunto}}"}
+        <p className="text-xs break-words text-muted-foreground">
+          Campos disponíveis: {TAGS_MODELO.join(" ")}
         </p>
         <Textarea
           rows={16}

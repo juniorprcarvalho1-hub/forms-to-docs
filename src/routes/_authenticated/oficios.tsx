@@ -78,7 +78,7 @@ function OficiosPage() {
     const termo = busca.trim().toLowerCase();
     if (!termo) return oficios;
     return oficios.filter((o) =>
-      [o.numero_formatado, o.nome, o.instituicao, o.assunto, o.cpf, o.cargo]
+      [o.numero_formatado, o.nome, o.curso, o.matricula, o.cpf, o.destinatario]
         .join(" ")
         .toLowerCase()
         .includes(termo),

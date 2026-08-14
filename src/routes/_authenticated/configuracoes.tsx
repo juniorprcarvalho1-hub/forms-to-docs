@@ -56,6 +56,18 @@ function ConfiguracoesPage() {
         digitos: form.digitos,
         logo_url: form.logo_url,
         assinatura_url: form.assinatura_url,
+        cidade: form.cidade,
+        form_url: form.form_url,
+        padrao_destinatario: form.padrao_destinatario,
+        padrao_area_estagio: form.padrao_area_estagio,
+        padrao_professor: form.padrao_professor,
+        padrao_registro_professor: form.padrao_registro_professor,
+        padrao_carga_horaria: form.padrao_carga_horaria,
+        padrao_periodo: form.padrao_periodo,
+        padrao_seguradora: form.padrao_seguradora,
+        padrao_apolice: form.padrao_apolice,
+        padrao_coordenador: form.padrao_coordenador,
+        padrao_cargo_coordenador: form.padrao_cargo_coordenador,
         updated_at: new Date().toISOString(),
       })
       .eq("id", true);

@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedOficiosRouteImport } from './routes/_authenticated/oficios'
+import { Route as ApiPublicWebhooksOficiosRouteImport } from './routes/api/public/webhooks/oficios'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +47,12 @@ const AuthenticatedOficiosRoute = AuthenticatedOficiosRouteImport.update({
   path: '/oficios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicWebhooksOficiosRoute =
+  ApiPublicWebhooksOficiosRouteImport.update({
+    id: '/api/public/webhooks/oficios',
+    path: '/api/public/webhooks/oficios',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -53,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/oficios': typeof AuthenticatedOficiosRoute
+  '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -60,6 +68,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/oficios': typeof AuthenticatedOficiosRoute
+  '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -69,12 +78,25 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/oficios': typeof AuthenticatedOficiosRoute
+  '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/configuracoes' | '/dashboard' | '/oficios'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/configuracoes'
+    | '/dashboard'
+    | '/oficios'
+    | '/api/public/webhooks/oficios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/configuracoes' | '/dashboard' | '/oficios'
+  to:
+    | '/'
+    | '/auth'
+    | '/configuracoes'
+    | '/dashboard'
+    | '/oficios'
+    | '/api/public/webhooks/oficios'
   id:
     | '__root__'
     | '/'
@@ -83,12 +105,14 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/oficios'
+    | '/api/public/webhooks/oficios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicWebhooksOficiosRoute: typeof ApiPublicWebhooksOficiosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -135,6 +159,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOficiosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/webhooks/oficios': {
+      id: '/api/public/webhooks/oficios'
+      path: '/api/public/webhooks/oficios'
+      fullPath: '/api/public/webhooks/oficios'
+      preLoaderRoute: typeof ApiPublicWebhooksOficiosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -157,6 +188,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicWebhooksOficiosRoute: ApiPublicWebhooksOficiosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

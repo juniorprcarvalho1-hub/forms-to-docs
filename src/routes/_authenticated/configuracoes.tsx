@@ -264,25 +264,57 @@ function ConfiguracoesPage() {
         )}
         <p className="text-sm text-muted-foreground">
           Cole o script abaixo no editor do formulário (Extensões › Apps Script) e crie o acionador
-          “Ao enviar formulário”. Cada resposta gera automaticamente um ofício numerado.
+          “A partir do formulário › Ao enviar um formulário”. Cada resposta gera automaticamente um
+          ofício numerado.
         </p>
         <CampoCopiavel label="URL do webhook" valor={endpoint} />
         <CampoCopiavel label="Token (header x-webhook-token)" valor={form.webhook_token} />
         <details className="text-sm" open>
           <summary className="cursor-pointer text-primary">Ver Google Apps Script</summary>
           <pre className="mt-3 overflow-x-auto rounded-lg bg-muted p-4 text-xs">{`function onFormSubmit(e) {
-  var r = e.namedValues;
-  function v(k) { return r[k] ? r[k][0] : ""; }
-  UrlFetchApp.fetch("${endpoint}", {
+  if (!e || !e.response) {
+    throw new Error("Esta função deve ser executada pelo acionador do formulário.");
+  }
+
+  var r = {};
+  e.response.getItemResponses().forEach(function (item) {
+    r[item.getItem().getTitle()] = item.getResponse();
+  });
+  enviar(r);
+}
+
+function enviar(r) {
+  function v(k) {
+    var valor = r[k];
+    return Array.isArray(valor) ? (valor[0] || "") : (valor || "");
+  }
+
+  var resposta = UrlFetchApp.fetch("${endpoint}", {
     method: "post",
     contentType: "application/json",
     headers: { "x-webhook-token": "${form.webhook_token}" },
     payload: JSON.stringify({
-      nome: v("Aluno(a)"),
-      cpf: v("CPF"),
-      curso: v("CURSO"),
-      matricula: v("MATRÍCULA")
-    })
+      "Aluno(a)": v("Aluno(a)"),
+      "CPF": v("CPF"),
+      "CURSO": v("CURSO"),
+      "MATRÍCULA": v("MATRÍCULA")
+    }),
+    muteHttpExceptions: true
+  });
+
+  var codigo = resposta.getResponseCode();
+  if (codigo < 200 || codigo >= 300) {
+    throw new Error("Falha no sistema (HTTP " + codigo + "): " + resposta.getContentText());
+  }
+  console.log(resposta.getContentText());
+}
+
+function testarEnvio() {
+  enviar({
+    "Aluno(a)": "Teste Manual",
+    "CPF": "000.000.000-00",
+    "CURSO": "Enfermagem",
+    "MATRÍCULA": "TESTE-001"
   });
 }`}</pre>
         </details>

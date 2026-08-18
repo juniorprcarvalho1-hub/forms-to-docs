@@ -28,18 +28,6 @@ function ConfiguracoesPage() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<Configuracoes | null>(null);
   const [salvando, setSalvando] = useState(false);
-  const [origem, setOrigem] = useState("");
-
-  // A URL do editor (id-preview…) exige login e responde 302 a chamadas externas.
-  // Para integrações (Google Forms/Apps Script) usamos a URL estável do projeto.
-  useEffect(() => {
-    const atual = window.location.origin;
-    setOrigem(
-      atual.includes("id-preview--")
-        ? atual.replace("id-preview--", "project--").replace(".lovable.app", "-dev.lovable.app")
-        : atual,
-    );
-  }, []);
 
   const { data } = useQuery({
     queryKey: ["configuracoes"],

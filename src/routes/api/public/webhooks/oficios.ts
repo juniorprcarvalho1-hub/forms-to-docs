@@ -3,7 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+    },
   });
 }
 
@@ -67,6 +70,8 @@ export const Route = createFileRoute("/api/public/webhooks/oficios")({
         const ano = Number(dataStr.slice(0, 4)) || new Date().getFullYear();
 
         const nome = texto("aluno", "alunoa", "nome");
+        if (!nome) return json({ error: "Campo Aluno(a) não recebido" }, 422);
+
         const registro = {
           data: dataStr,
           nome,
@@ -117,7 +122,13 @@ export const Route = createFileRoute("/api/public/webhooks/oficios")({
             .select("id, numero_formatado")
             .single();
 
-          if (!error) return json({ ok: true, oficio: inserido });
+          if (!error) {
+            return json({
+              ok: true,
+              mensagem: "Ofício salvo com sucesso",
+              oficio: inserido,
+            });
+          }
           if (error.code !== "23505") return json({ error: error.message }, 500);
         }
 

@@ -102,7 +102,7 @@ function ConfiguracoesPage() {
 
   if (!form) return <p className="text-sm text-muted-foreground">Carregando…</p>;
 
-  const endpoint = `${origem}/api/public/webhooks/oficios`;
+  const endpoint = "https://forms-to-docs.lovable.app/api/public/webhooks/oficios";
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -263,50 +263,64 @@ function ConfiguracoesPage() {
           </a>
         )}
         <p className="text-sm text-muted-foreground">
-          Cole o script abaixo no editor do formulário (Extensões › Apps Script) e crie o acionador
-          “A partir do formulário › Ao enviar um formulário”. Cada resposta gera automaticamente um
-          ofício numerado.
+          Cole o script abaixo no editor do formulário e crie um único acionador para a função
+          “onFormSubmit”, no evento “Ao enviar um formulário”. O mesmo código funciona com acionadores
+          criados no formulário ou na planilha de respostas.
         </p>
         <CampoCopiavel label="URL do webhook" valor={endpoint} />
         <CampoCopiavel label="Token (header x-webhook-token)" valor={form.webhook_token} />
         <details className="text-sm" open>
           <summary className="cursor-pointer text-primary">Ver Google Apps Script</summary>
-          <pre className="mt-3 overflow-x-auto rounded-lg bg-muted p-4 text-xs">{`function onFormSubmit(e) {
-  if (!e || !e.response) {
-    throw new Error("Esta função deve ser executada pelo acionador do formulário.");
+          <pre className="mt-3 overflow-x-auto rounded-lg bg-muted p-4 text-xs">{`var WEBHOOK_URL = "${endpoint}";
+var WEBHOOK_TOKEN = "${form.webhook_token}";
+
+function onFormSubmit(e) {
+  if (!e) {
+    throw new Error("Não execute onFormSubmit manualmente. Envie uma resposta pelo formulário ou execute testarEnvio.");
   }
 
-  var r = {};
-  e.response.getItemResponses().forEach(function (item) {
-    r[item.getItem().getTitle()] = item.getResponse();
-  });
-  enviar(r);
+  var dados = {};
+
+  // Acionador criado na planilha de respostas.
+  if (e.namedValues) {
+    Object.keys(e.namedValues).forEach(function (chave) {
+      var valor = e.namedValues[chave];
+      dados[chave] = Array.isArray(valor) ? valor[0] : valor;
+    });
+  }
+
+  // Acionador criado diretamente no Google Forms.
+  if (e.response && typeof e.response.getItemResponses === "function") {
+    e.response.getItemResponses().forEach(function (itemResponse) {
+      dados[itemResponse.getItem().getTitle()] = itemResponse.getResponse();
+    });
+  }
+
+  if (Object.keys(dados).length === 0) {
+    throw new Error("O acionador não forneceu os dados da resposta. Recrie-o no evento Ao enviar um formulário.");
+  }
+
+  dados.origem = "google_forms";
+  enviar(dados);
 }
 
-function enviar(r) {
-  function v(k) {
-    var valor = r[k];
-    return Array.isArray(valor) ? (valor[0] || "") : (valor || "");
-  }
-
-  var resposta = UrlFetchApp.fetch("${endpoint}", {
+function enviar(dados) {
+  var resposta = UrlFetchApp.fetch(WEBHOOK_URL, {
     method: "post",
     contentType: "application/json",
-    headers: { "x-webhook-token": "${form.webhook_token}" },
-    payload: JSON.stringify({
-      "Aluno(a)": v("Aluno(a)"),
-      "CPF": v("CPF"),
-      "CURSO": v("CURSO"),
-      "MATRÍCULA": v("MATRÍCULA")
-    }),
-    muteHttpExceptions: true
+    headers: { "x-webhook-token": WEBHOOK_TOKEN },
+    payload: JSON.stringify(dados),
+    muteHttpExceptions: true,
+    followRedirects: false
   });
 
   var codigo = resposta.getResponseCode();
+  var conteudo = resposta.getContentText();
+  console.log("Webhook HTTP " + codigo + ": " + conteudo);
   if (codigo < 200 || codigo >= 300) {
-    throw new Error("Falha no sistema (HTTP " + codigo + "): " + resposta.getContentText());
+    throw new Error("Falha ao salvar o ofício (HTTP " + codigo + "): " + conteudo);
   }
-  console.log(resposta.getContentText());
+  return conteudo;
 }
 
 function testarEnvio() {
@@ -314,7 +328,8 @@ function testarEnvio() {
     "Aluno(a)": "Teste Manual",
     "CPF": "000.000.000-00",
     "CURSO": "Enfermagem",
-    "MATRÍCULA": "TESTE-001"
+    "MATRÍCULA": "TESTE-" + new Date().getTime(),
+    "origem": "teste_apps_script"
   });
 }`}</pre>
         </details>

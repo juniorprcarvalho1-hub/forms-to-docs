@@ -1,72 +1,85 @@
 import { jsPDF } from "jspdf";
 
-import { renderizarModelo, type Configuracoes, type Oficio } from "./oficios";
+import { montarDocumentoHtml, type Configuracoes, type Oficio } from "./oficios";
 
-async function toDataUrl(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    return await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
+const LARGURA_A4 = 210;
+const ALTURA_A4 = 297;
+const MARGEM = 15;
+
+function documentoEmPagina(html: string) {
+  const pagina = document.createElement("div");
+  pagina.className = "prose-oficio";
+  pagina.style.position = "fixed";
+  pagina.style.left = "-10000px";
+  pagina.style.top = "0";
+  pagina.style.width = "794px"; // A4 em 96dpi
+  pagina.style.padding = "56px";
+  pagina.style.background = "#ffffff";
+  pagina.style.color = "#000000";
+  pagina.style.fontFamily = '"Times New Roman", serif';
+  pagina.style.fontSize = "16px";
+  pagina.style.lineHeight = "1.6";
+  pagina.innerHTML = html;
+  return pagina;
 }
 
+/** Gera o PDF a partir do HTML formatado do ofício, preservando imagens e estilos. */
 export async function gerarPdf(oficio: Oficio, config: Configuracoes): Promise<Blob> {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const margem = 25;
-  const largura = 210 - margem * 2;
-  let y = 20;
+  return gerarPdfDeHtml(montarDocumentoHtml(oficio, config));
+}
 
-  if (config.logo_url) {
-    const logo = await toDataUrl(config.logo_url);
-    if (logo) {
-      try {
-        doc.addImage(logo, "PNG", (210 - 35) / 2, y, 35, 20, undefined, "FAST");
-        y += 26;
-      } catch {
-        /* ignora logo inválida */
-      }
+export async function gerarPdfDeHtml(html: string): Promise<Blob> {
+  const { default: html2canvas } = await import("html2canvas");
+  const pagina = documentoEmPagina(html);
+  document.body.appendChild(pagina);
+
+  try {
+    const canvas = await html2canvas(pagina, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+    });
+
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const larguraUtil = LARGURA_A4 - MARGEM * 2;
+    const alturaUtil = ALTURA_A4 - MARGEM * 2;
+    const alturaTotal = (canvas.height * larguraUtil) / canvas.width;
+
+    const alturaFatiaPx = Math.floor((alturaUtil * canvas.width) / larguraUtil);
+    let deslocamento = 0;
+    let primeira = true;
+
+    while (deslocamento < canvas.height) {
+      const altura = Math.min(alturaFatiaPx, canvas.height - deslocamento);
+      const fatia = document.createElement("canvas");
+      fatia.width = canvas.width;
+      fatia.height = altura;
+      const ctx = fatia.getContext("2d");
+      if (!ctx) break;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, fatia.width, fatia.height);
+      ctx.drawImage(canvas, 0, deslocamento, canvas.width, altura, 0, 0, canvas.width, altura);
+
+      if (!primeira) doc.addPage();
+      doc.addImage(
+        fatia.toDataURL("image/jpeg", 0.95),
+        "JPEG",
+        MARGEM,
+        MARGEM,
+        larguraUtil,
+        (altura * larguraUtil) / canvas.width,
+        undefined,
+        "FAST",
+      );
+      primeira = false;
+      deslocamento += altura;
+      if (alturaTotal <= alturaUtil) break;
     }
+
+    return doc.output("blob");
+  } finally {
+    pagina.remove();
   }
-
-  doc.setFont("times", "normal");
-  doc.setFontSize(12);
-
-  const texto = renderizarModelo(config.modelo, oficio, config);
-  const linhas = doc.splitTextToSize(texto, largura) as string[];
-
-  for (const linha of linhas) {
-    if (y > 265) {
-      doc.addPage();
-      y = 25;
-    }
-    doc.text(linha, margem, y);
-    y += 7;
-  }
-
-  if (config.assinatura_url) {
-    const assinatura = await toDataUrl(config.assinatura_url);
-    if (assinatura) {
-      try {
-        if (y > 230) {
-          doc.addPage();
-          y = 40;
-        }
-        doc.addImage(assinatura, "PNG", (210 - 50) / 2, y + 6, 50, 22, undefined, "FAST");
-      } catch {
-        /* ignora assinatura inválida */
-      }
-    }
-  }
-
-  return doc.output("blob");
 }
 
 export function baixarBlob(blob: Blob, nome: string) {

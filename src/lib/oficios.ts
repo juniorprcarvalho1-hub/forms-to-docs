@@ -130,3 +130,34 @@ export function renderizarModelo(modelo: string, oficio: Oficio, config?: Config
     modelo,
   );
 }
+
+function escaparHtml(texto: string) {
+  return texto
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+export function textoParaHtml(texto: string) {
+  return escaparHtml(texto)
+    .split(/\n{2,}/)
+    .map((bloco) => `<p>${bloco.replaceAll("\n", "<br />")}</p>`)
+    .join("");
+}
+
+/** Modelo em HTML salvo nas configurações (com fallback para o modelo antigo em texto). */
+export function modeloHtmlAtual(config: Configuracoes) {
+  const html = (config.modelo_html ?? "").trim();
+  return html || textoParaHtml(config.modelo ?? "");
+}
+
+/** Documento final (cabeçalho + corpo + rodapé) já com as tags substituídas. */
+export function montarDocumentoHtml(oficio: Oficio, config: Configuracoes) {
+  if (oficio.conteudo_html && oficio.conteudo_html.trim()) return oficio.conteudo_html;
+  const partes = [
+    config.cabecalho_html?.trim(),
+    modeloHtmlAtual(config),
+    config.rodape_html?.trim(),
+  ].filter(Boolean) as string[];
+  return renderizarModelo(partes.join(""), oficio, config);
+}

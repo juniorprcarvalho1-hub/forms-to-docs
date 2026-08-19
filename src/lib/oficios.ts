@@ -29,6 +29,9 @@ export type Oficio = {
 export type Configuracoes = {
   id: boolean;
   modelo: string;
+  modelo_html: string;
+  cabecalho_html: string;
+  rodape_html: string;
   logo_url: string | null;
   assinatura_url: string | null;
   formato_numeracao: string;

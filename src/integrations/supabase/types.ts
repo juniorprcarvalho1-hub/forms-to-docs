@@ -17,6 +17,7 @@ export type Database = {
       configuracoes: {
         Row: {
           assinatura_url: string | null
+          cabecalho_html: string
           cidade: string
           digitos: number
           form_url: string
@@ -24,6 +25,7 @@ export type Database = {
           id: boolean
           logo_url: string | null
           modelo: string
+          modelo_html: string
           padrao_apolice: string
           padrao_area_estagio: string
           padrao_carga_horaria: string
@@ -34,11 +36,13 @@ export type Database = {
           padrao_professor: string
           padrao_registro_professor: string
           padrao_seguradora: string
+          rodape_html: string
           updated_at: string
           webhook_token: string
         }
         Insert: {
           assinatura_url?: string | null
+          cabecalho_html?: string
           cidade?: string
           digitos?: number
           form_url?: string
@@ -46,6 +50,7 @@ export type Database = {
           id?: boolean
           logo_url?: string | null
           modelo?: string
+          modelo_html?: string
           padrao_apolice?: string
           padrao_area_estagio?: string
           padrao_carga_horaria?: string
@@ -56,11 +61,13 @@ export type Database = {
           padrao_professor?: string
           padrao_registro_professor?: string
           padrao_seguradora?: string
+          rodape_html?: string
           updated_at?: string
           webhook_token?: string
         }
         Update: {
           assinatura_url?: string | null
+          cabecalho_html?: string
           cidade?: string
           digitos?: number
           form_url?: string
@@ -68,6 +75,7 @@ export type Database = {
           id?: boolean
           logo_url?: string | null
           modelo?: string
+          modelo_html?: string
           padrao_apolice?: string
           padrao_area_estagio?: string
           padrao_carga_horaria?: string
@@ -78,6 +86,7 @@ export type Database = {
           padrao_professor?: string
           padrao_registro_professor?: string
           padrao_seguradora?: string
+          rodape_html?: string
           updated_at?: string
           webhook_token?: string
         }
@@ -91,6 +100,7 @@ export type Database = {
           assunto: string
           carga_horaria: string
           cargo: string
+          conteudo_html: string | null
           coordenador: string
           corpo: string
           cpf: string
@@ -118,6 +128,7 @@ export type Database = {
           assunto?: string
           carga_horaria?: string
           cargo?: string
+          conteudo_html?: string | null
           coordenador?: string
           corpo?: string
           cpf?: string
@@ -145,6 +156,7 @@ export type Database = {
           assunto?: string
           carga_horaria?: string
           cargo?: string
+          conteudo_html?: string | null
           coordenador?: string
           corpo?: string
           cpf?: string

@@ -1,11 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Download, Eye, Printer, Search } from "lucide-react";
+import { Download, Eye, Pencil, Printer, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -20,14 +30,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { RichEditor } from "@/components/RichEditor";
 import { supabase } from "@/integrations/supabase/client";
 import {
   formatarData,
-  renderizarModelo,
+  montarDocumentoHtml,
   type Configuracoes,
   type Oficio,
 } from "@/lib/oficios";
-import { baixarBlob, gerarPdf, imprimirBlob } from "@/lib/pdf";
+import { baixarBlob, gerarPdfDeHtml, imprimirBlob } from "@/lib/pdf";
 import { uploadArquivo } from "@/lib/storage";
 
 export const Route = createFileRoute("/_authenticated/oficios")({
@@ -48,8 +59,12 @@ export const Route = createFileRoute("/_authenticated/oficios")({
 
 function OficiosPage() {
   const { q } = Route.useSearch();
+  const queryClient = useQueryClient();
   const [busca, setBusca] = useState(q);
   const [aberto, setAberto] = useState<Oficio | null>(null);
+  const [editando, setEditando] = useState<Oficio | null>(null);
+  const [conteudo, setConteudo] = useState("");
+  const [excluindo, setExcluindo] = useState<Oficio | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
   const { data: config } = useQuery({
@@ -89,7 +104,7 @@ function OficiosPage() {
     if (!config) return;
     setOcupado(true);
     try {
-      const blob = await gerarPdf(oficio, config);
+      const blob = await gerarPdfDeHtml(montarDocumentoHtml(oficio, config));
       const path = `documentos/${oficio.ano}/${oficio.numero_formatado.replace(/[^\w]+/g, "-")}.pdf`;
       try {
         await uploadArquivo(path, blob, "application/pdf");
@@ -104,6 +119,43 @@ function OficiosPage() {
     } finally {
       setOcupado(false);
     }
+  }
+
+  function abrirEditor(oficio: Oficio) {
+    if (!config) return;
+    setConteudo(montarDocumentoHtml(oficio, config));
+    setEditando(oficio);
+  }
+
+  async function salvarEdicao() {
+    if (!editando) return;
+    setOcupado(true);
+    const { error } = await supabase
+      .from("oficios")
+      .update({ conteudo_html: conteudo })
+      .eq("id", editando.id);
+    setOcupado(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Ofício atualizado.");
+    setEditando(null);
+    queryClient.invalidateQueries({ queryKey: ["oficios"] });
+  }
+
+  async function excluir() {
+    if (!excluindo) return;
+    setOcupado(true);
+    const { error } = await supabase.from("oficios").delete().eq("id", excluindo.id);
+    setOcupado(false);
+    setExcluindo(null);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Ofício excluído.");
+    queryClient.invalidateQueries({ queryKey: ["oficios"] });
   }
 
   return (
@@ -134,7 +186,7 @@ function OficiosPage() {
               <TableHead className="hidden md:table-cell">Curso</TableHead>
               <TableHead className="hidden lg:table-cell">Matrícula</TableHead>
               <TableHead className="w-28">Data</TableHead>
-              <TableHead className="w-36 text-right">Ações</TableHead>
+              <TableHead className="w-52 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -152,6 +204,9 @@ function OficiosPage() {
                 <TableCell className="text-right whitespace-nowrap">
                   <Button variant="ghost" size="icon" title="Visualizar" onClick={() => setAberto(o)}>
                     <Eye className="size-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" title="Editar" onClick={() => abrirEditor(o)}>
+                    <Pencil className="size-4" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -171,6 +226,15 @@ function OficiosPage() {
                   >
                     <Printer className="size-4" />
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Excluir"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setExcluindo(o)}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -186,29 +250,30 @@ function OficiosPage() {
       </div>
 
       <Dialog open={!!aberto} onOpenChange={(v) => !v && setAberto(null)}>
-        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{aberto?.numero_formatado}</DialogTitle>
           </DialogHeader>
           {aberto && config && (
             <>
-              <article className="print-area rounded-lg border bg-card p-8 font-serif text-sm leading-7 whitespace-pre-wrap">
-                {config.logo_url && (
-                  <img src={config.logo_url} alt="Logotipo" className="mx-auto mb-6 h-16 object-contain" />
-                )}
-                {renderizarModelo(config.modelo, aberto, config)}
-                {config.assinatura_url && (
-                  <img
-                    src={config.assinatura_url}
-                    alt="Assinatura"
-                    className="mx-auto mt-6 h-20 object-contain"
-                  />
-                )}
-              </article>
+              <article
+                className="print-area prose-oficio rounded-lg border bg-card p-8 font-serif text-sm leading-7"
+                dangerouslySetInnerHTML={{ __html: montarDocumentoHtml(aberto, config) }}
+              />
               <div className="flex flex-wrap justify-end gap-2">
                 <span className="mr-auto self-center text-xs text-muted-foreground">
                   Recebido em {formatarData(aberto.created_at.slice(0, 10))}
                 </span>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const alvo = aberto;
+                    setAberto(null);
+                    abrirEditor(alvo);
+                  }}
+                >
+                  <Pencil className="size-4" /> Editar
+                </Button>
                 <Button variant="outline" onClick={() => comPdf(aberto, "imprimir")} disabled={ocupado}>
                   <Printer className="size-4" /> Imprimir
                 </Button>
@@ -220,6 +285,42 @@ function OficiosPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!editando} onOpenChange={(v) => !v && setEditando(null)}>
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar {editando?.numero_formatado}</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            Edição livre do documento: formate o texto, ajuste alinhamentos e insira imagens PNG em
+            qualquer ponto — inclusive no cabeçalho.
+          </p>
+          <RichEditor value={conteudo} onChange={setConteudo} minHeight={420} />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditando(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={salvarEdicao} disabled={ocupado}>
+              {ocupado ? "Salvando…" : "Salvar ofício"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!excluindo} onOpenChange={(v) => !v && setExcluindo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {excluindo?.numero_formatado}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O documento será removido permanentemente do sistema. Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={excluir}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

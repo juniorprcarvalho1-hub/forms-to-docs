@@ -22,6 +22,7 @@ export type Oficio = {
   apolice: string;
   coordenador: string;
   pdf_path: string | null;
+  conteudo_html: string | null;
   origem: string;
   created_at: string;
 };
@@ -29,6 +30,9 @@ export type Oficio = {
 export type Configuracoes = {
   id: boolean;
   modelo: string;
+  modelo_html: string;
+  cabecalho_html: string;
+  rodape_html: string;
   logo_url: string | null;
   assinatura_url: string | null;
   formato_numeracao: string;
@@ -125,4 +129,35 @@ export function renderizarModelo(modelo: string, oficio: Oficio, config?: Config
     (texto, [chave, valor]) => texto.replaceAll(`{{${chave}}}`, valor),
     modelo,
   );
+}
+
+function escaparHtml(texto: string) {
+  return texto
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+export function textoParaHtml(texto: string) {
+  return escaparHtml(texto)
+    .split(/\n{2,}/)
+    .map((bloco) => `<p>${bloco.replaceAll("\n", "<br />")}</p>`)
+    .join("");
+}
+
+/** Modelo em HTML salvo nas configurações (com fallback para o modelo antigo em texto). */
+export function modeloHtmlAtual(config: Configuracoes) {
+  const html = (config.modelo_html ?? "").trim();
+  return html || textoParaHtml(config.modelo ?? "");
+}
+
+/** Documento final (cabeçalho + corpo + rodapé) já com as tags substituídas. */
+export function montarDocumentoHtml(oficio: Oficio, config: Configuracoes) {
+  if (oficio.conteudo_html && oficio.conteudo_html.trim()) return oficio.conteudo_html;
+  const partes = [
+    config.cabecalho_html?.trim(),
+    modeloHtmlAtual(config),
+    config.rodape_html?.trim(),
+  ].filter(Boolean) as string[];
+  return renderizarModelo(partes.join(""), oficio, config);
 }

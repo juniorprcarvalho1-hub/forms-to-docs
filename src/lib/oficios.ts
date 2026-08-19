@@ -22,6 +22,7 @@ export type Oficio = {
   apolice: string;
   coordenador: string;
   pdf_path: string | null;
+  conteudo_html: string | null;
   origem: string;
   created_at: string;
 };

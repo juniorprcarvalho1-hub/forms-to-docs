@@ -7,9 +7,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichEditor } from "@/components/RichEditor";
 import { supabase } from "@/integrations/supabase/client";
-import { formatarNumero, TAGS_MODELO, type Configuracoes } from "@/lib/oficios";
+import {
+  formatarNumero,
+  TAGS_MODELO,
+  textoParaHtml,
+  type Configuracoes,
+} from "@/lib/oficios";
 import { uploadArquivo, urlAssinada } from "@/lib/storage";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
@@ -39,7 +44,12 @@ function ConfiguracoesPage() {
   });
 
   useEffect(() => {
-    if (data && !form) setForm(data);
+    if (data && !form) {
+      setForm({
+        ...data,
+        modelo_html: (data.modelo_html ?? "").trim() || textoParaHtml(data.modelo ?? ""),
+      });
+    }
   }, [data, form]);
 
   async function salvar() {
@@ -49,6 +59,9 @@ function ConfiguracoesPage() {
       .from("configuracoes")
       .update({
         modelo: form.modelo,
+        modelo_html: form.modelo_html,
+        cabecalho_html: form.cabecalho_html,
+        rodape_html: form.rodape_html,
         formato_numeracao: form.formato_numeracao,
         digitos: form.digitos,
         logo_url: form.logo_url,
@@ -102,16 +115,41 @@ function ConfiguracoesPage() {
       </div>
 
       <section className="surface-card space-y-4 p-6">
-        <h2 className="text-sm font-medium">Modelo do ofício</h2>
+        <h2 className="text-sm font-medium">Modelo do ofício (edição livre)</h2>
         <p className="text-xs break-words text-muted-foreground">
-          Campos disponíveis: {TAGS_MODELO.join(" ")}
+          Formate como no Word: fontes, tamanhos, cores, alinhamento, listas e imagens PNG em
+          qualquer ponto. Campos automáticos: {TAGS_MODELO.join(" ")}
         </p>
-        <Textarea
-          rows={16}
-          value={form.modelo}
-          onChange={(e) => setForm({ ...form, modelo: e.target.value })}
-          className="font-mono text-sm"
-        />
+
+        <div className="space-y-2">
+          <Label>Cabeçalho (repetido no topo do documento)</Label>
+          <RichEditor
+            value={form.cabecalho_html}
+            minHeight={140}
+            placeholder="Insira aqui o logotipo e os dados da instituição…"
+            onChange={(html) => setForm((f) => (f ? { ...f, cabecalho_html: html } : f))}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Corpo do ofício</Label>
+          <RichEditor
+            value={form.modelo_html}
+            minHeight={360}
+            placeholder="Texto do ofício…"
+            onChange={(html) => setForm((f) => (f ? { ...f, modelo_html: html } : f))}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Rodapé</Label>
+          <RichEditor
+            value={form.rodape_html}
+            minHeight={140}
+            placeholder="Assinatura, endereço, contatos…"
+            onChange={(html) => setForm((f) => (f ? { ...f, rodape_html: html } : f))}
+          />
+        </div>
       </section>
 
       <section className="surface-card grid gap-4 p-6 sm:grid-cols-2">

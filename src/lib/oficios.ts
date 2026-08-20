@@ -125,10 +125,16 @@ export function renderizarModelo(modelo: string, oficio: Oficio, config?: Config
     assunto: oficio.assunto,
   };
 
-  return Object.entries(mapa).reduce(
+  const substituido = Object.entries(mapa).reduce(
     (texto, [chave, valor]) => texto.replaceAll(`{{${chave}}}`, valor),
     modelo,
   );
+  return limparTagsResiduais(substituido);
+}
+
+/** Remove tags automáticas que não foram preenchidas, evitando exibir "}}" no documento final. */
+function limparTagsResiduais(texto: string) {
+  return texto.replace(/\{\{[^}]+\}\}/g, "");
 }
 
 function escaparHtml(texto: string) {

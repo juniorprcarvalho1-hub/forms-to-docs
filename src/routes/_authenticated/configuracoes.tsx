@@ -118,7 +118,7 @@ function ConfiguracoesPage() {
         <h2 className="text-sm font-medium">Modelo do ofício (edição livre)</h2>
         <p className="text-xs break-words text-muted-foreground">
           Formate como no Word: fontes, tamanhos, cores, alinhamento, listas e imagens PNG em
-          qualquer ponto. Campos automáticos: {TAGS_MODELO.join(" ")}
+          qualquer ponto. Os campos automáticos são preenchidos pelos dados do formulário.
         </p>
 
         <div className="space-y-2">
@@ -162,7 +162,7 @@ function ConfiguracoesPage() {
             onChange={(e) => setForm({ ...form, formato_numeracao: e.target.value })}
           />
           <p className="text-xs text-muted-foreground">
-            Use {"{{seq}}"} e {"{{ano}}"}.
+            Use seq e ano para montar a numeração.
           </p>
         </div>
         <div className="space-y-1.5">

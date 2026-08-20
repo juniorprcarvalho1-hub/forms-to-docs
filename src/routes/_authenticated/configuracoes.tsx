@@ -7,9 +7,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichEditor } from "@/components/RichEditor";
 import { supabase } from "@/integrations/supabase/client";
-import { formatarNumero, TAGS_MODELO, type Configuracoes } from "@/lib/oficios";
+import {
+  formatarNumero,
+  TAGS_MODELO,
+  textoParaHtml,
+  type Configuracoes,
+} from "@/lib/oficios";
 import { uploadArquivo, urlAssinada } from "@/lib/storage";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
@@ -39,7 +44,12 @@ function ConfiguracoesPage() {
   });
 
   useEffect(() => {
-    if (data && !form) setForm(data);
+    if (data && !form) {
+      setForm({
+        ...data,
+        modelo_html: (data.modelo_html ?? "").trim() || textoParaHtml(data.modelo ?? ""),
+      });
+    }
   }, [data, form]);
 
   async function salvar() {
@@ -49,6 +59,9 @@ function ConfiguracoesPage() {
       .from("configuracoes")
       .update({
         modelo: form.modelo,
+        modelo_html: form.modelo_html,
+        cabecalho_html: form.cabecalho_html,
+        rodape_html: form.rodape_html,
         formato_numeracao: form.formato_numeracao,
         digitos: form.digitos,
         logo_url: form.logo_url,

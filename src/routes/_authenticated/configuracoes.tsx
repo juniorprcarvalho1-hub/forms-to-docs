@@ -102,16 +102,41 @@ function ConfiguracoesPage() {
       </div>
 
       <section className="surface-card space-y-4 p-6">
-        <h2 className="text-sm font-medium">Modelo do ofício</h2>
+        <h2 className="text-sm font-medium">Modelo do ofício (edição livre)</h2>
         <p className="text-xs break-words text-muted-foreground">
-          Campos disponíveis: {TAGS_MODELO.join(" ")}
+          Formate como no Word: fontes, tamanhos, cores, alinhamento, listas e imagens PNG em
+          qualquer ponto. Campos automáticos: {TAGS_MODELO.join(" ")}
         </p>
-        <Textarea
-          rows={16}
-          value={form.modelo}
-          onChange={(e) => setForm({ ...form, modelo: e.target.value })}
-          className="font-mono text-sm"
-        />
+
+        <div className="space-y-2">
+          <Label>Cabeçalho (repetido no topo do documento)</Label>
+          <RichEditor
+            value={form.cabecalho_html}
+            minHeight={140}
+            placeholder="Insira aqui o logotipo e os dados da instituição…"
+            onChange={(html) => setForm((f) => (f ? { ...f, cabecalho_html: html } : f))}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Corpo do ofício</Label>
+          <RichEditor
+            value={form.modelo_html}
+            minHeight={360}
+            placeholder="Texto do ofício…"
+            onChange={(html) => setForm((f) => (f ? { ...f, modelo_html: html } : f))}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Rodapé</Label>
+          <RichEditor
+            value={form.rodape_html}
+            minHeight={140}
+            placeholder="Assinatura, endereço, contatos…"
+            onChange={(html) => setForm((f) => (f ? { ...f, rodape_html: html } : f))}
+          />
+        </div>
       </section>
 
       <section className="surface-card grid gap-4 p-6 sm:grid-cols-2">

@@ -118,7 +118,7 @@ function ConfiguracoesPage() {
         <h2 className="text-sm font-medium">Modelo do ofício (edição livre)</h2>
         <p className="text-xs break-words text-muted-foreground">
           Formate como no Word: fontes, tamanhos, cores, alinhamento, listas e imagens PNG em
-          qualquer ponto. Campos automáticos: {TAGS_MODELO.join(" ")}
+          qualquer ponto. Os campos automáticos são preenchidos pelos dados do formulário.
         </p>
 
         <div className="space-y-2">

@@ -162,7 +162,7 @@ function ConfiguracoesPage() {
             onChange={(e) => setForm({ ...form, formato_numeracao: e.target.value })}
           />
           <p className="text-xs text-muted-foreground">
-            Use {"{{seq}}"} e {"{{ano}}"}.
+            Use seq e ano para montar a numeração.
           </p>
         </div>
         <div className="space-y-1.5">

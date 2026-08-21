@@ -1,0 +1,2 @@
+update public.configuracoes set formato_numeracao = replace(formato_numeracao, '{{2027}}', '{{ano}}'), updated_at = now() where formato_numeracao like '%{{2027}}%';
+update public.configuracoes set formato_numeracao = regexp_replace(formato_numeracao, '\{\{(19|20)[0-9]{2}\}\}', '{{ano}}', 'g'), updated_at = now() where formato_numeracao ~ '\{\{(19|20)[0-9]{2}\}\}';

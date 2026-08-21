@@ -92,6 +92,30 @@ export type Database = {
         }
         Relationships: []
       }
+      cursos: {
+        Row: {
+          area_estagio: string
+          created_at: string
+          id: string
+          nome_formulario: string
+          nome_oficial: string
+        }
+        Insert: {
+          area_estagio?: string
+          created_at?: string
+          id?: string
+          nome_formulario?: string
+          nome_oficial?: string
+        }
+        Update: {
+          area_estagio?: string
+          created_at?: string
+          id?: string
+          nome_formulario?: string
+          nome_oficial?: string
+        }
+        Relationships: []
+      }
       oficios: {
         Row: {
           ano: number
@@ -176,6 +200,33 @@ export type Database = {
           professor_orientador?: string
           registro_professor?: string
           seguradora?: string
+        }
+        Relationships: []
+      }
+      professores: {
+        Row: {
+          created_at: string
+          curso: string
+          id: string
+          nome_formulario: string
+          nome_oficial: string
+          registro: string
+        }
+        Insert: {
+          created_at?: string
+          curso?: string
+          id?: string
+          nome_formulario?: string
+          nome_oficial?: string
+          registro?: string
+        }
+        Update: {
+          created_at?: string
+          curso?: string
+          id?: string
+          nome_formulario?: string
+          nome_oficial?: string
+          registro?: string
         }
         Relationships: []
       }

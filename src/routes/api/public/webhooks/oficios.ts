@@ -72,21 +72,52 @@ export const Route = createFileRoute("/api/public/webhooks/oficios")({
         const nome = texto("aluno", "alunoa", "nome");
         if (!nome) return json({ error: "Campo Aluno(a) não recebido" }, 422);
 
+        // Cadastros auxiliares: curso e professor escolhidos no formulário
+        const cursoForm = texto("curso");
+        const professorForm = texto("professor", "professororientador");
+
+        const { data: cursos } = await supabaseAdmin
+          .from("cursos")
+          .select("nome_formulario, nome_oficial, area_estagio");
+        const { data: professores } = await supabaseAdmin
+          .from("professores")
+          .select("nome_formulario, nome_oficial, registro, curso");
+
+        const cursoCad = (cursos ?? []).find(
+          (c) => normalizar(String(c.nome_formulario)) === normalizar(cursoForm),
+        );
+        const curso = cursoCad?.nome_oficial?.trim() || cursoForm;
+
+        const professorCad = (professores ?? []).find((p) => {
+          const alvo = normalizar(String(p.nome_formulario));
+          return (
+            (professorForm && alvo === normalizar(professorForm)) ||
+            (!professorForm && normalizar(String(p.curso)) === normalizar(cursoForm))
+          );
+        });
+        const professor =
+          professorCad?.nome_oficial?.trim() || professorForm || padrao("padrao_professor");
+
         const registro = {
           data: dataStr,
           nome,
           cpf: texto("cpf"),
-          curso: texto("curso"),
+          curso,
           matricula: texto("matricula"),
           instituicao: texto("instituicao"),
           cargo: texto("cargo"),
           assunto: texto("assunto") || "Estágio Curricular Obrigatório",
           corpo: texto("corpo"),
           destinatario: texto("destinatario") || padrao("padrao_destinatario"),
-          area_estagio: texto("areaestagio", "area") || padrao("padrao_area_estagio"),
-          professor_orientador: texto("professor", "professororientador") || padrao("padrao_professor"),
+          area_estagio:
+            texto("areaestagio", "area") ||
+            cursoCad?.area_estagio?.trim() ||
+            padrao("padrao_area_estagio"),
+          professor_orientador: professor,
           registro_professor:
-            texto("registroprofessor", "conselho") || padrao("padrao_registro_professor"),
+            texto("registroprofessor", "conselho") ||
+            professorCad?.registro?.trim() ||
+            padrao("padrao_registro_professor"),
           carga_horaria: texto("cargahoraria") || padrao("padrao_carga_horaria"),
           periodo: texto("periodo") || padrao("padrao_periodo"),
           seguradora: texto("seguradora") || padrao("padrao_seguradora"),
@@ -94,6 +125,7 @@ export const Route = createFileRoute("/api/public/webhooks/oficios")({
           coordenador: texto("coordenador") || padrao("padrao_coordenador"),
           origem: texto("origem") || "google_forms",
         };
+
 
         for (let tentativa = 0; tentativa < 5; tentativa++) {
           const { data: ultimo } = await supabaseAdmin

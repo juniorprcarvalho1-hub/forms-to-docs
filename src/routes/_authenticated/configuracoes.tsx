@@ -44,7 +44,10 @@ function ConfiguracoesPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from("modelos_oficio").select("*").order("chave");
       if (error) throw error;
-      return (data ?? []) as unknown as ModeloOficio[];
+      const ordem = ["padrao", "nutricao", "psicologia"];
+      return ((data ?? []) as unknown as ModeloOficio[]).sort(
+        (a, b) => ordem.indexOf(a.chave) - ordem.indexOf(b.chave),
+      );
     },
   });
   const modeloSelecionado = (modelos.data ?? []).find((m) => m.chave === modeloAtivo);

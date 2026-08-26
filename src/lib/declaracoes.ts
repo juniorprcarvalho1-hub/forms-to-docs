@@ -7,6 +7,8 @@ export type Declaracao = {
   hospital: string;
   data_inicio: string;
   data_fim: string;
+  carga_horaria: string;
+  alunos: string;
   email: string;
   curso: string;
   modelo_chave: string;

@@ -98,7 +98,42 @@ export const Route = createFileRoute("/api/public/webhooks/oficios")({
         const professor =
           professorCad?.nome_oficial?.trim() || professorForm || padrao("padrao_professor");
 
+        // Módulo do estágio e modelo aplicável (1 padrão, 2 nutrição, 3 psicologia)
+        const moduloForm = texto("modulo", "moduloestagio", "estagio", "modulos");
+        const cursoNorm = normalizar(curso || cursoForm);
+        const modeloChave = cursoNorm.includes("nutricao")
+          ? "nutricao"
+          : cursoNorm.includes("psicologia")
+            ? "psicologia"
+            : "padrao";
+
+        let moduloNome = moduloForm;
+        let cargaModulo = "";
+        let areaModulo = "";
+        if (modeloChave !== "padrao") {
+          const { data: modulos } = await supabaseAdmin
+            .from("modulos_estagio")
+            .select("curso, nome_formulario, nome_oficial, carga_horaria, area_estagio");
+          const moduloCad = (modulos ?? []).find(
+            (m) =>
+              normalizar(String(m.nome_formulario)) === normalizar(moduloForm) &&
+              (!String(m.curso).trim() || normalizar(String(m.curso)) === cursoNorm),
+          );
+          if (moduloCad) {
+            moduloNome = String(moduloCad.nome_oficial || moduloCad.nome_formulario);
+            cargaModulo = String(moduloCad.carga_horaria ?? "");
+            areaModulo = String(moduloCad.area_estagio ?? "");
+          }
+        }
+
+        const cargaFinal =
+          texto("cargahoraria") ||
+          (modeloChave === "padrao" ? "420 horas" : cargaModulo) ||
+          padrao("padrao_carga_horaria");
+
         const registro = {
+          modulo: moduloNome,
+          modelo_chave: modeloChave,
           data: dataStr,
           nome,
           cpf: texto("cpf"),
@@ -111,6 +146,7 @@ export const Route = createFileRoute("/api/public/webhooks/oficios")({
           destinatario: texto("destinatario") || padrao("padrao_destinatario"),
           area_estagio:
             texto("areaestagio", "area") ||
+            areaModulo.trim() ||
             cursoCad?.area_estagio?.trim() ||
             padrao("padrao_area_estagio"),
           professor_orientador: professor,
@@ -118,7 +154,7 @@ export const Route = createFileRoute("/api/public/webhooks/oficios")({
             texto("registroprofessor", "conselho") ||
             professorCad?.registro?.trim() ||
             padrao("padrao_registro_professor"),
-          carga_horaria: texto("cargahoraria") || padrao("padrao_carga_horaria"),
+          carga_horaria: cargaFinal,
           periodo: texto("periodo") || padrao("padrao_periodo"),
           seguradora: texto("seguradora") || padrao("padrao_seguradora"),
           apolice: texto("apolice") || padrao("padrao_apolice"),

@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDeclaracoesRouteImport } from './routes/_authenticated/declaracoes'
 import { Route as AuthenticatedOficiosRouteImport } from './routes/_authenticated/oficios'
 import { Route as ApiPublicWebhooksDeclaracoesRouteImport } from './routes/api/public/webhooks/declaracoes'
 import { Route as ApiPublicWebhooksOficiosRouteImport } from './routes/api/public/webhooks/oficios'
@@ -43,6 +44,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDeclaracoesRoute =
+  AuthenticatedDeclaracoesRouteImport.update({
+    id: '/declaracoes',
+    path: '/declaracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOficiosRoute = AuthenticatedOficiosRouteImport.update({
   id: '/oficios',
   path: '/oficios',
@@ -66,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/declaracoes': typeof AuthenticatedDeclaracoesRoute
   '/oficios': typeof AuthenticatedOficiosRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
@@ -75,6 +83,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/declaracoes': typeof AuthenticatedDeclaracoesRoute
   '/oficios': typeof AuthenticatedOficiosRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
@@ -86,6 +95,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/declaracoes': typeof AuthenticatedDeclaracoesRoute
   '/_authenticated/oficios': typeof AuthenticatedOficiosRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/configuracoes'
     | '/dashboard'
+    | '/declaracoes'
     | '/oficios'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/oficios'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/configuracoes'
     | '/dashboard'
+    | '/declaracoes'
     | '/oficios'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/oficios'
@@ -116,6 +128,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
+    | '/_authenticated/declaracoes'
     | '/_authenticated/oficios'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/oficios'
@@ -166,6 +179,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/declaracoes': {
+      id: '/_authenticated/declaracoes'
+      path: '/declaracoes'
+      fullPath: '/declaracoes'
+      preLoaderRoute: typeof AuthenticatedDeclaracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/oficios': {
       id: '/_authenticated/oficios'
       path: '/oficios'
@@ -193,12 +213,14 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDeclaracoesRoute: typeof AuthenticatedDeclaracoesRoute
   AuthenticatedOficiosRoute: typeof AuthenticatedOficiosRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDeclaracoesRoute: AuthenticatedDeclaracoesRoute,
   AuthenticatedOficiosRoute: AuthenticatedOficiosRoute,
 }
 

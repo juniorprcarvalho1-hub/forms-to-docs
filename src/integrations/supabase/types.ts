@@ -124,6 +124,8 @@ export type Database = {
       }
       declaracoes: {
         Row: {
+          alunos: string
+          carga_horaria: string
           conteudo_html: string | null
           coren: string
           created_at: string
@@ -142,6 +144,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          alunos?: string
+          carga_horaria?: string
           conteudo_html?: string | null
           coren?: string
           created_at?: string
@@ -160,6 +164,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          alunos?: string
+          carga_horaria?: string
           conteudo_html?: string | null
           coren?: string
           created_at?: string

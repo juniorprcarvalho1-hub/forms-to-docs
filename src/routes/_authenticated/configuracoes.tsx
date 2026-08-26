@@ -18,6 +18,10 @@ import {
   type Configuracoes,
   type ModeloOficio,
 } from "@/lib/oficios";
+import {
+  ORDEM_MODELOS_DECLARACAO,
+  type ModeloDeclaracao,
+} from "@/lib/declaracoes";
 import { uploadArquivo, urlAssinada } from "@/lib/storage";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
@@ -38,6 +42,23 @@ function ConfiguracoesPage() {
   const [salvando, setSalvando] = useState(false);
   const [modeloAtivo, setModeloAtivo] = useState("padrao");
   const [corposModelo, setCorposModelo] = useState<Record<string, string>>({});
+  const [declaracaoAtiva, setDeclaracaoAtiva] = useState("enfermagem");
+  const [corposDeclaracao, setCorposDeclaracao] = useState<Record<string, string>>({});
+
+  const modelosDeclaracao = useQuery({
+    queryKey: ["modelos_declaracao"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("modelos_declaracao").select("*");
+      if (error) throw error;
+      return ((data ?? []) as unknown as ModeloDeclaracao[]).sort(
+        (a, b) =>
+          ORDEM_MODELOS_DECLARACAO.indexOf(a.chave) - ORDEM_MODELOS_DECLARACAO.indexOf(b.chave),
+      );
+    },
+  });
+  const declaracaoSelecionada = (modelosDeclaracao.data ?? []).find(
+    (m) => m.chave === declaracaoAtiva,
+  );
 
   const modelos = useQuery({
     queryKey: ["modelos_oficio"],
@@ -86,6 +107,19 @@ function ConfiguracoesPage() {
         return;
       }
     }
+    for (const modelo of modelosDeclaracao.data ?? []) {
+      const html = corposDeclaracao[modelo.chave];
+      if (html === undefined || html === modelo.modelo_html) continue;
+      const { error: erroDeclaracao } = await supabase
+        .from("modelos_declaracao")
+        .update({ modelo_html: html })
+        .eq("id", modelo.id);
+      if (erroDeclaracao) {
+        setSalvando(false);
+        toast.error(erroDeclaracao.message);
+        return;
+      }
+    }
     const { error } = await supabase
       .from("configuracoes")
       .update({
@@ -118,6 +152,7 @@ function ConfiguracoesPage() {
       toast.success("Configurações salvas.");
       queryClient.invalidateQueries({ queryKey: ["configuracoes"] });
       queryClient.invalidateQueries({ queryKey: ["modelos_oficio"] });
+      queryClient.invalidateQueries({ queryKey: ["modelos_declaracao"] });
     }
   }
 
@@ -210,6 +245,45 @@ function ConfiguracoesPage() {
             onChange={(html) => setForm((f) => (f ? { ...f, rodape_html: html } : f))}
           />
         </div>
+      </section>
+
+      <section className="surface-card space-y-4 p-6">
+        <h2 className="text-sm font-medium">Modelos de declaração de preceptoria</h2>
+        <p className="text-xs text-muted-foreground">
+          Um modelo por curso, com a mesma estrutura do certificado. O sistema escolhe sozinho
+          conforme o curso respondido no formulário do preceptor.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {(modelosDeclaracao.data ?? []).map((m) => (
+            <Button
+              key={m.chave}
+              type="button"
+              size="sm"
+              variant={m.chave === declaracaoAtiva ? "default" : "outline"}
+              onClick={() => setDeclaracaoAtiva(m.chave)}
+            >
+              {m.nome}
+            </Button>
+          ))}
+        </div>
+        {declaracaoSelecionada && (
+          <>
+            <p className="text-xs text-muted-foreground">
+              Curso atendido: {declaracaoSelecionada.cursos}
+            </p>
+            <RichEditor
+              key={declaracaoSelecionada.id}
+              value={
+                corposDeclaracao[declaracaoSelecionada.chave] ?? declaracaoSelecionada.modelo_html
+              }
+              minHeight={360}
+              placeholder="Texto da declaração…"
+              onChange={(html) =>
+                setCorposDeclaracao((c) => ({ ...c, [declaracaoSelecionada.chave]: html }))
+              }
+            />
+          </>
+        )}
       </section>
 
       <section className="surface-card grid gap-4 p-6 sm:grid-cols-2">

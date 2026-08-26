@@ -25,6 +25,7 @@ export const ROTULOS_TAGS: Record<string, string> = {
   cargo: "Cargo",
   assunto: "Assunto",
   coren: "Registro profissional",
+  conselho: "Conselho (sigla automática)",
   hospital: "Hospital / campo de estágio",
   alunos: "Aluno(s)",
   data_inicio: "Data de início",

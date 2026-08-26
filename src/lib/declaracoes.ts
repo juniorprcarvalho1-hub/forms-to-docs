@@ -109,7 +109,6 @@ export function montarDeclaracaoHtml(
     cidade: config.cidade ?? "",
   };
 
-  const chave = declaracao.modelo_chave || chaveModeloDeclaracao(declaracao.curso ?? "");
   const doCurso = modelos.find((m) => m.chave === chave)?.modelo_html;
   const modelo = (doCurso ?? config.modelo_declaracao_html ?? "").trim();
 

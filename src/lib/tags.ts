@@ -24,6 +24,12 @@ export const ROTULOS_TAGS: Record<string, string> = {
   instituicao: "Instituição",
   cargo: "Cargo",
   assunto: "Assunto",
+  coren: "Registro profissional",
+  hospital: "Hospital / campo de estágio",
+  alunos: "Aluno(s)",
+  data_inicio: "Data de início",
+  data_fim: "Data de término",
+  data_emissao: "Data de emissão",
 };
 
 export function rotuloTag(tag: string) {

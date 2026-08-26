@@ -76,6 +76,8 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes")({
           hospital: texto("hospital", "campodeestagio", "campoestagio", "instituicao"),
           data_inicio: texto("datainicio", "datadeinicio", "inicio", "periodoinicio"),
           data_fim: texto("datafim", "datadefim", "fim", "periodofim", "termino"),
+          carga_horaria: texto("cargahoraria", "horas", "totaldehoras", "cargahorariatotal"),
+          alunos: texto("alunos", "aluno", "nomedosalunos", "nomedoaluno", "estudantes", "discentes"),
           email: texto("email", "emaildopreceptor", "enderecodeemail"),
           origem: texto("origem") || "google_forms",
         };

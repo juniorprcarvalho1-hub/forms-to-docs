@@ -11,6 +11,8 @@ export type Oficio = {
   assunto: string;
   corpo: string;
   curso: string;
+  modulo: string;
+  modelo_chave: string;
   matricula: string;
   area_estagio: string;
   professor_orientador: string;
@@ -25,6 +27,14 @@ export type Oficio = {
   conteudo_html: string | null;
   origem: string;
   created_at: string;
+};
+
+export type ModeloOficio = {
+  id: string;
+  chave: string;
+  nome: string;
+  cursos: string;
+  modelo_html: string;
 };
 
 export type Configuracoes = {
@@ -60,6 +70,7 @@ export const TAGS_MODELO = [
   "{{nome}}",
   "{{cpf}}",
   "{{curso}}",
+  "{{modulo}}",
   "{{matricula}}",
   "{{destinatario}}",
   "{{area_estagio}}",
@@ -109,6 +120,7 @@ export function renderizarModelo(modelo: string, oficio: Oficio, config?: Config
     nome: oficio.nome,
     cpf: oficio.cpf,
     curso: oficio.curso,
+    modulo: oficio.modulo ?? "",
     matricula: oficio.matricula,
     destinatario: oficio.destinatario || (config?.padrao_destinatario ?? ""),
     area_estagio: oficio.area_estagio || (config?.padrao_area_estagio ?? ""),
@@ -157,12 +169,30 @@ export function modeloHtmlAtual(config: Configuracoes) {
   return html || textoParaHtml(config.modelo ?? "");
 }
 
+/** Corpo do modelo aplicável ao ofício (Enfermagem/Fisioterapia, Nutrição ou Psicologia). */
+export function corpoModeloDoOficio(
+  oficio: Oficio,
+  config: Configuracoes,
+  modelos?: ModeloOficio[],
+) {
+  const lista = modelos ?? [];
+  const escolhido =
+    lista.find((m) => m.chave === (oficio.modelo_chave || "padrao")) ??
+    lista.find((m) => m.chave === "padrao");
+  const html = (escolhido?.modelo_html ?? "").trim();
+  return html || modeloHtmlAtual(config);
+}
+
 /** Documento final (cabeçalho + corpo + rodapé) já com as tags substituídas. */
-export function montarDocumentoHtml(oficio: Oficio, config: Configuracoes) {
+export function montarDocumentoHtml(
+  oficio: Oficio,
+  config: Configuracoes,
+  modelos?: ModeloOficio[],
+) {
   if (oficio.conteudo_html && oficio.conteudo_html.trim()) return oficio.conteudo_html;
   const partes = [
     config.cabecalho_html?.trim(),
-    modeloHtmlAtual(config),
+    corpoModeloDoOficio(oficio, config, modelos),
     config.rodape_html?.trim(),
   ].filter(Boolean) as string[];
   return renderizarModelo(partes.join(""), oficio, config);

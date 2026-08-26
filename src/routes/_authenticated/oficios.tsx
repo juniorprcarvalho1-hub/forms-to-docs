@@ -36,6 +36,7 @@ import {
   formatarData,
   montarDocumentoHtml,
   type Configuracoes,
+  type ModeloOficio,
   type Oficio,
 } from "@/lib/oficios";
 import { baixarBlob, gerarPdfDeHtml, imprimirBlob } from "@/lib/pdf";
@@ -76,6 +77,15 @@ function OficiosPage() {
     },
   });
 
+  const { data: modelos = [] } = useQuery({
+    queryKey: ["modelos_oficio"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("modelos_oficio").select("*").order("chave");
+      if (error) throw error;
+      return (data ?? []) as unknown as ModeloOficio[];
+    },
+  });
+
   const { data: oficios = [], isLoading } = useQuery({
     queryKey: ["oficios"],
     queryFn: async () => {
@@ -104,7 +114,7 @@ function OficiosPage() {
     if (!config) return;
     setOcupado(true);
     try {
-      const blob = await gerarPdfDeHtml(montarDocumentoHtml(oficio, config));
+      const blob = await gerarPdfDeHtml(montarDocumentoHtml(oficio, config, modelos));
       const path = `documentos/${oficio.ano}/${oficio.numero_formatado.replace(/[^\w]+/g, "-")}.pdf`;
       try {
         await uploadArquivo(path, blob, "application/pdf");
@@ -123,7 +133,7 @@ function OficiosPage() {
 
   function abrirEditor(oficio: Oficio) {
     if (!config) return;
-    setConteudo(montarDocumentoHtml(oficio, config));
+    setConteudo(montarDocumentoHtml(oficio, config, modelos));
     setEditando(oficio);
   }
 
@@ -258,7 +268,7 @@ function OficiosPage() {
             <>
               <article
                 className="print-area prose-oficio rounded-lg border bg-card p-8 font-serif text-sm leading-7"
-                dangerouslySetInnerHTML={{ __html: montarDocumentoHtml(aberto, config) }}
+                dangerouslySetInnerHTML={{ __html: montarDocumentoHtml(aberto, config, modelos) }}
               />
               <div className="flex flex-wrap justify-end gap-2">
                 <span className="mr-auto self-center text-xs text-muted-foreground">

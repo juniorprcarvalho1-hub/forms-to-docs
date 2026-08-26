@@ -14,6 +14,15 @@ type Curso = {
   area_estagio: string;
 };
 
+type Modulo = {
+  id: string;
+  curso: string;
+  nome_formulario: string;
+  nome_oficial: string;
+  carga_horaria: string;
+  area_estagio: string;
+};
+
 type Professor = {
   id: string;
   nome_formulario: string;
@@ -21,6 +30,8 @@ type Professor = {
   registro: string;
   curso: string;
 };
+
+type Tabela = "cursos" | "professores" | "modulos_estagio";
 
 export function CadastrosAuxiliares() {
   const queryClient = useQueryClient();
@@ -49,19 +60,32 @@ export function CadastrosAuxiliares() {
     },
   });
 
-  async function salvarLinha(tabela: "cursos" | "professores", id: string, campos: object) {
+  const modulos = useQuery({
+    queryKey: ["modulos_estagio"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("modulos_estagio")
+        .select("*")
+        .order("curso")
+        .order("nome_formulario");
+      if (error) throw error;
+      return (data ?? []) as Modulo[];
+    },
+  });
+
+  async function salvarLinha(tabela: Tabela, id: string, campos: object) {
     const { error } = await supabase.from(tabela).update(campos).eq("id", id);
     if (error) toast.error(error.message);
     else queryClient.invalidateQueries({ queryKey: [tabela] });
   }
 
-  async function adicionar(tabela: "cursos" | "professores") {
+  async function adicionar(tabela: Tabela) {
     const { error } = await supabase.from(tabela).insert({});
     if (error) toast.error(error.message);
     else queryClient.invalidateQueries({ queryKey: [tabela] });
   }
 
-  async function remover(tabela: "cursos" | "professores", id: string) {
+  async function remover(tabela: Tabela, id: string) {
     const { error } = await supabase.from(tabela).delete().eq("id", id);
     if (error) toast.error(error.message);
     else queryClient.invalidateQueries({ queryKey: [tabela] });
@@ -101,6 +125,55 @@ export function CadastrosAuxiliares() {
               onSalvar={(v) => salvarLinha("cursos", curso.id, { area_estagio: v })}
             />
             <BotaoRemover onClick={() => remover("cursos", curso.id)} />
+          </div>
+        ))}
+      </section>
+
+      <section className="surface-card space-y-4 p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-medium">Módulos de estágio (Nutrição e Psicologia)</h2>
+            <p className="text-xs text-muted-foreground">
+              Cadastre o módulo exatamente como aparece no formulário e sua carga horária. Para
+              Enfermagem e Fisioterapia a carga é fixa de 420 horas.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => adicionar("modulos_estagio")}>
+            <Plus className="size-4" /> Módulo
+          </Button>
+        </div>
+
+        {(modulos.data ?? []).map((mod) => (
+          <div
+            key={mod.id}
+            className="grid gap-3 border-t pt-4 sm:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto]"
+          >
+            <Campo
+              label="Curso"
+              valor={mod.curso}
+              onSalvar={(v) => salvarLinha("modulos_estagio", mod.id, { curso: v })}
+            />
+            <Campo
+              label="Opção no formulário"
+              valor={mod.nome_formulario}
+              onSalvar={(v) => salvarLinha("modulos_estagio", mod.id, { nome_formulario: v })}
+            />
+            <Campo
+              label="Nome no ofício"
+              valor={mod.nome_oficial}
+              onSalvar={(v) => salvarLinha("modulos_estagio", mod.id, { nome_oficial: v })}
+            />
+            <Campo
+              label="Carga horária"
+              valor={mod.carga_horaria}
+              onSalvar={(v) => salvarLinha("modulos_estagio", mod.id, { carga_horaria: v })}
+            />
+            <Campo
+              label="Área do estágio (opcional)"
+              valor={mod.area_estagio}
+              onSalvar={(v) => salvarLinha("modulos_estagio", mod.id, { area_estagio: v })}
+            />
+            <BotaoRemover onClick={() => remover("modulos_estagio", mod.id)} />
           </div>
         ))}
       </section>

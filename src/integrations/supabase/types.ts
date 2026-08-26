@@ -116,6 +116,66 @@ export type Database = {
         }
         Relationships: []
       }
+      modelos_oficio: {
+        Row: {
+          chave: string
+          created_at: string
+          cursos: string
+          id: string
+          modelo_html: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          chave: string
+          created_at?: string
+          cursos?: string
+          id?: string
+          modelo_html?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          chave?: string
+          created_at?: string
+          cursos?: string
+          id?: string
+          modelo_html?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      modulos_estagio: {
+        Row: {
+          area_estagio: string
+          carga_horaria: string
+          created_at: string
+          curso: string
+          id: string
+          nome_formulario: string
+          nome_oficial: string
+        }
+        Insert: {
+          area_estagio?: string
+          carga_horaria?: string
+          created_at?: string
+          curso?: string
+          id?: string
+          nome_formulario?: string
+          nome_oficial?: string
+        }
+        Update: {
+          area_estagio?: string
+          carga_horaria?: string
+          created_at?: string
+          curso?: string
+          id?: string
+          nome_formulario?: string
+          nome_oficial?: string
+        }
+        Relationships: []
+      }
       oficios: {
         Row: {
           ano: number
@@ -135,6 +195,8 @@ export type Database = {
           id: string
           instituicao: string
           matricula: string
+          modelo_chave: string
+          modulo: string
           nome: string
           numero: number
           numero_formatado: string
@@ -163,6 +225,8 @@ export type Database = {
           id?: string
           instituicao?: string
           matricula?: string
+          modelo_chave?: string
+          modulo?: string
           nome?: string
           numero: number
           numero_formatado: string
@@ -191,6 +255,8 @@ export type Database = {
           id?: string
           instituicao?: string
           matricula?: string
+          modelo_chave?: string
+          modulo?: string
           nome?: string
           numero?: number
           numero_formatado?: string

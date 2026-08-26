@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichEditor } from "@/components/RichEditor";
+import { CadastrosAuxiliares } from "@/components/CadastrosAuxiliares";
+
 import { supabase } from "@/integrations/supabase/client";
 import {
   formatarNumero,
@@ -211,6 +213,10 @@ function ConfiguracoesPage() {
           />
         </div>
       </section>
+
+      <CadastrosAuxiliares />
+
+
 
       <section className="surface-card grid gap-4 p-6 sm:grid-cols-2">
         <h2 className="text-sm font-medium sm:col-span-2">Dados padrão do ofício de estágio</h2>

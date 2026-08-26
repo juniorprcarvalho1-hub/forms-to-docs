@@ -56,8 +56,22 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes")({
         const nome = texto("nome", "preceptor", "nomedopreceptor", "nomecompleto");
         if (!nome) return json({ error: "Campo Nome não recebido" }, 422);
 
+        const curso = texto("curso", "cursodeestagio", "areadeestagio", "area");
+        const modeloChave = (() => {
+          const t = curso
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase();
+          if (t.includes("fisio")) return "fisioterapia";
+          if (t.includes("nutri")) return "nutricao";
+          if (t.includes("psico")) return "psicologia";
+          return "enfermagem";
+        })();
+
         const registro = {
           nome,
+          curso,
+          modelo_chave: modeloChave,
           coren: texto("coren", "corennº", "registrocoren", "registro"),
           hospital: texto("hospital", "campodeestagio", "campoestagio", "instituicao"),
           data_inicio: texto("datainicio", "datadeinicio", "inicio", "periodoinicio"),
@@ -69,7 +83,7 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes")({
         const { data: inserido, error } = await supabaseAdmin
           .from("declaracoes")
           .insert(registro)
-          .select("id, nome, email")
+          .select("id, nome, email, curso, modelo_chave")
           .single();
 
         if (error) return json({ error: error.message }, 500);

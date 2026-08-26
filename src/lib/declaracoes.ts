@@ -118,3 +118,20 @@ export function montarDeclaracaoHtml(
   );
   return substituido.replace(/\{\{[^}]+\}\}/g, "");
 }
+
+/** Assunto e corpo padrão do e-mail enviado ao preceptor. */
+export function mensagemEmailDeclaracao(declaracao: Declaracao, linkPdf?: string) {
+  const assunto = `Declaração de Preceptoria - ${declaracao.nome}`;
+  const corpo = [
+    `Prezado(a) ${declaracao.nome},`,
+    "",
+    `Segue em anexo a Declaração de Preceptoria referente às atividades desenvolvidas no período de ${declaracao.data_inicio} a ${declaracao.data_fim}${declaracao.hospital ? ` no ${declaracao.hospital}` : ""}.`,
+    "",
+    "Agradecemos imensamente a sua contribuição para a integração ensino-serviço e para a formação profissional dos nossos discentes.",
+    ...(linkPdf ? ["", `Link para o documento: ${linkPdf}`] : []),
+    "",
+    "Atenciosamente,",
+    "NUPES/NUPEP - FACESF",
+  ].join("\n");
+  return { assunto, corpo };
+}

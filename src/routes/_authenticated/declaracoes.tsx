@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Download, Eye, Pencil, Printer, Search, Trash2 } from "lucide-react";
+import { Download, Eye, Mail, Pencil, Printer, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ import {
 import { RichEditor } from "@/components/RichEditor";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  mensagemEmailDeclaracao,
   montarDeclaracaoHtml,
   ORDEM_MODELOS_DECLARACAO,
   ROTULOS_DECLARACAO,
@@ -37,7 +38,7 @@ import {
 } from "@/lib/declaracoes";
 import { formatarData } from "@/lib/oficios";
 import { baixarBlob, gerarPdfDeHtml, imprimirBlob } from "@/lib/pdf";
-import { uploadArquivo } from "@/lib/storage";
+import { uploadArquivo, urlAssinada } from "@/lib/storage";
 
 export const Route = createFileRoute("/_authenticated/declaracoes")({
   head: () => ({
@@ -132,6 +133,42 @@ function DeclaracoesPage() {
     }
   }
 
+  async function enviarPorEmail(declaracao: Declaracao) {
+    if (!config) return;
+    if (!declaracao.email) {
+      toast.error("Esta declaração não tem e-mail do preceptor.");
+      return;
+    }
+    setOcupado(true);
+    try {
+      const blob = await gerarPdfDeHtml(montarDeclaracaoHtml(declaracao, config, modelos));
+      const arquivo = `Declaracao-${declaracao.nome.replace(/[^\w]+/g, "-")}.pdf`;
+      let link: string | undefined;
+      try {
+        const path = `declaracoes/${declaracao.id}.pdf`;
+        await uploadArquivo(path, blob, "application/pdf");
+        await supabase.from("declaracoes").update({ pdf_path: path }).eq("id", declaracao.id);
+        link = await urlAssinada(path);
+      } catch {
+        /* link opcional */
+      }
+      baixarBlob(blob, arquivo);
+      const { assunto, corpo } = mensagemEmailDeclaracao(declaracao, link);
+      const mailto = `mailto:${encodeURIComponent(declaracao.email)}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
+      window.location.href = mailto;
+      await supabase
+        .from("declaracoes")
+        .update({ email_enviado_em: new Date().toISOString() })
+        .eq("id", declaracao.id);
+      queryClient.invalidateQueries({ queryKey: ["declaracoes"] });
+      toast.success("E-mail aberto. O PDF foi baixado — anexe o arquivo e clique em enviar.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao preparar o e-mail.");
+    } finally {
+      setOcupado(false);
+    }
+  }
+
   function abrirEditor(declaracao: Declaracao) {
     if (!config) return;
     setConteudo(montarDeclaracaoHtml(declaracao, config, modelos));
@@ -196,7 +233,7 @@ function DeclaracoesPage() {
               <TableHead className="hidden md:table-cell">COREN</TableHead>
               <TableHead className="hidden lg:table-cell">Hospital</TableHead>
               <TableHead className="w-40">Período</TableHead>
-              <TableHead className="w-52 text-right">Ações</TableHead>
+              <TableHead className="w-64 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -225,6 +262,15 @@ function DeclaracoesPage() {
                     onClick={() => comPdf(d, "baixar")}
                   >
                     <Download className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Enviar por e-mail"
+                    disabled={ocupado}
+                    onClick={() => enviarPorEmail(d)}
+                  >
+                    <Mail className="size-4" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -282,6 +328,13 @@ function DeclaracoesPage() {
                   }}
                 >
                   <Pencil className="size-4" /> Editar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => enviarPorEmail(aberto)}
+                  disabled={ocupado}
+                >
+                  <Mail className="size-4" /> Enviar por e-mail
                 </Button>
                 <Button
                   variant="outline"

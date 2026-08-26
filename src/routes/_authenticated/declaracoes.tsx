@@ -30,6 +30,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   montarDeclaracaoHtml,
   ORDEM_MODELOS_DECLARACAO,
+  ROTULOS_DECLARACAO,
   type ConfiguracoesDeclaracao,
   type Declaracao,
   type ModeloDeclaracao,
@@ -303,7 +304,12 @@ function DeclaracoesPage() {
           <DialogHeader>
             <DialogTitle>Editar declaração de {editando?.nome}</DialogTitle>
           </DialogHeader>
-          <RichEditor value={conteudo} onChange={setConteudo} minHeight={420} />
+          <RichEditor
+            value={conteudo}
+            onChange={setConteudo}
+            minHeight={420}
+            rotulos={ROTULOS_DECLARACAO}
+          />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setEditando(null)}>
               Cancelar

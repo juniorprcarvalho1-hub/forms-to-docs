@@ -25,6 +25,7 @@ export const ROTULOS_TAGS: Record<string, string> = {
   cargo: "Cargo",
   assunto: "Assunto",
   coren: "Registro profissional",
+  conselho: "Conselho (sigla automática)",
   hospital: "Hospital / campo de estágio",
   alunos: "Aluno(s)",
   data_inicio: "Data de início",
@@ -32,15 +33,15 @@ export const ROTULOS_TAGS: Record<string, string> = {
   data_emissao: "Data de emissão",
 };
 
-export function rotuloTag(tag: string) {
-  return ROTULOS_TAGS[tag] ?? tag.replaceAll("_", " ");
+export function rotuloTag(tag: string, rotulos?: Record<string, string>) {
+  return rotulos?.[tag] ?? ROTULOS_TAGS[tag] ?? tag.replaceAll("_", " ");
 }
 
 /** Substitui {{tag}} por uma etiqueta não editável, exibida sem chaves. */
-export function tagsParaEtiquetas(html: string) {
+export function tagsParaEtiquetas(html: string, rotulos?: Record<string, string>) {
   return (html ?? "").replace(/\{\{\s*([a-z_]+)\s*\}\}/gi, (_m, tag: string) => {
     const chave = tag.toLowerCase();
-    return `<span class="tag-campo" data-tag="${chave}" contenteditable="false">${rotuloTag(chave)}</span>`;
+    return `<span class="tag-campo" data-tag="${chave}" contenteditable="false">${rotuloTag(chave, rotulos)}</span>`;
   });
 }
 

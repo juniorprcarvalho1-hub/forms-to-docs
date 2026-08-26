@@ -20,6 +20,7 @@ import {
 } from "@/lib/oficios";
 import {
   ORDEM_MODELOS_DECLARACAO,
+  ROTULOS_DECLARACAO,
   type ModeloDeclaracao,
 } from "@/lib/declaracoes";
 import { uploadArquivo, urlAssinada } from "@/lib/storage";
@@ -273,6 +274,7 @@ function ConfiguracoesPage() {
             </p>
             <RichEditor
               key={declaracaoSelecionada.id}
+              rotulos={ROTULOS_DECLARACAO}
               value={
                 corposDeclaracao[declaracaoSelecionada.chave] ?? declaracaoSelecionada.modelo_html
               }

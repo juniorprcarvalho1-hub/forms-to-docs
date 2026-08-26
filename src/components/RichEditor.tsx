@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { uploadArquivo, urlAssinada } from "@/lib/storage";
+import { etiquetasParaTags, tagsParaEtiquetas } from "@/lib/tags";
 
 type Props = {
   value: string;
@@ -55,11 +56,14 @@ export function RichEditor({ value, onChange, className, minHeight = 260, placeh
 
   useEffect(() => {
     const area = areaRef.current;
-    if (area && area.innerHTML !== value) area.innerHTML = value || "";
+    if (!area) return;
+    if (etiquetasParaTags(area.innerHTML) !== (value || "")) {
+      area.innerHTML = tagsParaEtiquetas(value || "");
+    }
   }, [value]);
 
   const emitir = useCallback(() => {
-    if (areaRef.current) onChange(areaRef.current.innerHTML);
+    if (areaRef.current) onChange(etiquetasParaTags(areaRef.current.innerHTML));
   }, [onChange]);
 
   function executar(nome: string, valor?: string) {

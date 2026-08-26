@@ -16,6 +16,7 @@ import {
   TAGS_MODELO,
   textoParaHtml,
   type Configuracoes,
+  type ModeloOficio,
 } from "@/lib/oficios";
 import { uploadArquivo, urlAssinada } from "@/lib/storage";
 
@@ -35,6 +36,18 @@ function ConfiguracoesPage() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<Configuracoes | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [modeloAtivo, setModeloAtivo] = useState("padrao");
+  const [corposModelo, setCorposModelo] = useState<Record<string, string>>({});
+
+  const modelos = useQuery({
+    queryKey: ["modelos_oficio"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("modelos_oficio").select("*").order("chave");
+      if (error) throw error;
+      return (data ?? []) as unknown as ModeloOficio[];
+    },
+  });
+  const modeloSelecionado = (modelos.data ?? []).find((m) => m.chave === modeloAtivo);
 
   const { data } = useQuery({
     queryKey: ["configuracoes"],
@@ -57,6 +70,19 @@ function ConfiguracoesPage() {
   async function salvar() {
     if (!form) return;
     setSalvando(true);
+    for (const modelo of modelos.data ?? []) {
+      const html = corposModelo[modelo.chave];
+      if (html === undefined || html === modelo.modelo_html) continue;
+      const { error: erroModelo } = await supabase
+        .from("modelos_oficio")
+        .update({ modelo_html: html })
+        .eq("id", modelo.id);
+      if (erroModelo) {
+        setSalvando(false);
+        toast.error(erroModelo.message);
+        return;
+      }
+    }
     const { error } = await supabase
       .from("configuracoes")
       .update({
@@ -88,6 +114,7 @@ function ConfiguracoesPage() {
     else {
       toast.success("Configurações salvas.");
       queryClient.invalidateQueries({ queryKey: ["configuracoes"] });
+      queryClient.invalidateQueries({ queryKey: ["modelos_oficio"] });
     }
   }
 

@@ -214,6 +214,10 @@ function ConfiguracoesPage() {
         </div>
       </section>
 
+      <CadastrosAuxiliares />
+
+
+
       <section className="surface-card grid gap-4 p-6 sm:grid-cols-2">
         <h2 className="text-sm font-medium sm:col-span-2">Dados padrão do ofício de estágio</h2>
         <p className="text-xs text-muted-foreground sm:col-span-2">

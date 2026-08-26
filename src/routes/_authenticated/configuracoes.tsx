@@ -135,13 +135,41 @@ function ConfiguracoesPage() {
 
         <div className="space-y-2">
           <Label>Corpo do ofício</Label>
-          <RichEditor
-            value={form.modelo_html}
-            minHeight={360}
-            placeholder="Texto do ofício…"
-            onChange={(html) => setForm((f) => (f ? { ...f, modelo_html: html } : f))}
-          />
+          <p className="text-xs text-muted-foreground">
+            Três modelos com a mesma estrutura. O sistema escolhe sozinho conforme o curso e o
+            módulo respondidos no formulário.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {(modelos.data ?? []).map((m) => (
+              <Button
+                key={m.chave}
+                type="button"
+                size="sm"
+                variant={m.chave === modeloAtivo ? "default" : "outline"}
+                onClick={() => setModeloAtivo(m.chave)}
+              >
+                {m.nome}
+              </Button>
+            ))}
+          </div>
+          {modeloSelecionado && (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Cursos atendidos: {modeloSelecionado.cursos}
+              </p>
+              <RichEditor
+                key={modeloSelecionado.id}
+                value={corposModelo[modeloSelecionado.chave] ?? modeloSelecionado.modelo_html}
+                minHeight={360}
+                placeholder="Texto do ofício…"
+                onChange={(html) =>
+                  setCorposModelo((c) => ({ ...c, [modeloSelecionado.chave]: html }))
+                }
+              />
+            </>
+          )}
         </div>
+
 
         <div className="space-y-2">
           <Label>Rodapé</Label>

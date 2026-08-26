@@ -127,6 +127,7 @@ export type Database = {
           conteudo_html: string | null
           coren: string
           created_at: string
+          curso: string
           data_emissao: string
           data_fim: string
           data_inicio: string
@@ -134,6 +135,7 @@ export type Database = {
           email_enviado_em: string | null
           hospital: string
           id: string
+          modelo_chave: string
           nome: string
           origem: string
           pdf_path: string | null
@@ -143,6 +145,7 @@ export type Database = {
           conteudo_html?: string | null
           coren?: string
           created_at?: string
+          curso?: string
           data_emissao?: string
           data_fim?: string
           data_inicio?: string
@@ -150,6 +153,7 @@ export type Database = {
           email_enviado_em?: string | null
           hospital?: string
           id?: string
+          modelo_chave?: string
           nome?: string
           origem?: string
           pdf_path?: string | null
@@ -159,6 +163,7 @@ export type Database = {
           conteudo_html?: string | null
           coren?: string
           created_at?: string
+          curso?: string
           data_emissao?: string
           data_fim?: string
           data_inicio?: string
@@ -166,9 +171,40 @@ export type Database = {
           email_enviado_em?: string | null
           hospital?: string
           id?: string
+          modelo_chave?: string
           nome?: string
           origem?: string
           pdf_path?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      modelos_declaracao: {
+        Row: {
+          chave: string
+          created_at: string
+          cursos: string
+          id: string
+          modelo_html: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          chave: string
+          created_at?: string
+          cursos?: string
+          id?: string
+          modelo_html?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          chave?: string
+          created_at?: string
+          cursos?: string
+          id?: string
+          modelo_html?: string
+          nome?: string
           updated_at?: string
         }
         Relationships: []

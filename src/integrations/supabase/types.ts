@@ -20,11 +20,13 @@ export type Database = {
           cabecalho_html: string
           cidade: string
           digitos: number
+          form_declaracao_url: string
           form_url: string
           formato_numeracao: string
           id: boolean
           logo_url: string | null
           modelo: string
+          modelo_declaracao_html: string
           modelo_html: string
           padrao_apolice: string
           padrao_area_estagio: string
@@ -45,11 +47,13 @@ export type Database = {
           cabecalho_html?: string
           cidade?: string
           digitos?: number
+          form_declaracao_url?: string
           form_url?: string
           formato_numeracao?: string
           id?: boolean
           logo_url?: string | null
           modelo?: string
+          modelo_declaracao_html?: string
           modelo_html?: string
           padrao_apolice?: string
           padrao_area_estagio?: string
@@ -70,11 +74,13 @@ export type Database = {
           cabecalho_html?: string
           cidade?: string
           digitos?: number
+          form_declaracao_url?: string
           form_url?: string
           formato_numeracao?: string
           id?: boolean
           logo_url?: string | null
           modelo?: string
+          modelo_declaracao_html?: string
           modelo_html?: string
           padrao_apolice?: string
           padrao_area_estagio?: string
@@ -113,6 +119,57 @@ export type Database = {
           id?: string
           nome_formulario?: string
           nome_oficial?: string
+        }
+        Relationships: []
+      }
+      declaracoes: {
+        Row: {
+          conteudo_html: string | null
+          coren: string
+          created_at: string
+          data_emissao: string
+          data_fim: string
+          data_inicio: string
+          email: string
+          email_enviado_em: string | null
+          hospital: string
+          id: string
+          nome: string
+          origem: string
+          pdf_path: string | null
+          updated_at: string
+        }
+        Insert: {
+          conteudo_html?: string | null
+          coren?: string
+          created_at?: string
+          data_emissao?: string
+          data_fim?: string
+          data_inicio?: string
+          email?: string
+          email_enviado_em?: string | null
+          hospital?: string
+          id?: string
+          nome?: string
+          origem?: string
+          pdf_path?: string | null
+          updated_at?: string
+        }
+        Update: {
+          conteudo_html?: string | null
+          coren?: string
+          created_at?: string
+          data_emissao?: string
+          data_fim?: string
+          data_inicio?: string
+          email?: string
+          email_enviado_em?: string | null
+          hospital?: string
+          id?: string
+          nome?: string
+          origem?: string
+          pdf_path?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

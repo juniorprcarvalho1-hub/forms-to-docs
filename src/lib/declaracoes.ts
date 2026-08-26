@@ -52,8 +52,28 @@ export type ConfiguracoesDeclaracao = Configuracoes & {
   form_declaracao_url?: string;
 };
 
+/** Sigla do conselho profissional conforme o curso/categoria do formulário. */
+export function siglaConselho(cursoOuChave: string): string {
+  const texto = (cursoOuChave ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  if (texto.includes("fisio")) return "CREFITO";
+  if (texto.includes("nutri")) return "CRN";
+  if (texto.includes("psico")) return "CRP";
+  return "COREN";
+}
+
+/** Rótulos dos campos no editor de declarações (o nome é do preceptor, não do aluno). */
+export const ROTULOS_DECLARACAO: Record<string, string> = {
+  nome: "Preceptor(a)",
+  conselho: "Conselho (sigla automática)",
+  coren: "Número do registro",
+};
+
 export const TAGS_DECLARACAO = [
   "{{nome}}",
+  "{{conselho}}",
   "{{coren}}",
   "{{hospital}}",
   "{{curso}}",
@@ -73,8 +93,11 @@ export function montarDeclaracaoHtml(
 ): string {
   if (declaracao.conteudo_html && declaracao.conteudo_html.trim()) return declaracao.conteudo_html;
 
+  const chave = declaracao.modelo_chave || chaveModeloDeclaracao(declaracao.curso ?? "");
+
   const mapa: Record<string, string> = {
     nome: declaracao.nome,
+    conselho: siglaConselho(chave || declaracao.curso),
     coren: declaracao.coren,
     hospital: declaracao.hospital,
     curso: declaracao.curso ?? "",

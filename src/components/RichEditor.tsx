@@ -32,6 +32,8 @@ type Props = {
   className?: string;
   minHeight?: number;
   placeholder?: string;
+  /** Rótulos personalizados para as etiquetas dos campos automáticos. */
+  rotulos?: Record<string, string>;
 };
 
 const FONTES = ["Times New Roman", "Arial", "Georgia", "Roboto", "Courier New", "Verdana"];

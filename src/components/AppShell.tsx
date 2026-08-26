@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { FileText, LayoutDashboard, Files, Settings, LogOut, Menu } from "lucide-react";
+import { FileText, LayoutDashboard, Files, Award, Settings, LogOut, Menu } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 const links = [
   { to: "/dashboard", label: "Painel", icon: LayoutDashboard },
   { to: "/oficios", label: "Ofícios", icon: Files },
+  { to: "/declaracoes", label: "Declarações", icon: Award },
   { to: "/configuracoes", label: "Configurações", icon: Settings },
 ] as const;
 

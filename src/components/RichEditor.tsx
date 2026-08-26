@@ -51,7 +51,14 @@ function comando(nome: string, valor?: string) {
   document.execCommand(nome, false, valor);
 }
 
-export function RichEditor({ value, onChange, className, minHeight = 260, placeholder }: Props) {
+export function RichEditor({
+  value,
+  onChange,
+  className,
+  minHeight = 260,
+  placeholder,
+  rotulos,
+}: Props) {
   const areaRef = useRef<HTMLDivElement>(null);
   const [imagemSelecionada, setImagemSelecionada] = useState<HTMLImageElement | null>(null);
   const [larguraImagem, setLarguraImagem] = useState(240);
@@ -60,9 +67,9 @@ export function RichEditor({ value, onChange, className, minHeight = 260, placeh
     const area = areaRef.current;
     if (!area) return;
     if (etiquetasParaTags(area.innerHTML) !== (value || "")) {
-      area.innerHTML = tagsParaEtiquetas(value || "");
+      area.innerHTML = tagsParaEtiquetas(value || "", rotulos);
     }
-  }, [value]);
+  }, [value, rotulos]);
 
   const emitir = useCallback(() => {
     if (areaRef.current) onChange(etiquetasParaTags(areaRef.current.innerHTML));

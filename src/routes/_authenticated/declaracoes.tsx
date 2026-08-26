@@ -29,8 +29,10 @@ import { RichEditor } from "@/components/RichEditor";
 import { supabase } from "@/integrations/supabase/client";
 import {
   montarDeclaracaoHtml,
+  ORDEM_MODELOS_DECLARACAO,
   type ConfiguracoesDeclaracao,
   type Declaracao,
+  type ModeloDeclaracao,
 } from "@/lib/declaracoes";
 import { formatarData } from "@/lib/oficios";
 import { baixarBlob, gerarPdfDeHtml, imprimirBlob } from "@/lib/pdf";
@@ -75,6 +77,18 @@ function DeclaracoesPage() {
     },
   });
 
+  const { data: modelos = [] } = useQuery({
+    queryKey: ["modelos_declaracao"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("modelos_declaracao").select("*");
+      if (error) throw error;
+      return ((data ?? []) as unknown as ModeloDeclaracao[]).sort(
+        (a, b) =>
+          ORDEM_MODELOS_DECLARACAO.indexOf(a.chave) - ORDEM_MODELOS_DECLARACAO.indexOf(b.chave),
+      );
+    },
+  });
+
   const { data: declaracoes = [], isLoading } = useQuery({
     queryKey: ["declaracoes"],
     queryFn: async () => {
@@ -99,7 +113,7 @@ function DeclaracoesPage() {
     if (!config) return;
     setOcupado(true);
     try {
-      const blob = await gerarPdfDeHtml(montarDeclaracaoHtml(declaracao, config));
+      const blob = await gerarPdfDeHtml(montarDeclaracaoHtml(declaracao, config, modelos));
       const path = `declaracoes/${declaracao.id}.pdf`;
       try {
         await uploadArquivo(path, blob, "application/pdf");
@@ -119,7 +133,7 @@ function DeclaracoesPage() {
 
   function abrirEditor(declaracao: Declaracao) {
     if (!config) return;
-    setConteudo(montarDeclaracaoHtml(declaracao, config));
+    setConteudo(montarDeclaracaoHtml(declaracao, config, modelos));
     setEditando(declaracao);
   }
 
@@ -252,7 +266,7 @@ function DeclaracoesPage() {
             <>
               <article
                 className="print-area prose-oficio rounded-lg border bg-card p-8 font-serif text-sm leading-7"
-                dangerouslySetInnerHTML={{ __html: montarDeclaracaoHtml(aberto, config) }}
+                dangerouslySetInnerHTML={{ __html: montarDeclaracaoHtml(aberto, config, modelos) }}
               />
               <div className="flex flex-wrap justify-end gap-2">
                 <span className="mr-auto self-center text-xs text-muted-foreground">

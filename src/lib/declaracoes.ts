@@ -59,6 +59,8 @@ export const TAGS_DECLARACAO = [
   "{{curso}}",
   "{{data_inicio}}",
   "{{data_fim}}",
+  "{{carga_horaria}}",
+  "{{alunos}}",
   "{{data_emissao}}",
   "{{cidade}}",
 ];
@@ -78,6 +80,8 @@ export function montarDeclaracaoHtml(
     curso: declaracao.curso ?? "",
     data_inicio: declaracao.data_inicio,
     data_fim: declaracao.data_fim,
+    carga_horaria: declaracao.carga_horaria ?? "",
+    alunos: declaracao.alunos ?? "",
     data_emissao: formatarData(declaracao.data_emissao),
     cidade: config.cidade ?? "",
   };

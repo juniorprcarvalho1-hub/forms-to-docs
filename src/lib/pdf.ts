@@ -4,22 +4,6 @@ const LARGURA_A4 = 210;
 const ALTURA_A4 = 297;
 const MARGEM = 0;
 
-function estilosDaAplicacao(): string {
-  return Array.from(document.styleSheets)
-    .map((folha) => {
-      try {
-        return Array.from(folha.cssRules)
-          .map((regra) => regra.cssText)
-          .join("\n");
-      } catch {
-        // Folhas externas protegidas pelo navegador não fazem parte dos estilos
-        // locais do editor e podem ser ignoradas com segurança.
-        return "";
-      }
-    })
-    .join("\n");
-}
-
 function documentoEmPagina(html: string) {
   const quadro = document.createElement("iframe");
   quadro.setAttribute("aria-hidden", "true");
@@ -37,22 +21,23 @@ function documentoEmPagina(html: string) {
     quadro.remove();
     throw new Error("Não foi possível preparar a página do PDF.");
   }
-  documento.documentElement.className = document.documentElement.className;
-  documento.documentElement.style.colorScheme = "light";
-
-  const estilos = documento.createElement("style");
-  estilos.textContent = `${estilosDaAplicacao()}
-    html, body { margin: 0 !important; width: 794px !important; min-height: 1123px; background: #fff !important; }
-    .pagina-a4 { overflow: visible !important; box-shadow: none !important; }
+  documento.open();
+  documento.write(`<!doctype html><html><head><style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 794px; background: #fff; }
+    .pagina-a4 { width: 794px; min-height: 1123px; padding: 38px 48px; overflow: visible;
+      background: #fff; color: #000; font-family: "Times New Roman", serif;
+      font-size: 14px; line-height: 1.35; }
+    h1 { font-size: 1.6em; } h2 { font-size: 1.35em; } h3 { font-size: 1.15em; }
+    h1, h2, h3 { font-weight: 700; margin: .45em 0; }
+    p { margin: 0 0 .4em; }
+    ul, ol { padding-left: 1.6em; margin: 0 0 .6em; }
+    blockquote { border-left: 3px solid #d1d5db; padding-left: 1em; margin: 0 0 .6em; }
+    img { display: inline-block; max-width: 100%; }
+    table { max-width: 100%; }
     .img-selecionada { outline: none !important; }
-  `;
-  documento.head.appendChild(estilos);
-
-  const paginaCriada = documento.createElement("div");
-  paginaCriada.className = "prose-oficio pagina-a4";
-  paginaCriada.innerHTML = html;
-  documento.body.appendChild(paginaCriada);
-
+  </style></head><body><div class="prose-oficio pagina-a4">${html}</div></body></html>`);
+  documento.close();
   const pagina = documento.querySelector<HTMLElement>(".pagina-a4");
   if (!pagina) {
     quadro.remove();

@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RichEditor } from "@/components/RichEditor";
+import { EscalaA4 } from "@/components/PaginaA4";
 import { supabase } from "@/integrations/supabase/client";
 import {
   formatarData,

@@ -4,7 +4,7 @@ import { montarDocumentoHtml, type Configuracoes, type Oficio } from "./oficios"
 
 const LARGURA_A4 = 210;
 const ALTURA_A4 = 297;
-const MARGEM = 15;
+const MARGEM = 0;
 
 function documentoEmPagina(html: string) {
   const pagina = document.createElement("div");

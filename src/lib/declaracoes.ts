@@ -128,6 +128,9 @@ export const TAGS_DECLARACAO = [
   "{{coren}}",
   "{{hospital}}",
   "{{curso}}",
+  "{{departamento}}",
+  "{{nucleo}}",
+  "{{portaria}}",
   "{{data_inicio}}",
   "{{data_fim}}",
   "{{carga_horaria}}",
@@ -135,6 +138,14 @@ export const TAGS_DECLARACAO = [
   "{{data_emissao}}",
   "{{cidade}}",
 ];
+
+/** Mensagem de pendência quando o curso da declaração não está no mapeamento oficial. */
+export function pendenciaDeclaracao(declaracao: Declaracao): string | null {
+  const mapa = mapaDoCurso(declaracao.modelo_chave || declaracao.curso || "");
+  if (!mapa)
+    return `Curso "${declaracao.curso || "não informado"}" não consta na tabela de cursos (Enfermagem, Fisioterapia, Nutrição, Psicologia). Corrija o curso antes de gerar a declaração.`;
+  return null;
+}
 
 /** Documento final da declaração já com os campos do formulário substituídos. */
 export function montarDeclaracaoHtml(
@@ -145,13 +156,18 @@ export function montarDeclaracaoHtml(
   if (declaracao.conteudo_html && declaracao.conteudo_html.trim()) return declaracao.conteudo_html;
 
   const chave = declaracao.modelo_chave || chaveModeloDeclaracao(declaracao.curso ?? "");
+  const info = mapaDoCurso(chave || declaracao.curso || "");
+  if (!info) throw new Error(pendenciaDeclaracao(declaracao) ?? "Curso inválido.");
 
   const mapa: Record<string, string> = {
     nome: declaracao.nome,
-    conselho: siglaConselho(chave || declaracao.curso),
+    conselho: info.conselho,
     coren: declaracao.coren,
     hospital: declaracao.hospital,
-    curso: declaracao.curso ?? "",
+    curso: info.curso,
+    departamento: info.departamento,
+    nucleo: info.nucleo,
+    portaria: info.portaria,
     data_inicio: declaracao.data_inicio,
     data_fim: declaracao.data_fim,
     carga_horaria: declaracao.carga_horaria ?? "",
@@ -169,6 +185,7 @@ export function montarDeclaracaoHtml(
   );
   return substituido.replace(/\{\{[^}]+\}\}/g, "");
 }
+
 
 /** Assunto e corpo padrão do e-mail enviado ao preceptor. */
 export function mensagemEmailDeclaracao(declaracao: Declaracao, linkPdf?: string) {

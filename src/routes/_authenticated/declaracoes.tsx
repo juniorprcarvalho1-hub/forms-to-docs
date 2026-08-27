@@ -192,9 +192,15 @@ function DeclaracoesPage() {
 
   function abrirEditor(declaracao: Declaracao) {
     if (!config) return;
-    setConteudo(montarDeclaracaoHtml(declaracao, config, modelos));
+    const html = gerarHtml(declaracao);
+    if (!html) {
+      toast.error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
+      return;
+    }
+    setConteudo(html);
     setEditando(declaracao);
   }
+
 
   async function salvarEdicao() {
     if (!editando) return;

@@ -5,16 +5,44 @@ const ALTURA_A4 = 297;
 const MARGEM = 0;
 
 function documentoEmPagina(html: string) {
-  const pagina = document.createElement("div");
-  // Mesma classe usada no editor e na visualização: o PDF sai idêntico ao salvo.
-  pagina.className = "prose-oficio pagina-a4";
-  pagina.style.position = "fixed";
-  pagina.style.left = "0";
-  pagina.style.top = "0";
-  pagina.style.zIndex = "-1";
-  pagina.style.pointerEvents = "none";
-  pagina.innerHTML = html;
-  return pagina;
+  const quadro = document.createElement("iframe");
+  quadro.setAttribute("aria-hidden", "true");
+  quadro.style.position = "fixed";
+  quadro.style.inset = "0 auto auto 0";
+  quadro.style.width = "794px";
+  quadro.style.height = "1123px";
+  quadro.style.border = "0";
+  quadro.style.zIndex = "-1";
+  quadro.style.pointerEvents = "none";
+  document.body.appendChild(quadro);
+
+  const documento = quadro.contentDocument;
+  if (!documento) {
+    quadro.remove();
+    throw new Error("Não foi possível preparar a página do PDF.");
+  }
+  documento.open();
+  documento.write(`<!doctype html><html><head><style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 794px; background: #fff; }
+    .pagina-a4 { width: 794px; min-height: 1123px; padding: 38px 48px; overflow: visible;
+      background: #fff; color: #000; font-family: "Times New Roman", serif;
+      font-size: 14px; line-height: 1.35; }
+    h1 { font-size: 1.6em; } h2 { font-size: 1.35em; } h3 { font-size: 1.15em; }
+    h1, h2, h3 { font-weight: 700; margin: .45em 0; }
+    p { margin: 0 0 .4em; }
+    ul, ol { padding-left: 1.6em; margin: 0 0 .6em; }
+    img { display: inline-block; max-width: 100%; }
+    table { max-width: 100%; }
+    .img-selecionada { outline: none !important; }
+  </style></head><body><div class="prose-oficio pagina-a4">${html}</div></body></html>`);
+  documento.close();
+  const pagina = documento.querySelector<HTMLElement>(".pagina-a4");
+  if (!pagina) {
+    quadro.remove();
+    throw new Error("Não foi possível montar a página do PDF.");
+  }
+  return { quadro, pagina };
 }
 
 function aguardarImagem(imagem: HTMLImageElement): Promise<void> {
@@ -33,11 +61,10 @@ function aguardarImagem(imagem: HTMLImageElement): Promise<void> {
 
 export async function gerarPdfDeHtml(html: string): Promise<Blob> {
   const { default: html2canvas } = await import("html2canvas");
-  const pagina = documentoEmPagina(html);
-  document.body.appendChild(pagina);
+  const { quadro, pagina } = documentoEmPagina(html);
 
   try {
-    await document.fonts.ready;
+    await quadro.contentDocument?.fonts.ready;
     const imagens = Array.from(pagina.querySelectorAll("img"));
     await Promise.all(imagens.map(aguardarImagem));
     imagens.forEach((imagem) => {
@@ -76,7 +103,7 @@ export async function gerarPdfDeHtml(html: string): Promise<Blob> {
 
     return doc.output("blob");
   } finally {
-    pagina.remove();
+    quadro.remove();
   }
 }
 

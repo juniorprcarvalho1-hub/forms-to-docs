@@ -52,17 +52,68 @@ export type ConfiguracoesDeclaracao = Configuracoes & {
   form_declaracao_url?: string;
 };
 
-/** Sigla do conselho profissional conforme o curso/categoria do formulário. */
-export function siglaConselho(cursoOuChave: string): string {
+/** Mapeamento oficial curso → conselho, departamento, núcleo e portaria de autorização. */
+export type MapaCurso = {
+  curso: string;
+  conselho: string;
+  departamento: string;
+  nucleo: string;
+  portaria: string;
+};
+
+export const MAPA_CURSOS: Record<string, MapaCurso> = {
+  enfermagem: {
+    curso: "Enfermagem",
+    conselho: "COREN",
+    departamento: "DEPARTAMENTO DE ENFERMAGEM",
+    nucleo: "NÚCLEO DE PRÁTICAS E ESTUDOS EM SAÚDE - NUPES",
+    portaria:
+      "Curso de Enfermagem autorizado pela Portaria Min. Nº 583 de 17/08/2015 – Pub. No D.O.U. de 18/08/2015 Rua Cel. Trapiá, 201, Centro - Belém do São Francisco/PE CEP.:56440-000",
+  },
+  fisioterapia: {
+    curso: "Fisioterapia",
+    conselho: "CREFITO",
+    departamento: "DEPARTAMENTO DE FISIOTERAPIA",
+    nucleo: "NÚCLEO DE PRÁTICAS E ESTUDOS EM SAÚDE - NUPES",
+    portaria:
+      "Curso de Fisioterapia autorizado pela Portaria Min. Nº 583 de 17/08/2015 – Pub. No D.O.U. de 18/08/2015 Rua Cel. Trapiá, 201, Centro - Belém do São Francisco/PE CEP.:56440-000",
+  },
+  nutricao: {
+    curso: "Nutrição",
+    conselho: "CRN",
+    departamento: "DEPARTAMENTO DE NUTRIÇÃO",
+    nucleo: "NÚCLEO DE PRÁTICAS E ESTUDOS EM SAÚDE - NUPES",
+    portaria:
+      "Curso de Nutrição autorizado pela Portaria Min. Nº 583 de 17/08/2015 – Pub. No D.O.U. de 18/08/2015 Rua Cel. Trapiá, 201, Centro - Belém do São Francisco/PE CEP.:56440-000",
+  },
+  psicologia: {
+    curso: "Psicologia",
+    conselho: "CRP",
+    departamento: "DEPARTAMENTO DE PSICOLOGIA",
+    nucleo: "NÚCLEO DE PRÁTICAS E ESTUDOS EM PSICOLOGIA - NUPEP",
+    portaria:
+      "Curso de Psicologia autorizado pela Portaria Min. Nº 583 de 17/08/2015 – Pub. No D.O.U. de 18/08/2015 Rua Cel. Trapiá, 201, Centro - Belém do São Francisco/PE CEP.:56440-000",
+  },
+};
+
+/** Retorna o mapeamento do curso ou null quando o curso não está cadastrado. */
+export function mapaDoCurso(cursoOuChave: string): MapaCurso | null {
   const texto = (cursoOuChave ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
-  if (texto.includes("fisio")) return "CREFITO";
-  if (texto.includes("nutri")) return "CRN";
-  if (texto.includes("psico")) return "CRP";
-  return "COREN";
+  if (texto.includes("fisio")) return MAPA_CURSOS.fisioterapia;
+  if (texto.includes("nutri")) return MAPA_CURSOS.nutricao;
+  if (texto.includes("psico")) return MAPA_CURSOS.psicologia;
+  if (texto.includes("enferm")) return MAPA_CURSOS.enfermagem;
+  return null;
 }
+
+/** Sigla do conselho profissional conforme o curso/categoria do formulário. */
+export function siglaConselho(cursoOuChave: string): string {
+  return mapaDoCurso(cursoOuChave)?.conselho ?? "";
+}
+
 
 /** Rótulos dos campos no editor de declarações (o nome é do preceptor, não do aluno). */
 export const ROTULOS_DECLARACAO: Record<string, string> = {

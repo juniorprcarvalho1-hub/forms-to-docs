@@ -111,11 +111,26 @@ function DeclaracoesPage() {
     );
   }, [declaracoes, busca]);
 
+  function gerarHtml(declaracao: Declaracao): string | null {
+    if (!config) return null;
+    try {
+      return montarDeclaracaoHtml(declaracao, config, modelos);
+    } catch {
+      return null;
+    }
+  }
+
   async function comPdf(declaracao: Declaracao, acao: "baixar" | "imprimir") {
     if (!config) return;
+    const html = gerarHtml(declaracao);
+    if (!html) {
+      toast.error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
+      return;
+    }
     setOcupado(true);
     try {
-      const blob = await gerarPdfDeHtml(montarDeclaracaoHtml(declaracao, config, modelos));
+      const blob = await gerarPdfDeHtml(html);
+
       const path = `declaracoes/${declaracao.id}.pdf`;
       try {
         await uploadArquivo(path, blob, "application/pdf");

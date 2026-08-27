@@ -427,6 +427,29 @@ function ConfiguracoesPage() {
         )}
       </section>
 
+      <section className="surface-card space-y-4 p-6">
+        <h2 className="text-sm font-medium">Formulário da declaração de preceptoria</h2>
+        <p className="text-xs text-muted-foreground">
+          Perguntas do formulário: Nome completo do preceptor, Curso, Registro profissional, Campo
+          de estágio, Data de início, Data de fim, Nome(s) do(s) aluno(s) e E-mail do preceptor. A
+          carga horária e o nome oficial do campo de estágio são preenchidos automaticamente pelo
+          cadastro do sistema.
+        </p>
+        <CampoTexto
+          label="Link do formulário"
+          valor={form.form_declaracao_url ?? ""}
+          onChange={(v) => setForm({ ...form, form_declaracao_url: v })}
+        />
+        {form.form_declaracao_url && (
+          <iframe
+            src={form.form_declaracao_url.replace("/viewform", "/viewform?embedded=true")}
+            title="Formulário de declaração de preceptoria"
+            className="h-[520px] w-full rounded-lg border"
+          />
+        )}
+      </section>
+
+
       <div className="flex justify-end">
         <Button onClick={salvar} disabled={salvando}>
           {salvando ? "Salvando…" : "Salvar alterações"}

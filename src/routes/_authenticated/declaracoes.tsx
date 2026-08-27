@@ -30,6 +30,8 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   mensagemEmailDeclaracao,
   montarDeclaracaoHtml,
+  pendenciaDeclaracao,
+
   ORDEM_MODELOS_DECLARACAO,
   ROTULOS_DECLARACAO,
   type ConfiguracoesDeclaracao,
@@ -111,11 +113,26 @@ function DeclaracoesPage() {
     );
   }, [declaracoes, busca]);
 
+  function gerarHtml(declaracao: Declaracao): string | null {
+    if (!config) return null;
+    try {
+      return montarDeclaracaoHtml(declaracao, config, modelos);
+    } catch {
+      return null;
+    }
+  }
+
   async function comPdf(declaracao: Declaracao, acao: "baixar" | "imprimir") {
     if (!config) return;
+    const html = gerarHtml(declaracao);
+    if (!html) {
+      toast.error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
+      return;
+    }
     setOcupado(true);
     try {
-      const blob = await gerarPdfDeHtml(montarDeclaracaoHtml(declaracao, config, modelos));
+      const blob = await gerarPdfDeHtml(html);
+
       const path = `declaracoes/${declaracao.id}.pdf`;
       try {
         await uploadArquivo(path, blob, "application/pdf");
@@ -139,9 +156,15 @@ function DeclaracoesPage() {
       toast.error("Esta declaração não tem e-mail do preceptor.");
       return;
     }
+    const html = gerarHtml(declaracao);
+    if (!html) {
+      toast.error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
+      return;
+    }
     setOcupado(true);
     try {
-      const blob = await gerarPdfDeHtml(montarDeclaracaoHtml(declaracao, config, modelos));
+      const blob = await gerarPdfDeHtml(html);
+
       const arquivo = `Declaracao-${declaracao.nome.replace(/[^\w]+/g, "-")}.pdf`;
       let link: string | undefined;
       try {
@@ -171,9 +194,15 @@ function DeclaracoesPage() {
 
   function abrirEditor(declaracao: Declaracao) {
     if (!config) return;
-    setConteudo(montarDeclaracaoHtml(declaracao, config, modelos));
+    const html = gerarHtml(declaracao);
+    if (!html) {
+      toast.error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
+      return;
+    }
+    setConteudo(html);
     setEditando(declaracao);
   }
+
 
   async function salvarEdicao() {
     if (!editando) return;
@@ -313,7 +342,7 @@ function DeclaracoesPage() {
             <>
               <article
                 className="print-area prose-oficio rounded-lg border bg-card p-8 font-serif text-sm leading-7"
-                dangerouslySetInnerHTML={{ __html: montarDeclaracaoHtml(aberto, config, modelos) }}
+                dangerouslySetInnerHTML={{ __html: gerarHtml(aberto) ?? "" }}
               />
               <div className="flex flex-wrap justify-end gap-2">
                 <span className="mr-auto self-center text-xs text-muted-foreground">

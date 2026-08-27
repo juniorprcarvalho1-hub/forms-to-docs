@@ -50,6 +50,8 @@ export type Configuracoes = {
   webhook_token: string;
   cidade: string;
   form_url: string;
+  form_declaracao_url?: string;
+
   padrao_destinatario: string;
   padrao_seguradora: string;
   padrao_apolice: string;

@@ -73,31 +73,59 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes")({
         if (!nome) return json({ error: "Campo Nome não recebido" }, 422);
 
 
-        const curso = texto("curso", "cursodeestagio", "areadeestagio", "area");
+        const cursoForm = texto("curso", "cursodeestagio", "areadeestagio", "area");
+
+        // Nome oficial do curso, conforme cadastro auxiliar
+        const { data: cursos } = await supabaseAdmin
+          .from("cursos")
+          .select("nome_formulario, nome_oficial");
+        const cursoCad = (cursos ?? []).find(
+          (c) => normalizar(String(c.nome_formulario)) === normalizar(cursoForm),
+        );
+        const curso = cursoCad?.nome_oficial?.trim() || cursoForm;
+
         const modeloChave = (() => {
-          const t = curso
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase();
+          const t = normalizar(curso || cursoForm);
           if (t.includes("fisio")) return "fisioterapia";
           if (t.includes("nutri")) return "nutricao";
           if (t.includes("psico")) return "psicologia";
           return "enfermagem";
         })();
 
+        // Campo de estágio: nome oficial e carga horária vêm do cadastro do sistema
+        const campoForm = texto(
+          "campodeestagio",
+          "campoestagio",
+          "hospital",
+          "instituicao",
+          "modulo",
+        );
+        const cursoNorm = normalizar(curso || cursoForm);
+        const { data: modulos } = await supabaseAdmin
+          .from("modulos_estagio")
+          .select("curso, nome_formulario, nome_oficial, carga_horaria");
+        const campoCad = (modulos ?? []).find(
+          (m) =>
+            normalizar(String(m.nome_formulario)) === normalizar(campoForm) &&
+            (!String(m.curso).trim() || normalizar(String(m.curso)) === cursoNorm),
+        );
+
         const registro = {
           nome,
           curso,
           modelo_chave: modeloChave,
-          coren: texto("coren", "corennº", "registrocoren", "registro"),
-          hospital: texto("hospital", "campodeestagio", "campoestagio", "instituicao"),
+          coren: texto("registroprofissional", "registro", "coren", "crefito", "crn", "crp"),
+          hospital: campoCad
+            ? String(campoCad.nome_oficial || campoCad.nome_formulario)
+            : campoForm,
           data_inicio: texto("datainicio", "datadeinicio", "inicio", "periodoinicio"),
           data_fim: texto("datafim", "datadefim", "fim", "periodofim", "termino"),
-          carga_horaria: texto("cargahoraria", "horas", "totaldehoras", "cargahorariatotal"),
-          alunos: texto("alunos", "aluno", "nomedosalunos", "nomedoaluno", "estudantes", "discentes"),
-          email: texto("email", "emaildopreceptor", "enderecodeemail"),
-          origem: texto("origem") || "google_forms",
+          carga_horaria: String(campoCad?.carga_horaria ?? "") || String(cfg["padrao_carga_horaria"] ?? ""),
+          alunos: texto("alunos", "nomedosalunos", "nomedoaluno", "estudantes", "discentes"),
+          email: texto("emaildopreceptor", "email", "enderecodeemail"),
+          origem: "google_forms",
         };
+
 
         const { data: inserido, error } = await supabaseAdmin
           .from("declaracoes")

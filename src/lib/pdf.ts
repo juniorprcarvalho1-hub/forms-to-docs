@@ -77,7 +77,6 @@ export async function gerarPdfDeHtml(html: string): Promise<Blob> {
       imageTimeout: 5000,
       backgroundColor: "#ffffff",
       logging: false,
-      foreignObjectRendering: true,
     });
 
     const doc = new jsPDF({ unit: "mm", format: "a4" });

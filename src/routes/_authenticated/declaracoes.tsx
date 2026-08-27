@@ -220,7 +220,7 @@ function DeclaracoesPage() {
         <Input
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          placeholder="Pesquisar por preceptor, COREN, hospital ou e-mail"
+          placeholder="Pesquisar por preceptor, registro, hospital ou e-mail"
           className="border-0 shadow-none focus-visible:ring-0"
         />
       </div>
@@ -230,7 +230,7 @@ function DeclaracoesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Preceptor(a)</TableHead>
-              <TableHead className="hidden md:table-cell">COREN</TableHead>
+              <TableHead className="hidden md:table-cell">Registro</TableHead>
               <TableHead className="hidden lg:table-cell">Hospital</TableHead>
               <TableHead className="w-40">Período</TableHead>
               <TableHead className="w-64 text-right">Ações</TableHead>

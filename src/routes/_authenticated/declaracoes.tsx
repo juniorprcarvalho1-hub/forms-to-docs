@@ -340,10 +340,12 @@ function DeclaracoesPage() {
           </DialogHeader>
           {aberto && config && (
             <>
-              <article
-                className="print-area prose-oficio rounded-lg border bg-card p-8 font-serif text-sm leading-7"
-                dangerouslySetInnerHTML={{ __html: gerarHtml(aberto) ?? "" }}
-              />
+              <EscalaA4 className="rounded-lg border bg-muted/30 p-2">
+                <article
+                  className="print-area prose-oficio pagina-a4"
+                  dangerouslySetInnerHTML={{ __html: gerarHtml(aberto) ?? "" }}
+                />
+              </EscalaA4>
               <div className="flex flex-wrap justify-end gap-2">
                 <span className="mr-auto self-center text-xs text-muted-foreground">
                   Recebida em {formatarData(aberto.created_at.slice(0, 10))}

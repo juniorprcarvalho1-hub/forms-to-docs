@@ -107,17 +107,20 @@ function ConfiguracoesPage() {
         if (error) throw error;
         if (confirmado.modelo_html !== html) throw new Error(`O modelo ${modelo.nome} não foi confirmado pelo banco.`);
       }
-      for (const modelo of modelosDeclaracao.data ?? []) {
-        const html = corposDeclaracao[modelo.chave];
-        if (html === undefined || html === modelo.modelo_html) continue;
-        const { data: confirmado, error } = await supabase
+      const modeloDeclaracaoEditado = corposDeclaracao[declaracaoAtiva];
+      if (modeloDeclaracaoEditado !== undefined) {
+        const { data: confirmados, error } = await supabase
           .from("modelos_declaracao")
-          .update({ modelo_html: html })
-          .eq("id", modelo.id)
-          .select("modelo_html")
-          .single();
+          .update({ modelo_html: modeloDeclaracaoEditado })
+          .in("chave", ORDEM_MODELOS_DECLARACAO)
+          .select("chave, modelo_html");
         if (error) throw error;
-        if (confirmado.modelo_html !== html) throw new Error(`O modelo ${modelo.nome} não foi confirmado pelo banco.`);
+        if (
+          (confirmados ?? []).length !== ORDEM_MODELOS_DECLARACAO.length ||
+          (confirmados ?? []).some((modelo) => modelo.modelo_html !== modeloDeclaracaoEditado)
+        ) {
+          throw new Error("O modelo da declaração não foi confirmado para todos os cursos.");
+        }
       }
 
       const { error } = await supabase
@@ -262,8 +265,8 @@ function ConfiguracoesPage() {
       <section className="surface-card space-y-4 p-6">
         <h2 className="text-sm font-medium">Modelos de declaração de preceptoria</h2>
         <p className="text-xs text-muted-foreground">
-          Um modelo por curso, com a mesma estrutura do certificado. O sistema escolhe sozinho
-          conforme o curso respondido no formulário do preceptor.
+          O layout salvo é aplicado a todos os cursos. Curso, conselho, núcleo e portaria são
+          preenchidos automaticamente conforme a resposta do formulário.
         </p>
         <div className="flex flex-wrap gap-2">
           {(modelosDeclaracao.data ?? []).map((m) => (

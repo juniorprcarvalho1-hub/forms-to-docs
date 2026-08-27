@@ -32,6 +32,7 @@ function documentoEmPagina(html: string) {
     h1, h2, h3 { font-weight: 700; margin: .45em 0; }
     p { margin: 0 0 .4em; }
     ul, ol { padding-left: 1.6em; margin: 0 0 .6em; }
+    blockquote { border-left: 3px solid #d1d5db; padding-left: 1em; margin: 0 0 .6em; }
     img { display: inline-block; max-width: 100%; }
     table { max-width: 100%; }
     .img-selecionada { outline: none !important; }

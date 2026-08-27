@@ -225,3 +225,22 @@
   font-family: inherit;
   font-size: inherit;
 }
+
+/* Página A4: mesma medida usada na geração do PDF (WYSIWYG) */
+.pagina-a4 {
+  width: 794px;
+  padding: 56px;
+  background: #ffffff;
+  color: #000000;
+  font-family: "Times New Roman", serif;
+  font-size: 16px;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
+.pagina-a4 img {
+  max-width: 100%;
+}
+.pagina-a4 img.img-selecionada {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}

@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RichEditor } from "@/components/RichEditor";
+import { EscalaA4 } from "@/components/PaginaA4";
 import { supabase } from "@/integrations/supabase/client";
 import {
   formatarData,
@@ -266,10 +267,12 @@ function OficiosPage() {
           </DialogHeader>
           {aberto && config && (
             <>
-              <article
-                className="print-area prose-oficio rounded-lg border bg-card p-8 font-serif text-sm leading-7"
-                dangerouslySetInnerHTML={{ __html: montarDocumentoHtml(aberto, config, modelos) }}
-              />
+              <EscalaA4 className="rounded-lg border bg-muted/30 p-2">
+                <article
+                  className="print-area prose-oficio pagina-a4"
+                  dangerouslySetInnerHTML={{ __html: montarDocumentoHtml(aberto, config, modelos) }}
+                />
+              </EscalaA4>
               <div className="flex flex-wrap justify-end gap-2">
                 <span className="mr-auto self-center text-xs text-muted-foreground">
                   Recebido em {formatarData(aberto.created_at.slice(0, 10))}

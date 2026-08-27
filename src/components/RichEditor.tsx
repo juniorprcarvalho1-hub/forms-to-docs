@@ -20,8 +20,10 @@ import {
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { EscalaA4 } from "@/components/PaginaA4";
 import { cn } from "@/lib/utils";
 import { uploadArquivo, urlAssinada } from "@/lib/storage";
 import { etiquetasParaTags, tagsParaEtiquetas } from "@/lib/tags";
@@ -62,6 +64,8 @@ export function RichEditor({
   const areaRef = useRef<HTMLDivElement>(null);
   const [imagemSelecionada, setImagemSelecionada] = useState<HTMLImageElement | null>(null);
   const [larguraImagem, setLarguraImagem] = useState(240);
+  const [deslocamentoX, setDeslocamentoX] = useState(0);
+  const [deslocamentoY, setDeslocamentoY] = useState(0);
 
   useEffect(() => {
     const area = areaRef.current;
@@ -72,7 +76,13 @@ export function RichEditor({
   }, [value, rotulos]);
 
   const emitir = useCallback(() => {
-    if (areaRef.current) onChange(etiquetasParaTags(areaRef.current.innerHTML));
+    if (!areaRef.current) return;
+    const clone = areaRef.current.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll("img.img-selecionada").forEach((img) => {
+      img.classList.remove("img-selecionada");
+      if (!img.getAttribute("class")) img.removeAttribute("class");
+    });
+    onChange(etiquetasParaTags(clone.innerHTML));
   }, [onChange]);
 
   function executar(nome: string, valor?: string) {
@@ -89,7 +99,7 @@ export function RichEditor({
       areaRef.current?.focus();
       comando(
         "insertHTML",
-        `<img src="${url}" alt="Imagem do ofício" style="width:240px;max-width:100%;display:inline-block" />`,
+        `<img src="${url}" alt="Imagem do documento" style="width:240px;max-width:100%;display:inline-block" />`,
       );
       emitir();
     } catch (err) {
@@ -97,30 +107,67 @@ export function RichEditor({
     }
   }
 
+  function selecionar(img: HTMLImageElement | null) {
+    areaRef.current
+      ?.querySelectorAll("img.img-selecionada")
+      .forEach((i) => i.classList.remove("img-selecionada"));
+    if (img) img.classList.add("img-selecionada");
+    setImagemSelecionada(img);
+    if (img) {
+      setLarguraImagem(Math.round(img.getBoundingClientRect().width) || 240);
+      setDeslocamentoX(parseInt(img.style.left || "0", 10) || 0);
+      setDeslocamentoY(parseInt(img.style.top || "0", 10) || 0);
+    }
+  }
+
   function aoClicar(e: React.MouseEvent) {
     const alvo = e.target as HTMLElement;
-    if (alvo.tagName === "IMG") {
-      const img = alvo as HTMLImageElement;
-      setImagemSelecionada(img);
-      setLarguraImagem(Math.round(img.getBoundingClientRect().width) || 240);
-    } else {
-      setImagemSelecionada(null);
-    }
+    if (alvo.tagName === "IMG") selecionar(alvo as HTMLImageElement);
+    else selecionar(null);
   }
 
   function ajustarImagem(px: number) {
     if (!imagemSelecionada) return;
     setLarguraImagem(px);
     imagemSelecionada.style.width = `${px}px`;
+    imagemSelecionada.style.height = "auto";
     imagemSelecionada.style.maxWidth = "100%";
     emitir();
   }
 
   function alinharImagem(valor: "left" | "center" | "right") {
     if (!imagemSelecionada) return;
+    imagemSelecionada.style.float = "";
     imagemSelecionada.style.display = "block";
     imagemSelecionada.style.marginLeft = valor === "left" ? "0" : "auto";
     imagemSelecionada.style.marginRight = valor === "right" ? "0" : "auto";
+    emitir();
+  }
+
+  function flutuarImagem(valor: "left" | "right" | "none") {
+    if (!imagemSelecionada) return;
+    if (valor === "none") {
+      imagemSelecionada.style.float = "";
+      imagemSelecionada.style.display = "inline-block";
+      imagemSelecionada.style.margin = "";
+    } else {
+      imagemSelecionada.style.display = "inline";
+      imagemSelecionada.style.float = valor;
+      imagemSelecionada.style.margin = valor === "left" ? "0 12px 8px 0" : "0 0 8px 12px";
+    }
+    emitir();
+  }
+
+  function moverImagem(eixo: "x" | "y", px: number) {
+    if (!imagemSelecionada) return;
+    imagemSelecionada.style.position = "relative";
+    if (eixo === "x") {
+      setDeslocamentoX(px);
+      imagemSelecionada.style.left = `${px}px`;
+    } else {
+      setDeslocamentoY(px);
+      imagemSelecionada.style.top = `${px}px`;
+    }
     emitir();
   }
 
@@ -243,54 +290,122 @@ export function RichEditor({
       </div>
 
       {imagemSelecionada && (
-        <div className="flex flex-wrap items-center gap-3 border-b bg-accent/40 px-3 py-2">
-          <Label className="text-xs">Largura da imagem: {larguraImagem}px</Label>
-          <Slider
-            className="w-48"
-            min={60}
-            max={700}
-            step={10}
-            value={[larguraImagem]}
-            onValueChange={(v) => ajustarImagem(v[0] ?? larguraImagem)}
-          />
-          <Button type="button" size="sm" variant="outline" onClick={() => alinharImagem("left")}>
-            Esquerda
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => alinharImagem("center")}>
-            Centro
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => alinharImagem("right")}>
-            Direita
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              imagemSelecionada.remove();
-              setImagemSelecionada(null);
-              emitir();
-            }}
-          >
-            Remover
-          </Button>
+        <div className="space-y-3 border-b bg-accent/40 px-3 py-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Label className="text-xs">Largura</Label>
+            <Slider
+              className="w-40"
+              min={40}
+              max={794}
+              step={5}
+              value={[larguraImagem]}
+              onValueChange={(v) => ajustarImagem(v[0] ?? larguraImagem)}
+            />
+            <Input
+              type="number"
+              className="h-8 w-24"
+              min={20}
+              max={1200}
+              value={larguraImagem}
+              onChange={(e) => ajustarImagem(Number(e.target.value) || larguraImagem)}
+            />
+            <span className="text-xs text-muted-foreground">px</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Label className="text-xs">Posição</Label>
+            <Button type="button" size="sm" variant="outline" onClick={() => alinharImagem("left")}>
+              Esquerda
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => alinharImagem("center")}
+            >
+              Centro
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => alinharImagem("right")}
+            >
+              Direita
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => flutuarImagem("left")}>
+              Texto à direita
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => flutuarImagem("right")}
+            >
+              Texto à esquerda
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => flutuarImagem("none")}>
+              No meio do texto
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Label className="text-xs">Ajuste fino horizontal ({deslocamentoX}px)</Label>
+            <Slider
+              className="w-32"
+              min={-300}
+              max={300}
+              step={2}
+              value={[deslocamentoX]}
+              onValueChange={(v) => moverImagem("x", v[0] ?? deslocamentoX)}
+            />
+            <Label className="text-xs">Vertical ({deslocamentoY}px)</Label>
+            <Slider
+              className="w-32"
+              min={-300}
+              max={300}
+              step={2}
+              value={[deslocamentoY]}
+              onValueChange={(v) => moverImagem("y", v[0] ?? deslocamentoY)}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                imagemSelecionada.remove();
+                selecionar(null);
+                emitir();
+              }}
+            >
+              Remover
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Você também pode arrastar a imagem para qualquer ponto do texto. Adicione quantas
+            imagens quiser pelo botão “Imagem”.
+          </p>
         </div>
       )}
 
-      <div
-        ref={areaRef}
-        contentEditable
-        suppressContentEditableWarning
-        role="textbox"
-        aria-multiline="true"
-        aria-label={placeholder ?? "Editor de texto"}
-        data-placeholder={placeholder}
-        onInput={emitir}
-        onBlur={emitir}
-        onClick={aoClicar}
-        style={{ minHeight }}
-        className="prose-oficio max-w-none p-6 font-serif text-sm leading-7 outline-none"
-      />
+      <div className="bg-muted/30 p-4">
+        <EscalaA4>
+          <div
+            ref={areaRef}
+            contentEditable
+            suppressContentEditableWarning
+            role="textbox"
+            aria-multiline="true"
+            aria-label={placeholder ?? "Editor de texto"}
+            data-placeholder={placeholder}
+            onInput={emitir}
+            onBlur={emitir}
+            onClick={aoClicar}
+            style={{ minHeight }}
+            className="prose-oficio pagina-a4 shadow-sm outline-none"
+          />
+        </EscalaA4>
+      </div>
     </div>
   );
 }

@@ -4,21 +4,15 @@ import { montarDocumentoHtml, type Configuracoes, type Oficio } from "./oficios"
 
 const LARGURA_A4 = 210;
 const ALTURA_A4 = 297;
-const MARGEM = 15;
+const MARGEM = 0;
 
 function documentoEmPagina(html: string) {
   const pagina = document.createElement("div");
-  pagina.className = "prose-oficio";
+  // Mesma classe usada no editor e na visualização: o PDF sai idêntico ao salvo.
+  pagina.className = "prose-oficio pagina-a4";
   pagina.style.position = "fixed";
   pagina.style.left = "-10000px";
   pagina.style.top = "0";
-  pagina.style.width = "794px"; // A4 em 96dpi
-  pagina.style.padding = "56px";
-  pagina.style.background = "#ffffff";
-  pagina.style.color = "#000000";
-  pagina.style.fontFamily = '"Times New Roman", serif';
-  pagina.style.fontSize = "16px";
-  pagina.style.lineHeight = "1.6";
   pagina.innerHTML = html;
   return pagina;
 }

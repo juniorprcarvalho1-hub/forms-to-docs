@@ -42,6 +42,7 @@ import {
 import { formatarData } from "@/lib/oficios";
 import { baixarBlob, gerarPdfDeHtml, imprimirBlob } from "@/lib/pdf";
 import { uploadArquivo, urlAssinada } from "@/lib/storage";
+import { buscarFontesDeclaracaoAtuais } from "@/lib/documentos-data";
 
 export const Route = createFileRoute("/_authenticated/declaracoes")({
   head: () => ({
@@ -68,6 +69,7 @@ function DeclaracoesPage() {
   const queryClient = useQueryClient();
   const [busca, setBusca] = useState("");
   const [aberto, setAberto] = useState<Declaracao | null>(null);
+  const [htmlAberto, setHtmlAberto] = useState("");
   const [editando, setEditando] = useState<Declaracao | null>(null);
   const [conteudo, setConteudo] = useState("");
   const [excluindo, setExcluindo] = useState<Declaracao | null>(null);
@@ -114,24 +116,24 @@ function DeclaracoesPage() {
     );
   }, [declaracoes, busca]);
 
-  function gerarHtml(declaracao: Declaracao): string | null {
-    if (!config) return null;
+  function gerarHtmlComFontes(
+    declaracao: Declaracao,
+    fontesConfig: ConfiguracoesDeclaracao,
+    fontesModelos: ModeloDeclaracao[],
+  ): string | null {
     try {
-      return montarDeclaracaoHtml(declaracao, config, modelos);
+      return montarDeclaracaoHtml(declaracao, fontesConfig, fontesModelos);
     } catch {
       return null;
     }
   }
 
   async function comPdf(declaracao: Declaracao, acao: "baixar" | "imprimir") {
-    if (!config) return;
-    const html = gerarHtml(declaracao);
-    if (!html) {
-      toast.error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
-      return;
-    }
     setOcupado(true);
     try {
+      const fontes = await buscarFontesDeclaracaoAtuais();
+      const html = gerarHtmlComFontes(declaracao, fontes.config, fontes.modelos);
+      if (!html) throw new Error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
       const blob = await gerarPdfDeHtml(html);
 
       const path = `declaracoes/${declaracao.id}.pdf`;
@@ -157,13 +159,11 @@ function DeclaracoesPage() {
       toast.error("Esta declaração não tem e-mail do preceptor.");
       return;
     }
-    const html = gerarHtml(declaracao);
-    if (!html) {
-      toast.error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
-      return;
-    }
     setOcupado(true);
     try {
+      const fontes = await buscarFontesDeclaracaoAtuais();
+      const html = gerarHtmlComFontes(declaracao, fontes.config, fontes.modelos);
+      if (!html) throw new Error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
       const blob = await gerarPdfDeHtml(html);
 
       const arquivo = `Declaracao-${declaracao.nome.replace(/[^\w]+/g, "-")}.pdf`;
@@ -193,15 +193,34 @@ function DeclaracoesPage() {
     }
   }
 
-  function abrirEditor(declaracao: Declaracao) {
-    if (!config) return;
-    const html = gerarHtml(declaracao);
-    if (!html) {
-      toast.error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
-      return;
+  async function abrirEditor(declaracao: Declaracao) {
+    setOcupado(true);
+    try {
+      const fontes = await buscarFontesDeclaracaoAtuais();
+      const html = gerarHtmlComFontes(declaracao, fontes.config, fontes.modelos);
+      if (!html) throw new Error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
+      setConteudo(html);
+      setEditando(declaracao);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao carregar o modelo atual.");
+    } finally {
+      setOcupado(false);
     }
-    setConteudo(html);
-    setEditando(declaracao);
+  }
+
+  async function abrirVisualizacao(declaracao: Declaracao) {
+    setOcupado(true);
+    try {
+      const fontes = await buscarFontesDeclaracaoAtuais();
+      const html = gerarHtmlComFontes(declaracao, fontes.config, fontes.modelos);
+      if (!html) throw new Error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
+      setHtmlAberto(html);
+      setAberto(declaracao);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao carregar o modelo atual.");
+    } finally {
+      setOcupado(false);
+    }
   }
 
 
@@ -278,7 +297,7 @@ function DeclaracoesPage() {
                   {d.data_inicio} a {d.data_fim}
                 </TableCell>
                 <TableCell className="text-right whitespace-nowrap">
-                  <Button variant="ghost" size="icon" title="Visualizar" onClick={() => setAberto(d)}>
+                  <Button variant="ghost" size="icon" title="Visualizar" onClick={() => abrirVisualizacao(d)}>
                     <Eye className="size-4" />
                   </Button>
                   <Button variant="ghost" size="icon" title="Editar" onClick={() => abrirEditor(d)}>
@@ -344,7 +363,7 @@ function DeclaracoesPage() {
               <EscalaA4 className="rounded-lg border bg-muted/30 p-2">
                 <article
                   className="print-area prose-oficio pagina-a4"
-                  dangerouslySetInnerHTML={{ __html: gerarHtml(aberto) ?? "" }}
+                  dangerouslySetInnerHTML={{ __html: htmlAberto }}
                 />
               </EscalaA4>
               <div className="flex flex-wrap justify-end gap-2">

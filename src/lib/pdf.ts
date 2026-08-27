@@ -1,7 +1,5 @@
 import { jsPDF } from "jspdf";
 
-import { montarDocumentoHtml, type Configuracoes, type Oficio } from "./oficios";
-
 const LARGURA_A4 = 210;
 const ALTURA_A4 = 297;
 const MARGEM = 0;
@@ -11,15 +9,26 @@ function documentoEmPagina(html: string) {
   // Mesma classe usada no editor e na visualização: o PDF sai idêntico ao salvo.
   pagina.className = "prose-oficio pagina-a4";
   pagina.style.position = "fixed";
-  pagina.style.left = "-10000px";
+  pagina.style.left = "0";
   pagina.style.top = "0";
+  pagina.style.zIndex = "-1";
+  pagina.style.pointerEvents = "none";
   pagina.innerHTML = html;
   return pagina;
 }
 
-/** Gera o PDF a partir do HTML formatado do ofício, preservando imagens e estilos. */
-export async function gerarPdf(oficio: Oficio, config: Configuracoes): Promise<Blob> {
-  return gerarPdfDeHtml(montarDocumentoHtml(oficio, config));
+function aguardarImagem(imagem: HTMLImageElement): Promise<void> {
+  if (imagem.complete) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    const concluir = () => {
+      window.clearTimeout(limite);
+      resolve();
+    };
+    const limite = window.setTimeout(concluir, 5000);
+    imagem.addEventListener("load", concluir, { once: true });
+    imagem.addEventListener("error", concluir, { once: true });
+  });
 }
 
 export async function gerarPdfDeHtml(html: string): Promise<Blob> {
@@ -28,47 +37,42 @@ export async function gerarPdfDeHtml(html: string): Promise<Blob> {
   document.body.appendChild(pagina);
 
   try {
+    await document.fonts.ready;
+    const imagens = Array.from(pagina.querySelectorAll("img"));
+    await Promise.all(imagens.map(aguardarImagem));
+    imagens.forEach((imagem) => {
+      if (imagem.naturalWidth === 0) imagem.remove();
+    });
+
     const canvas = await html2canvas(pagina, {
       scale: 2,
       useCORS: true,
+      imageTimeout: 5000,
       backgroundColor: "#ffffff",
+      logging: false,
+      foreignObjectRendering: true,
     });
 
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const larguraUtil = LARGURA_A4 - MARGEM * 2;
     const alturaUtil = ALTURA_A4 - MARGEM * 2;
-    const alturaTotal = (canvas.height * larguraUtil) / canvas.width;
+    const escala = Math.min(larguraUtil / canvas.width, alturaUtil / canvas.height);
+    const larguraRenderizada = canvas.width * escala;
+    const alturaRenderizada = canvas.height * escala;
+    const x = MARGEM + (larguraUtil - larguraRenderizada) / 2;
 
-    const alturaFatiaPx = Math.floor((alturaUtil * canvas.width) / larguraUtil);
-    let deslocamento = 0;
-    let primeira = true;
-
-    while (deslocamento < canvas.height) {
-      const altura = Math.min(alturaFatiaPx, canvas.height - deslocamento);
-      const fatia = document.createElement("canvas");
-      fatia.width = canvas.width;
-      fatia.height = altura;
-      const ctx = fatia.getContext("2d");
-      if (!ctx) break;
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, fatia.width, fatia.height);
-      ctx.drawImage(canvas, 0, deslocamento, canvas.width, altura, 0, 0, canvas.width, altura);
-
-      if (!primeira) doc.addPage();
-      doc.addImage(
-        fatia.toDataURL("image/jpeg", 0.95),
-        "JPEG",
-        MARGEM,
-        MARGEM,
-        larguraUtil,
-        (altura * larguraUtil) / canvas.width,
-        undefined,
-        "FAST",
-      );
-      primeira = false;
-      deslocamento += altura;
-      if (alturaTotal <= alturaUtil) break;
-    }
+    // O documento inteiro é reduzido proporcionalmente quando necessário.
+    // Nunca há recorte nem vazamento de assinaturas/rodapé para uma segunda página.
+    doc.addImage(
+      canvas.toDataURL("image/jpeg", 0.97),
+      "JPEG",
+      x,
+      MARGEM,
+      larguraRenderizada,
+      alturaRenderizada,
+      undefined,
+      "FAST",
+    );
 
     return doc.output("blob");
   } finally {
@@ -81,7 +85,9 @@ export function baixarBlob(blob: Blob, nome: string) {
   const a = document.createElement("a");
   a.href = url;
   a.download = nome;
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 

@@ -24,6 +24,11 @@ import {
   type ModeloDeclaracao,
 } from "@/lib/declaracoes";
 import { uploadArquivo, urlAssinada } from "@/lib/storage";
+import {
+  buscarConfiguracoesAtuais,
+  buscarModelosDeclaracaoAtuais,
+  buscarModelosOficioAtuais,
+} from "@/lib/documentos-data";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -49,9 +54,8 @@ function ConfiguracoesPage() {
   const modelosDeclaracao = useQuery({
     queryKey: ["modelos_declaracao"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("modelos_declaracao").select("*");
-      if (error) throw error;
-      return ((data ?? []) as unknown as ModeloDeclaracao[]).sort(
+      const data = await buscarModelosDeclaracaoAtuais();
+      return data.sort(
         (a, b) =>
           ORDEM_MODELOS_DECLARACAO.indexOf(a.chave) - ORDEM_MODELOS_DECLARACAO.indexOf(b.chave),
       );
@@ -64,10 +68,9 @@ function ConfiguracoesPage() {
   const modelos = useQuery({
     queryKey: ["modelos_oficio"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("modelos_oficio").select("*").order("chave");
-      if (error) throw error;
+      const data = await buscarModelosOficioAtuais();
       const ordem = ["padrao", "nutricao", "psicologia"];
-      return ((data ?? []) as unknown as ModeloOficio[]).sort(
+      return data.sort(
         (a, b) => ordem.indexOf(a.chave) - ordem.indexOf(b.chave),
       );
     },
@@ -76,11 +79,7 @@ function ConfiguracoesPage() {
 
   const { data } = useQuery({
     queryKey: ["configuracoes"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("configuracoes").select("*").maybeSingle();
-      if (error) throw error;
-      return data as unknown as Configuracoes | null;
-    },
+    queryFn: buscarConfiguracoesAtuais,
   });
 
   useEffect(() => {
@@ -95,67 +94,77 @@ function ConfiguracoesPage() {
   async function salvar() {
     if (!form) return;
     setSalvando(true);
-    for (const modelo of modelos.data ?? []) {
-      const html = corposModelo[modelo.chave];
-      if (html === undefined || html === modelo.modelo_html) continue;
-      const { error: erroModelo } = await supabase
-        .from("modelos_oficio")
-        .update({ modelo_html: html })
-        .eq("id", modelo.id);
-      if (erroModelo) {
-        setSalvando(false);
-        toast.error(erroModelo.message);
-        return;
+    try {
+      for (const modelo of modelos.data ?? []) {
+        const html = corposModelo[modelo.chave];
+        if (html === undefined || html === modelo.modelo_html) continue;
+        const { data: confirmado, error } = await supabase
+          .from("modelos_oficio")
+          .update({ modelo_html: html })
+          .eq("id", modelo.id)
+          .select("modelo_html")
+          .single();
+        if (error) throw error;
+        if (confirmado.modelo_html !== html) throw new Error(`O modelo ${modelo.nome} não foi confirmado pelo banco.`);
       }
-    }
-    for (const modelo of modelosDeclaracao.data ?? []) {
-      const html = corposDeclaracao[modelo.chave];
-      if (html === undefined || html === modelo.modelo_html) continue;
-      const { error: erroDeclaracao } = await supabase
-        .from("modelos_declaracao")
-        .update({ modelo_html: html })
-        .eq("id", modelo.id);
-      if (erroDeclaracao) {
-        setSalvando(false);
-        toast.error(erroDeclaracao.message);
-        return;
+      for (const modelo of modelosDeclaracao.data ?? []) {
+        const html = corposDeclaracao[modelo.chave];
+        if (html === undefined || html === modelo.modelo_html) continue;
+        const { data: confirmado, error } = await supabase
+          .from("modelos_declaracao")
+          .update({ modelo_html: html })
+          .eq("id", modelo.id)
+          .select("modelo_html")
+          .single();
+        if (error) throw error;
+        if (confirmado.modelo_html !== html) throw new Error(`O modelo ${modelo.nome} não foi confirmado pelo banco.`);
       }
-    }
-    const { error } = await supabase
-      .from("configuracoes")
-      .update({
-        modelo: form.modelo,
-        modelo_html: form.modelo_html,
-        cabecalho_html: form.cabecalho_html,
-        rodape_html: form.rodape_html,
-        formato_numeracao: form.formato_numeracao,
-        digitos: form.digitos,
-        logo_url: form.logo_url,
-        assinatura_url: form.assinatura_url,
-        cidade: form.cidade,
-        form_url: form.form_url,
-        form_declaracao_url: form.form_declaracao_url ?? "",
 
-        padrao_destinatario: form.padrao_destinatario,
-        padrao_area_estagio: form.padrao_area_estagio,
-        padrao_professor: form.padrao_professor,
-        padrao_registro_professor: form.padrao_registro_professor,
-        padrao_carga_horaria: form.padrao_carga_horaria,
-        padrao_periodo: form.padrao_periodo,
-        padrao_seguradora: form.padrao_seguradora,
-        padrao_apolice: form.padrao_apolice,
-        padrao_coordenador: form.padrao_coordenador,
-        padrao_cargo_coordenador: form.padrao_cargo_coordenador,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", true);
-    setSalvando(false);
-    if (error) toast.error(error.message);
-    else {
+      const { error } = await supabase
+        .from("configuracoes")
+        .update({
+          modelo: form.modelo,
+          modelo_html: form.modelo_html,
+          cabecalho_html: form.cabecalho_html,
+          rodape_html: form.rodape_html,
+          formato_numeracao: form.formato_numeracao,
+          digitos: form.digitos,
+          logo_url: form.logo_url,
+          assinatura_url: form.assinatura_url,
+          cidade: form.cidade,
+          form_url: form.form_url,
+          form_declaracao_url: form.form_declaracao_url ?? "",
+          padrao_destinatario: form.padrao_destinatario,
+          padrao_area_estagio: form.padrao_area_estagio,
+          padrao_professor: form.padrao_professor,
+          padrao_registro_professor: form.padrao_registro_professor,
+          padrao_carga_horaria: form.padrao_carga_horaria,
+          padrao_periodo: form.padrao_periodo,
+          padrao_seguradora: form.padrao_seguradora,
+          padrao_apolice: form.padrao_apolice,
+          padrao_coordenador: form.padrao_coordenador,
+          padrao_cargo_coordenador: form.padrao_cargo_coordenador,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", true);
+      if (error) throw error;
+
+      const [configAtual, oficiosAtuais, declaracoesAtuais] = await Promise.all([
+        buscarConfiguracoesAtuais(),
+        buscarModelosOficioAtuais(),
+        buscarModelosDeclaracaoAtuais(),
+      ]);
+      queryClient.setQueryData(["configuracoes"], configAtual);
+      queryClient.setQueryData(["modelos_oficio"], oficiosAtuais);
+      queryClient.setQueryData(["modelos_declaracao"], declaracoesAtuais);
+      setForm(configAtual);
+      setCorposModelo({});
+      setCorposDeclaracao({});
       toast.success("Configurações salvas.");
-      queryClient.invalidateQueries({ queryKey: ["configuracoes"] });
-      queryClient.invalidateQueries({ queryKey: ["modelos_oficio"] });
-      queryClient.invalidateQueries({ queryKey: ["modelos_declaracao"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao salvar as configurações.");
+    } finally {
+      setSalvando(false);
     }
   }
 

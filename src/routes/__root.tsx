@@ -79,13 +79,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Ofícios | Gestão e geração automática" },
+      { title: "Sistema Integrado de Cursos FACESF" },
       {
         name: "description",
         content:
           "Sistema para geração automática, numeração sequencial e consulta de ofícios integrados ao Google Forms.",
       },
-      { property: "og:title", content: "Ofícios | Gestão e geração automática" },
+      { property: "og:title", content: "Sistema Integrado de Cursos FACESF" },
       {
         property: "og:description",
         content: "Gere, numere e localize ofícios em segundos, direto do Google Forms.",

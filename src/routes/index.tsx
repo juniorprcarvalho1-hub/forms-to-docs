@@ -6,12 +6,12 @@ export const Route = createFileRoute("/")({
   },
   head: () => ({
     meta: [
-      { title: "Entrar | Sistema de Ofícios" },
+      { title: "Entrar | Sistema Integrado de Cursos FACESF" },
       {
         name: "description",
         content: "Acesse o sistema de geração e gestão automática de ofícios.",
       },
-      { property: "og:title", content: "Entrar | Sistema de Ofícios" },
+      { property: "og:title", content: "Entrar | Sistema Integrado de Cursos FACESF" },
       {
         property: "og:description",
         content: "Acesse o sistema de geração e gestão automática de ofícios.",

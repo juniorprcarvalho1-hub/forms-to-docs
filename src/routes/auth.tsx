@@ -13,9 +13,9 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Entrar | Sistema de Ofícios" },
+      { title: "Entrar | Sistema Integrado de Cursos FACESF" },
       { name: "description", content: "Acesse o painel de gestão e geração de ofícios." },
-      { property: "og:title", content: "Entrar | Sistema de Ofícios" },
+      { property: "og:title", content: "Entrar | Sistema Integrado de Cursos FACESF" },
       { property: "og:description", content: "Acesse o painel de gestão e geração de ofícios." },
     ],
   }),

@@ -30,6 +30,8 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   mensagemEmailDeclaracao,
   montarDeclaracaoHtml,
+  pendenciaDeclaracao,
+
   ORDEM_MODELOS_DECLARACAO,
   ROTULOS_DECLARACAO,
   type ConfiguracoesDeclaracao,
@@ -340,7 +342,7 @@ function DeclaracoesPage() {
             <>
               <article
                 className="print-area prose-oficio rounded-lg border bg-card p-8 font-serif text-sm leading-7"
-                dangerouslySetInnerHTML={{ __html: montarDeclaracaoHtml(aberto, config, modelos) }}
+                dangerouslySetInnerHTML={{ __html: gerarHtml(aberto) ?? "" }}
               />
               <div className="flex flex-wrap justify-end gap-2">
                 <span className="mr-auto self-center text-xs text-muted-foreground">

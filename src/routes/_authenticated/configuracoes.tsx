@@ -134,6 +134,8 @@ function ConfiguracoesPage() {
         assinatura_url: form.assinatura_url,
         cidade: form.cidade,
         form_url: form.form_url,
+        form_declaracao_url: form.form_declaracao_url ?? "",
+
         padrao_destinatario: form.padrao_destinatario,
         padrao_area_estagio: form.padrao_area_estagio,
         padrao_professor: form.padrao_professor,

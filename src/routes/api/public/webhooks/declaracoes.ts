@@ -45,16 +45,33 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes")({
           return json({ error: "Token inválido" }, 401);
         }
 
-        const texto = (...chaves: string[]) => {
-          for (const chave of chaves) {
-            const valor = payload[normalizar(chave)];
-            if (valor !== undefined && String(valor).trim() !== "") return String(valor).trim();
+        /** Procura o valor por correspondência exata e, depois, aproximada do título da pergunta. */
+        const buscar = (chaves: string[], evitar: string[] = []) => {
+          const alvos = chaves.map(normalizar);
+          const usavel = (k: string) => !evitar.some((e) => k.includes(normalizar(e)));
+          const valor = (k: string) => {
+            const v = payload[k];
+            return v !== undefined && String(v).trim() !== "" ? String(v).trim() : "";
+          };
+          for (const alvo of alvos) {
+            if (usavel(alvo) && valor(alvo)) return valor(alvo);
+          }
+          for (const alvo of alvos) {
+            for (const k of Object.keys(payload)) {
+              if (!usavel(k)) continue;
+              if ((k.includes(alvo) || alvo.includes(k)) && valor(k)) return valor(k);
+            }
           }
           return "";
         };
+        const texto = (...chaves: string[]) => buscar(chaves);
 
-        const nome = texto("nome", "preceptor", "nomedopreceptor", "nomecompleto");
+        const nome = buscar(
+          ["nome", "preceptor", "nomedopreceptor", "nomecompleto"],
+          ["aluno", "estudante", "discente", "curso", "hospital", "email"],
+        );
         if (!nome) return json({ error: "Campo Nome não recebido" }, 422);
+
 
         const curso = texto("curso", "cursodeestagio", "areadeestagio", "area");
         const modeloChave = (() => {

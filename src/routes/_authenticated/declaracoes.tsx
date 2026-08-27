@@ -154,9 +154,15 @@ function DeclaracoesPage() {
       toast.error("Esta declaração não tem e-mail do preceptor.");
       return;
     }
+    const html = gerarHtml(declaracao);
+    if (!html) {
+      toast.error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
+      return;
+    }
     setOcupado(true);
     try {
-      const blob = await gerarPdfDeHtml(montarDeclaracaoHtml(declaracao, config, modelos));
+      const blob = await gerarPdfDeHtml(html);
+
       const arquivo = `Declaracao-${declaracao.nome.replace(/[^\w]+/g, "-")}.pdf`;
       let link: string | undefined;
       try {

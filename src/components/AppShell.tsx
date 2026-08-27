@@ -1,6 +1,9 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { FileText, LayoutDashboard, Files, Award, Settings, LogOut, Menu } from "lucide-react";
+import { LayoutDashboard, Files, Award, Settings, LogOut, Menu } from "lucide-react";
+import facesf from "@/assets/facesf.png.asset.json";
+import nupep from "@/assets/nupep.png.asset.json";
+import clinica from "@/assets/clinica-escola.png.asset.json";
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";

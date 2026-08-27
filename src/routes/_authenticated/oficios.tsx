@@ -42,6 +42,7 @@ import {
 } from "@/lib/oficios";
 import { baixarBlob, gerarPdfDeHtml, imprimirBlob } from "@/lib/pdf";
 import { uploadArquivo } from "@/lib/storage";
+import { buscarFontesOficioAtuais } from "@/lib/documentos-data";
 
 export const Route = createFileRoute("/_authenticated/oficios")({
   validateSearch: (search: Record<string, unknown>) => ({ q: String(search["q"] ?? "") }),
@@ -64,6 +65,7 @@ function OficiosPage() {
   const queryClient = useQueryClient();
   const [busca, setBusca] = useState(q);
   const [aberto, setAberto] = useState<Oficio | null>(null);
+  const [htmlAberto, setHtmlAberto] = useState("");
   const [editando, setEditando] = useState<Oficio | null>(null);
   const [conteudo, setConteudo] = useState("");
   const [excluindo, setExcluindo] = useState<Oficio | null>(null);
@@ -112,10 +114,10 @@ function OficiosPage() {
   }, [oficios, busca]);
 
   async function comPdf(oficio: Oficio, acao: "baixar" | "imprimir") {
-    if (!config) return;
     setOcupado(true);
     try {
-      const blob = await gerarPdfDeHtml(montarDocumentoHtml(oficio, config, modelos));
+      const fontes = await buscarFontesOficioAtuais();
+      const blob = await gerarPdfDeHtml(montarDocumentoHtml(oficio, fontes.config, fontes.modelos));
       const path = `documentos/${oficio.ano}/${oficio.numero_formatado.replace(/[^\w]+/g, "-")}.pdf`;
       try {
         await uploadArquivo(path, blob, "application/pdf");
@@ -132,10 +134,30 @@ function OficiosPage() {
     }
   }
 
-  function abrirEditor(oficio: Oficio) {
-    if (!config) return;
-    setConteudo(montarDocumentoHtml(oficio, config, modelos));
-    setEditando(oficio);
+  async function abrirEditor(oficio: Oficio) {
+    setOcupado(true);
+    try {
+      const fontes = await buscarFontesOficioAtuais();
+      setConteudo(montarDocumentoHtml(oficio, fontes.config, fontes.modelos));
+      setEditando(oficio);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao carregar o modelo atual.");
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function abrirVisualizacao(oficio: Oficio) {
+    setOcupado(true);
+    try {
+      const fontes = await buscarFontesOficioAtuais();
+      setHtmlAberto(montarDocumentoHtml(oficio, fontes.config, fontes.modelos));
+      setAberto(oficio);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao carregar o modelo atual.");
+    } finally {
+      setOcupado(false);
+    }
   }
 
   async function salvarEdicao() {
@@ -213,7 +235,7 @@ function OficiosPage() {
                   {o.data.slice(8, 10)}/{o.data.slice(5, 7)}/{o.data.slice(0, 4)}
                 </TableCell>
                 <TableCell className="text-right whitespace-nowrap">
-                  <Button variant="ghost" size="icon" title="Visualizar" onClick={() => setAberto(o)}>
+                  <Button variant="ghost" size="icon" title="Visualizar" onClick={() => abrirVisualizacao(o)}>
                     <Eye className="size-4" />
                   </Button>
                   <Button variant="ghost" size="icon" title="Editar" onClick={() => abrirEditor(o)}>
@@ -270,7 +292,7 @@ function OficiosPage() {
               <EscalaA4 className="rounded-lg border bg-muted/30 p-2">
                 <article
                   className="print-area prose-oficio pagina-a4"
-                  dangerouslySetInnerHTML={{ __html: montarDocumentoHtml(aberto, config, modelos) }}
+                  dangerouslySetInnerHTML={{ __html: htmlAberto }}
                 />
               </EscalaA4>
               <div className="flex flex-wrap justify-end gap-2">

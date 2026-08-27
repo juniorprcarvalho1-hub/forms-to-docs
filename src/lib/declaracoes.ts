@@ -61,7 +61,7 @@ export type MapaCurso = {
   portaria: string;
 };
 
-export const MAPA_CURSOS: Record<string, MapaCurso> = {
+export const MAPA_CURSOS = {
   enfermagem: {
     curso: "Enfermagem",
     conselho: "COREN",
@@ -94,7 +94,7 @@ export const MAPA_CURSOS: Record<string, MapaCurso> = {
     portaria:
       "Curso de Psicologia autorizado pela Portaria Min. Nº 583 de 17/08/2015 – Pub. No D.O.U. de 18/08/2015 Rua Cel. Trapiá, 201, Centro - Belém do São Francisco/PE CEP.:56440-000",
   },
-};
+} satisfies Record<string, MapaCurso>;
 
 /** Retorna o mapeamento do curso ou null quando o curso não está cadastrado. */
 export function mapaDoCurso(cursoOuChave: string): MapaCurso | null {

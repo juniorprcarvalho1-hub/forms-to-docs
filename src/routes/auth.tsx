@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { FileText } from "lucide-react";
+import facesf from "@/assets/facesf.png.asset.json";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -76,9 +76,7 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <FileText className="size-5" />
-          </span>
+          <img src={facesf.url} alt="FACESF" className="h-14 w-auto" />
           <div>
             <h1 className="text-2xl font-normal">Sistema Integrado de Cursos FACESF</h1>
             <p className="text-sm text-muted-foreground">

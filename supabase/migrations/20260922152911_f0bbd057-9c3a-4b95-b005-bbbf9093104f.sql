@@ -1,0 +1,1 @@
+ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS form_resposta_url text NOT NULL DEFAULT '';

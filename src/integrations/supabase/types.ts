@@ -21,6 +21,7 @@ export type Database = {
           cidade: string
           digitos: number
           form_declaracao_url: string
+          form_resposta_url: string
           form_url: string
           formato_numeracao: string
           id: boolean
@@ -48,6 +49,7 @@ export type Database = {
           cidade?: string
           digitos?: number
           form_declaracao_url?: string
+          form_resposta_url?: string
           form_url?: string
           formato_numeracao?: string
           id?: boolean
@@ -75,6 +77,7 @@ export type Database = {
           cidade?: string
           digitos?: number
           form_declaracao_url?: string
+          form_resposta_url?: string
           form_url?: string
           formato_numeracao?: string
           id?: boolean

@@ -17,6 +17,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDeclaracoesRouteImport } from './routes/_authenticated/declaracoes'
 import { Route as AuthenticatedOficiosRouteImport } from './routes/_authenticated/oficios'
 import { Route as ApiPublicWebhooksDeclaracoesRouteImport } from './routes/api/public/webhooks/declaracoes'
+import { Route as ApiPublicWebhooksDeclaracoesRespostaRouteImport } from './routes/api/public/webhooks/declaracoes-resposta'
 import { Route as ApiPublicWebhooksOficiosRouteImport } from './routes/api/public/webhooks/oficios'
 
 const IndexRoute = IndexRouteImport.update({
@@ -61,6 +62,12 @@ const ApiPublicWebhooksDeclaracoesRoute =
     path: '/api/public/webhooks/declaracoes',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicWebhooksDeclaracoesRespostaRoute =
+  ApiPublicWebhooksDeclaracoesRespostaRouteImport.update({
+    id: '/api/public/webhooks/declaracoes-resposta',
+    path: '/api/public/webhooks/declaracoes-resposta',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicWebhooksOficiosRoute =
   ApiPublicWebhooksOficiosRouteImport.update({
     id: '/api/public/webhooks/oficios',
@@ -76,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/declaracoes': typeof AuthenticatedDeclaracoesRoute
   '/oficios': typeof AuthenticatedOficiosRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
+  '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
   '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
 }
 export interface FileRoutesByTo {
@@ -86,6 +94,7 @@ export interface FileRoutesByTo {
   '/declaracoes': typeof AuthenticatedDeclaracoesRoute
   '/oficios': typeof AuthenticatedOficiosRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
+  '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
   '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
 }
 export interface FileRoutesById {
@@ -98,6 +107,7 @@ export interface FileRoutesById {
   '/_authenticated/declaracoes': typeof AuthenticatedDeclaracoesRoute
   '/_authenticated/oficios': typeof AuthenticatedOficiosRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
+  '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
   '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/declaracoes'
     | '/oficios'
     | '/api/public/webhooks/declaracoes'
+    | '/api/public/webhooks/declaracoes-resposta'
     | '/api/public/webhooks/oficios'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/declaracoes'
     | '/oficios'
     | '/api/public/webhooks/declaracoes'
+    | '/api/public/webhooks/declaracoes-resposta'
     | '/api/public/webhooks/oficios'
   id:
     | '__root__'
@@ -131,6 +143,7 @@ export interface FileRouteTypes {
     | '/_authenticated/declaracoes'
     | '/_authenticated/oficios'
     | '/api/public/webhooks/declaracoes'
+    | '/api/public/webhooks/declaracoes-resposta'
     | '/api/public/webhooks/oficios'
   fileRoutesById: FileRoutesById
 }
@@ -139,6 +152,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiPublicWebhooksDeclaracoesRoute: typeof ApiPublicWebhooksDeclaracoesRoute
+  ApiPublicWebhooksDeclaracoesRespostaRoute: typeof ApiPublicWebhooksDeclaracoesRespostaRoute
   ApiPublicWebhooksOficiosRoute: typeof ApiPublicWebhooksOficiosRoute
 }
 
@@ -200,6 +214,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksDeclaracoesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhooks/declaracoes-resposta': {
+      id: '/api/public/webhooks/declaracoes-resposta'
+      path: '/api/public/webhooks/declaracoes-resposta'
+      fullPath: '/api/public/webhooks/declaracoes-resposta'
+      preLoaderRoute: typeof ApiPublicWebhooksDeclaracoesRespostaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/oficios': {
       id: '/api/public/webhooks/oficios'
       path: '/api/public/webhooks/oficios'
@@ -232,6 +253,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiPublicWebhooksDeclaracoesRoute: ApiPublicWebhooksDeclaracoesRoute,
+  ApiPublicWebhooksDeclaracoesRespostaRoute:
+    ApiPublicWebhooksDeclaracoesRespostaRoute,
   ApiPublicWebhooksOficiosRoute: ApiPublicWebhooksOficiosRoute,
 }
 export const routeTree = rootRouteImport

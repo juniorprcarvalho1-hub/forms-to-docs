@@ -185,7 +185,94 @@ export type Database = {
         }
         Relationships: []
       }
+      declaracoes_resposta: {
+        Row: {
+          conteudo_html: string | null
+          created_at: string
+          curso: string
+          data_emissao: string
+          email_destino: string
+          email_enviado_em: string | null
+          email_supervisor: string
+          estagiario: string
+          id: string
+          modelo_chave: string
+          origem: string
+          pdf_path: string | null
+          periodo: string
+          supervisor: string
+          tipo_avaliacao: string
+          updated_at: string
+        }
+        Insert: {
+          conteudo_html?: string | null
+          created_at?: string
+          curso?: string
+          data_emissao?: string
+          email_destino?: string
+          email_enviado_em?: string | null
+          email_supervisor?: string
+          estagiario?: string
+          id?: string
+          modelo_chave?: string
+          origem?: string
+          pdf_path?: string | null
+          periodo?: string
+          supervisor?: string
+          tipo_avaliacao?: string
+          updated_at?: string
+        }
+        Update: {
+          conteudo_html?: string | null
+          created_at?: string
+          curso?: string
+          data_emissao?: string
+          email_destino?: string
+          email_enviado_em?: string | null
+          email_supervisor?: string
+          estagiario?: string
+          id?: string
+          modelo_chave?: string
+          origem?: string
+          pdf_path?: string | null
+          periodo?: string
+          supervisor?: string
+          tipo_avaliacao?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       modelos_declaracao: {
+        Row: {
+          chave: string
+          created_at: string
+          cursos: string
+          id: string
+          modelo_html: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          chave: string
+          created_at?: string
+          cursos?: string
+          id?: string
+          modelo_html?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          chave?: string
+          created_at?: string
+          cursos?: string
+          id?: string
+          modelo_html?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      modelos_declaracao_resposta: {
         Row: {
           chave: string
           created_at: string
@@ -365,6 +452,33 @@ export type Database = {
           professor_orientador?: string
           registro_professor?: string
           seguradora?: string
+        }
+        Relationships: []
+      }
+      orientadores: {
+        Row: {
+          created_at: string
+          curso: string
+          email: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          curso: string
+          email?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          curso?: string
+          email?: string
+          id?: string
+          nome?: string
+          updated_at?: string
         }
         Relationships: []
       }

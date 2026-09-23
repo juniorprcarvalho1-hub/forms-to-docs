@@ -144,6 +144,15 @@ function ConfiguracoesPage() {
         }
       }
 
+      const modeloRespostaEditado = corposResposta[respostaAtiva];
+      if (modeloRespostaEditado !== undefined) {
+        const { error } = await supabase
+          .from("modelos_declaracao_resposta")
+          .update({ modelo_html: modeloRespostaEditado })
+          .eq("chave", respostaAtiva);
+        if (error) throw error;
+      }
+
       const { error } = await supabase
         .from("configuracoes")
         .update({
@@ -158,6 +167,7 @@ function ConfiguracoesPage() {
           cidade: form.cidade,
           form_url: form.form_url,
           form_declaracao_url: form.form_declaracao_url ?? "",
+          form_resposta_url: form.form_resposta_url ?? "",
           padrao_destinatario: form.padrao_destinatario,
           padrao_area_estagio: form.padrao_area_estagio,
           padrao_professor: form.padrao_professor,

@@ -51,6 +51,7 @@ export type Configuracoes = {
   cidade: string;
   form_url: string;
   form_declaracao_url?: string;
+  form_resposta_url?: string;
 
   padrao_destinatario: string;
   padrao_seguradora: string;

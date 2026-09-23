@@ -9,6 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichEditor } from "@/components/RichEditor";
 import { CadastrosAuxiliares } from "@/components/CadastrosAuxiliares";
+import { OrientadoresCurso } from "@/components/OrientadoresCurso";
+import {
+  ORDEM_MODELOS_RESPOSTA,
+  ROTULOS_DECLARACAO_RESPOSTA,
+  type ModeloDeclaracaoResposta,
+} from "@/lib/declaracoes-resposta";
 
 import { supabase } from "@/integrations/supabase/client";
 import {

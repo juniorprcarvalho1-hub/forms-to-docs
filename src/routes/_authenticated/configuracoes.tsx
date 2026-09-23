@@ -536,6 +536,26 @@ function ConfiguracoesPage() {
         )}
       </section>
 
+      <section className="surface-card space-y-4 p-6">
+        <h2 className="text-sm font-medium">Formulário da declaração de resposta</h2>
+        <p className="text-xs text-muted-foreground">
+          Perguntas do formulário: Nome completo do supervisor, Curso, Tipo de avaliação (parcial ou
+          final), Nome do estagiário, Período e E-mail do supervisor. O documento é gerado e enviado
+          automaticamente ao professor orientador do curso.
+        </p>
+        <CampoTexto
+          label="Link do formulário"
+          valor={form.form_resposta_url ?? ""}
+          onChange={(v) => setForm({ ...form, form_resposta_url: v })}
+        />
+        {form.form_resposta_url && (
+          <iframe
+            src={form.form_resposta_url.replace("/viewform", "/viewform?embedded=true")}
+            title="Formulário da declaração de resposta"
+            className="h-[520px] w-full rounded-lg border"
+          />
+        )}
+      </section>
 
       <div className="flex justify-end">
         <Button onClick={salvar} disabled={salvando}>

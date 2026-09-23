@@ -335,6 +335,46 @@ function ConfiguracoesPage() {
         )}
       </section>
 
+      <section className="surface-card space-y-4 p-6">
+        <h2 className="text-sm font-medium">Modelos da declaração de resposta</h2>
+        <p className="text-xs text-muted-foreground">
+          Declaração de que o supervisor de campo preencheu a avaliação do estagiário. Um modelo por
+          curso; o sistema escolhe conforme o curso informado no formulário.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {(modelosResposta.data ?? []).map((m) => (
+            <Button
+              key={m.chave}
+              type="button"
+              size="sm"
+              variant={m.chave === respostaAtiva ? "default" : "outline"}
+              onClick={() => setRespostaAtiva(m.chave)}
+            >
+              {m.nome}
+            </Button>
+          ))}
+        </div>
+        {respostaSelecionada && (
+          <>
+            <p className="text-xs text-muted-foreground">
+              Curso atendido: {respostaSelecionada.cursos}
+            </p>
+            <RichEditor
+              key={respostaSelecionada.id}
+              rotulos={ROTULOS_DECLARACAO_RESPOSTA}
+              value={corposResposta[respostaSelecionada.chave] ?? respostaSelecionada.modelo_html}
+              minHeight={360}
+              placeholder="Texto da declaração…"
+              onChange={(html) =>
+                setCorposResposta((c) => ({ ...c, [respostaSelecionada.chave]: html }))
+              }
+            />
+          </>
+        )}
+      </section>
+
+      <OrientadoresCurso />
+
       <section className="surface-card grid gap-4 p-6 sm:grid-cols-2">
         <h2 className="text-sm font-medium sm:col-span-2">Numeração</h2>
         <div className="space-y-1.5">

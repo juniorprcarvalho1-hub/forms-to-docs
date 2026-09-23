@@ -56,6 +56,21 @@ function ConfiguracoesPage() {
   const [corposModelo, setCorposModelo] = useState<Record<string, string>>({});
   const [declaracaoAtiva, setDeclaracaoAtiva] = useState("enfermagem");
   const [corposDeclaracao, setCorposDeclaracao] = useState<Record<string, string>>({});
+  const [respostaAtiva, setRespostaAtiva] = useState("enfermagem");
+  const [corposResposta, setCorposResposta] = useState<Record<string, string>>({});
+
+  const modelosResposta = useQuery({
+    queryKey: ["modelos_declaracao_resposta"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("modelos_declaracao_resposta").select("*");
+      if (error) throw error;
+      return ((data ?? []) as unknown as ModeloDeclaracaoResposta[]).sort(
+        (a, b) => ORDEM_MODELOS_RESPOSTA.indexOf(a.chave) - ORDEM_MODELOS_RESPOSTA.indexOf(b.chave),
+      );
+    },
+  });
+  const respostaSelecionada = (modelosResposta.data ?? []).find((m) => m.chave === respostaAtiva);
+
 
   const modelosDeclaracao = useQuery({
     queryKey: ["modelos_declaracao"],

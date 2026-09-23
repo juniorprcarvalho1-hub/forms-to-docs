@@ -194,6 +194,8 @@ function ConfiguracoesPage() {
       setForm(configAtual);
       setCorposModelo({});
       setCorposDeclaracao({});
+      setCorposResposta({});
+      await queryClient.invalidateQueries({ queryKey: ["modelos_declaracao_resposta"] });
       toast.success("Configurações salvas.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha ao salvar as configurações.");

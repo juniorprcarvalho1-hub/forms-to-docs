@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, Files, Award, Settings, LogOut, Menu } from "lucide-react";
+import { LayoutDashboard, Files, Award, FileCheck2, Settings, LogOut, Menu } from "lucide-react";
 import facesf from "@/assets/facesf.png.asset.json";
 import nupep from "@/assets/nupep.png.asset.json";
 import clinica from "@/assets/clinica-escola.png.asset.json";
@@ -14,6 +14,7 @@ const links = [
   { to: "/dashboard", label: "Painel", icon: LayoutDashboard },
   { to: "/oficios", label: "Ofícios", icon: Files },
   { to: "/declaracoes", label: "Declarações", icon: Award },
+  { to: "/declaracoes-resposta", label: "Declarações de Resposta", icon: FileCheck2 },
   { to: "/configuracoes", label: "Configurações", icon: Settings },
 ] as const;
 

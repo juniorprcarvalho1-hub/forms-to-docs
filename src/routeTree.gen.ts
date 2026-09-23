@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDeclaracoesRouteImport } from './routes/_authenticated/declaracoes'
+import { Route as AuthenticatedDeclaracoesRespostaRouteImport } from './routes/_authenticated/declaracoes-resposta'
 import { Route as AuthenticatedOficiosRouteImport } from './routes/_authenticated/oficios'
 import { Route as ApiPublicWebhooksDeclaracoesRouteImport } from './routes/api/public/webhooks/declaracoes'
 import { Route as ApiPublicWebhooksDeclaracoesRespostaRouteImport } from './routes/api/public/webhooks/declaracoes-resposta'
@@ -51,6 +52,12 @@ const AuthenticatedDeclaracoesRoute =
     path: '/declaracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDeclaracoesRespostaRoute =
+  AuthenticatedDeclaracoesRespostaRouteImport.update({
+    id: '/declaracoes-resposta',
+    path: '/declaracoes-resposta',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOficiosRoute = AuthenticatedOficiosRouteImport.update({
   id: '/oficios',
   path: '/oficios',
@@ -81,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/declaracoes': typeof AuthenticatedDeclaracoesRoute
+  '/declaracoes-resposta': typeof AuthenticatedDeclaracoesRespostaRoute
   '/oficios': typeof AuthenticatedOficiosRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
@@ -92,6 +100,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/declaracoes': typeof AuthenticatedDeclaracoesRoute
+  '/declaracoes-resposta': typeof AuthenticatedDeclaracoesRespostaRoute
   '/oficios': typeof AuthenticatedOficiosRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
@@ -105,6 +114,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/declaracoes': typeof AuthenticatedDeclaracoesRoute
+  '/_authenticated/declaracoes-resposta': typeof AuthenticatedDeclaracoesRespostaRoute
   '/_authenticated/oficios': typeof AuthenticatedOficiosRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/dashboard'
     | '/declaracoes'
+    | '/declaracoes-resposta'
     | '/oficios'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/declaracoes-resposta'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/dashboard'
     | '/declaracoes'
+    | '/declaracoes-resposta'
     | '/oficios'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/declaracoes-resposta'
@@ -141,6 +153,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/declaracoes'
+    | '/_authenticated/declaracoes-resposta'
     | '/_authenticated/oficios'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/declaracoes-resposta'
@@ -200,6 +213,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDeclaracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/declaracoes-resposta': {
+      id: '/_authenticated/declaracoes-resposta'
+      path: '/declaracoes-resposta'
+      fullPath: '/declaracoes-resposta'
+      preLoaderRoute: typeof AuthenticatedDeclaracoesRespostaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/oficios': {
       id: '/_authenticated/oficios'
       path: '/oficios'
@@ -235,6 +255,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeclaracoesRoute: typeof AuthenticatedDeclaracoesRoute
+  AuthenticatedDeclaracoesRespostaRoute: typeof AuthenticatedDeclaracoesRespostaRoute
   AuthenticatedOficiosRoute: typeof AuthenticatedOficiosRoute
 }
 
@@ -242,6 +263,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeclaracoesRoute: AuthenticatedDeclaracoesRoute,
+  AuthenticatedDeclaracoesRespostaRoute: AuthenticatedDeclaracoesRespostaRoute,
   AuthenticatedOficiosRoute: AuthenticatedOficiosRoute,
 }
 

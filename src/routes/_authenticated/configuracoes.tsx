@@ -9,6 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichEditor } from "@/components/RichEditor";
 import { CadastrosAuxiliares } from "@/components/CadastrosAuxiliares";
+import { OrientadoresCurso } from "@/components/OrientadoresCurso";
+import {
+  ORDEM_MODELOS_RESPOSTA,
+  ROTULOS_DECLARACAO_RESPOSTA,
+  type ModeloDeclaracaoResposta,
+} from "@/lib/declaracoes-resposta";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -50,6 +56,21 @@ function ConfiguracoesPage() {
   const [corposModelo, setCorposModelo] = useState<Record<string, string>>({});
   const [declaracaoAtiva, setDeclaracaoAtiva] = useState("enfermagem");
   const [corposDeclaracao, setCorposDeclaracao] = useState<Record<string, string>>({});
+  const [respostaAtiva, setRespostaAtiva] = useState("enfermagem");
+  const [corposResposta, setCorposResposta] = useState<Record<string, string>>({});
+
+  const modelosResposta = useQuery({
+    queryKey: ["modelos_declaracao_resposta"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("modelos_declaracao_resposta").select("*");
+      if (error) throw error;
+      return ((data ?? []) as unknown as ModeloDeclaracaoResposta[]).sort(
+        (a, b) => ORDEM_MODELOS_RESPOSTA.indexOf(a.chave) - ORDEM_MODELOS_RESPOSTA.indexOf(b.chave),
+      );
+    },
+  });
+  const respostaSelecionada = (modelosResposta.data ?? []).find((m) => m.chave === respostaAtiva);
+
 
   const modelosDeclaracao = useQuery({
     queryKey: ["modelos_declaracao"],
@@ -123,6 +144,15 @@ function ConfiguracoesPage() {
         }
       }
 
+      const modeloRespostaEditado = corposResposta[respostaAtiva];
+      if (modeloRespostaEditado !== undefined) {
+        const { error } = await supabase
+          .from("modelos_declaracao_resposta")
+          .update({ modelo_html: modeloRespostaEditado })
+          .eq("chave", respostaAtiva);
+        if (error) throw error;
+      }
+
       const { error } = await supabase
         .from("configuracoes")
         .update({
@@ -137,6 +167,7 @@ function ConfiguracoesPage() {
           cidade: form.cidade,
           form_url: form.form_url,
           form_declaracao_url: form.form_declaracao_url ?? "",
+          form_resposta_url: form.form_resposta_url ?? "",
           padrao_destinatario: form.padrao_destinatario,
           padrao_area_estagio: form.padrao_area_estagio,
           padrao_professor: form.padrao_professor,
@@ -163,6 +194,8 @@ function ConfiguracoesPage() {
       setForm(configAtual);
       setCorposModelo({});
       setCorposDeclaracao({});
+      setCorposResposta({});
+      await queryClient.invalidateQueries({ queryKey: ["modelos_declaracao_resposta"] });
       toast.success("Configurações salvas.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha ao salvar as configurações.");
@@ -301,6 +334,46 @@ function ConfiguracoesPage() {
           </>
         )}
       </section>
+
+      <section className="surface-card space-y-4 p-6">
+        <h2 className="text-sm font-medium">Modelos da declaração de resposta</h2>
+        <p className="text-xs text-muted-foreground">
+          Declaração de que o supervisor de campo preencheu a avaliação do estagiário. Um modelo por
+          curso; o sistema escolhe conforme o curso informado no formulário.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {(modelosResposta.data ?? []).map((m) => (
+            <Button
+              key={m.chave}
+              type="button"
+              size="sm"
+              variant={m.chave === respostaAtiva ? "default" : "outline"}
+              onClick={() => setRespostaAtiva(m.chave)}
+            >
+              {m.nome}
+            </Button>
+          ))}
+        </div>
+        {respostaSelecionada && (
+          <>
+            <p className="text-xs text-muted-foreground">
+              Curso atendido: {respostaSelecionada.cursos}
+            </p>
+            <RichEditor
+              key={respostaSelecionada.id}
+              rotulos={ROTULOS_DECLARACAO_RESPOSTA}
+              value={corposResposta[respostaSelecionada.chave] ?? respostaSelecionada.modelo_html}
+              minHeight={360}
+              placeholder="Texto da declaração…"
+              onChange={(html) =>
+                setCorposResposta((c) => ({ ...c, [respostaSelecionada.chave]: html }))
+              }
+            />
+          </>
+        )}
+      </section>
+
+      <OrientadoresCurso />
 
       <section className="surface-card grid gap-4 p-6 sm:grid-cols-2">
         <h2 className="text-sm font-medium sm:col-span-2">Numeração</h2>
@@ -463,6 +536,26 @@ function ConfiguracoesPage() {
         )}
       </section>
 
+      <section className="surface-card space-y-4 p-6">
+        <h2 className="text-sm font-medium">Formulário da declaração de resposta</h2>
+        <p className="text-xs text-muted-foreground">
+          Perguntas do formulário: Nome completo do supervisor, Curso, Tipo de avaliação (parcial ou
+          final), Nome do estagiário, Período e E-mail do supervisor. O documento é gerado e enviado
+          automaticamente ao professor orientador do curso.
+        </p>
+        <CampoTexto
+          label="Link do formulário"
+          valor={form.form_resposta_url ?? ""}
+          onChange={(v) => setForm({ ...form, form_resposta_url: v })}
+        />
+        {form.form_resposta_url && (
+          <iframe
+            src={form.form_resposta_url.replace("/viewform", "/viewform?embedded=true")}
+            title="Formulário da declaração de resposta"
+            className="h-[520px] w-full rounded-lg border"
+          />
+        )}
+      </section>
 
       <div className="flex justify-end">
         <Button onClick={salvar} disabled={salvando}>

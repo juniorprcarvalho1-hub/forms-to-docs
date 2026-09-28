@@ -105,13 +105,24 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes-resposta"
             ? "AVALIAÇÃO PARCIAL"
             : avaliacaoBruta;
 
+        const periodoFormulario = buscar([
+          "periodo",
+          "periododoestagiario",
+          "periododoaluno",
+          "periodoqueoalunoestamatriculado",
+          "periodoqueoestagiarioestamatriculado",
+          "periodomatriculado",
+          "semestre",
+        ]);
+        const periodo = periodoFormulario.match(/\d+/)?.[0] ?? periodoFormulario;
+
         const registro = {
           supervisor,
           estagiario,
           curso,
           modelo_chave: modeloChave,
           tipo_avaliacao: tipoAvaliacao,
-          periodo: texto("periodo", "periodomatriculado", "semestre").replace(/[^\d]/g, ""),
+          periodo,
           email_supervisor: texto("emaildosupervisor", "email", "enderecodeemail"),
           origem: "google_forms",
         };

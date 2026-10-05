@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
 import { montarDeclaracaoHtml, type Declaracao, type ModeloDeclaracao } from "./declaracoes";
+import {
+  montarDeclaracaoRespostaHtml,
+  type DeclaracaoResposta,
+  type ModeloDeclaracaoResposta,
+} from "./declaracoes-resposta";
 import { montarDocumentoHtml, type Configuracoes, type ModeloOficio, type Oficio } from "./oficios";
 
 const config = {
@@ -63,5 +68,26 @@ describe("fonte atual dos documentos", () => {
       [{ chave: "padrao", modelo_html: "<p>MODELO NOVO</p>" }] as ModeloOficio[],
     );
     expect(html).toBe("<p>EDIÇÃO MANUAL</p>");
+  });
+
+  test("declaração de resposta inclui automaticamente o período recebido", () => {
+    const resposta = {
+      supervisor: "Supervisor Teste",
+      estagiario: "Estagiário Teste",
+      curso: "Fisioterapia",
+      modelo_chave: "fisioterapia",
+      tipo_avaliacao: "AVALIAÇÃO PARCIAL",
+      periodo: "9",
+      data_emissao: "2026-10-05",
+      conteudo_html: null,
+    } as DeclaracaoResposta;
+    const modelos = [{
+      chave: "fisioterapia",
+      modelo_html: "<p>{{estagiario}} — {{periodo}}º período</p>",
+    }] as ModeloDeclaracaoResposta[];
+
+    const html = montarDeclaracaoRespostaHtml(resposta, modelos);
+    expect(html).toContain("Estagiário Teste — 9º período");
+    expect(html).not.toContain("{{periodo}}");
   });
 });

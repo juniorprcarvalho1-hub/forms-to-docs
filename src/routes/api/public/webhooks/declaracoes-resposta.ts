@@ -113,8 +113,12 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes-resposta"
           "periodoqueoestagiarioestamatriculado",
           "periodomatriculado",
           "semestre",
+          "semestredoestagiario",
+          "semestredoaluno",
+          "fase",
         ]);
-        const periodo = periodoFormulario.match(/\d+/)?.[0] ?? periodoFormulario;
+        const periodoNoCurso = cursoForm.match(/\d+/)?.[0] ?? "";
+        const periodo = periodoFormulario.match(/\d+/)?.[0] ?? periodoFormulario || periodoNoCurso;
 
         const registro = {
           supervisor,

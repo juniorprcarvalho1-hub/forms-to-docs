@@ -69,7 +69,12 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes-resposta"
           ["nomedosupervisor", "supervisor", "nomecompletodosupervisor", "nome"],
           ["estagiario", "aluno", "discente", "curso", "email"],
         );
-        if (!supervisor) return json({ error: "Campo Nome do supervisor não recebido" }, 422);
+        const primeiroNome =
+          Object.entries(payload).find(
+            ([k, v]) => k.includes("nome") && !k.includes("estagiario") && !k.includes("aluno") && String(v ?? "").trim(),
+          )?.[1] ?? "";
+        const supervisorFinal = supervisor || String(primeiroNome).trim() || "Supervisor(a) não informado";
+        console.log("[declaracoes-resposta] campos recebidos:", Object.keys(payload).join(", "));
 
         const estagiario = buscar(
           ["nomedoestagiario", "estagiario", "aluno", "nomedoaluno", "discente"],
@@ -121,7 +126,7 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes-resposta"
         const periodo = periodoFormulario.match(/\d+/)?.[0] ?? (periodoFormulario || periodoNoCurso);
 
         const registro = {
-          supervisor,
+          supervisor: supervisorFinal,
           estagiario,
           curso,
           modelo_chave: modeloChave,

@@ -110,20 +110,37 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes-resposta"
             ? "AVALIAÇÃO PARCIAL"
             : avaliacaoBruta;
 
-        const periodoFormulario = buscar([
+        // Período: só aceita respostas que contenham número (ex.: "7º"), evitando "Sim"/"Não".
+        const numeroDe = (v: unknown) => {
+          const m = String(v ?? "").trim().match(/^(\d{1,2})\s*(º|°|o|ª)?\s*(periodo|período|semestre)?\.?$/i);
+          return m?.[1] ?? "";
+        };
+        const chavesPeriodo = [
+          "estagiosupervisionado",
           "periodo",
-          "periododoestagiario",
-          "periododoaluno",
-          "periodoqueoalunoestamatriculado",
-          "periodoqueoestagiarioestamatriculado",
-          "periodomatriculado",
           "semestre",
-          "semestredoestagiario",
-          "semestredoaluno",
           "fase",
-        ]);
-        const periodoNoCurso = cursoForm.match(/\d+/)?.[0] ?? "";
-        const periodo = periodoFormulario.match(/\d+/)?.[0] ?? (periodoFormulario || periodoNoCurso);
+        ];
+        let periodo = "";
+        for (const alvo of chavesPeriodo) {
+          for (const [k, v] of Object.entries(payload)) {
+            if (k.includes(alvo) && numeroDe(v)) {
+              periodo = numeroDe(v);
+              break;
+            }
+          }
+          if (periodo) break;
+        }
+        if (!periodo) {
+          // Qualquer resposta que seja apenas um número de período (ex.: "7º").
+          for (const v of Object.values(payload)) {
+            if (numeroDe(v)) {
+              periodo = numeroDe(v);
+              break;
+            }
+          }
+        }
+        if (!periodo) periodo = cursoForm.match(/\d+/)?.[0] ?? "";
 
         const registro = {
           supervisor: supervisorFinal,

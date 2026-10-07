@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedControleRouteImport } from './routes/_authenticated/controle'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDeclaracoesRouteImport } from './routes/_authenticated/declaracoes'
 import { Route as AuthenticatedDeclaracoesRespostaRouteImport } from './routes/_authenticated/declaracoes-resposta'
@@ -41,6 +42,11 @@ const AuthenticatedConfiguracoesRoute =
     path: '/configuracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedControleRoute = AuthenticatedControleRouteImport.update({
+  id: '/controle',
+  path: '/controle',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/controle': typeof AuthenticatedControleRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/declaracoes': typeof AuthenticatedDeclaracoesRoute
   '/declaracoes-resposta': typeof AuthenticatedDeclaracoesRespostaRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/controle': typeof AuthenticatedControleRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/declaracoes': typeof AuthenticatedDeclaracoesRoute
   '/declaracoes-resposta': typeof AuthenticatedDeclaracoesRespostaRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/_authenticated/controle': typeof AuthenticatedControleRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/declaracoes': typeof AuthenticatedDeclaracoesRoute
   '/_authenticated/declaracoes-resposta': typeof AuthenticatedDeclaracoesRespostaRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/configuracoes'
+    | '/controle'
     | '/dashboard'
     | '/declaracoes'
     | '/declaracoes-resposta'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/configuracoes'
+    | '/controle'
     | '/dashboard'
     | '/declaracoes'
     | '/declaracoes-resposta'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/configuracoes'
+    | '/_authenticated/controle'
     | '/_authenticated/dashboard'
     | '/_authenticated/declaracoes'
     | '/_authenticated/declaracoes-resposta'
@@ -197,6 +209,13 @@ declare module '@tanstack/react-router' {
       path: '/configuracoes'
       fullPath: '/configuracoes'
       preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/controle': {
+      id: '/_authenticated/controle'
+      path: '/controle'
+      fullPath: '/controle'
+      preLoaderRoute: typeof AuthenticatedControleRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -253,6 +272,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
+  AuthenticatedControleRoute: typeof AuthenticatedControleRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeclaracoesRoute: typeof AuthenticatedDeclaracoesRoute
   AuthenticatedDeclaracoesRespostaRoute: typeof AuthenticatedDeclaracoesRespostaRoute
@@ -261,6 +281,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
+  AuthenticatedControleRoute: AuthenticatedControleRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeclaracoesRoute: AuthenticatedDeclaracoesRoute,
   AuthenticatedDeclaracoesRespostaRoute: AuthenticatedDeclaracoesRespostaRoute,

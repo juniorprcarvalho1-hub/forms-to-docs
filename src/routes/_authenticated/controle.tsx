@@ -90,18 +90,18 @@ function Controle() {
 
   async function salvarAss(campos: Record<string, unknown>) {
     const { error } = await supabase.from("assinatura").update({ ...campos, updated_at: new Date().toISOString() }).eq("id", true);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Salvo");
     qc.invalidateQueries({ queryKey: ["assinatura"] });
   }
 
   async function registrarPagamento() {
-    const p = PLANOS[plano];
+    const p = PLANOS[plano] ?? PLANOS["mensal"]!;
     const base = a && !vencido ? new Date(a.vencimento + "T12:00:00") : new Date();
     base.setMonth(base.getMonth() + p.meses);
     const novoVenc = base.toISOString().slice(0, 10);
     const { error } = await supabase.from("pagamentos").insert({ valor: p.valor, plano });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await salvarAss({ plano, valor: p.valor, vencimento: novoVenc, status: "ativa" });
     qc.invalidateQueries({ queryKey: ["pagamentos"] });
   }
@@ -115,7 +115,7 @@ function Controle() {
   async function bloquearIp() {
     if (!novoIp.trim()) return;
     const { error } = await supabase.from("ips_bloqueados").insert({ ip: novoIp.trim(), motivo });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setNovoIp("");
     setMotivo("");
     qc.invalidateQueries({ queryKey: ["ips"] });

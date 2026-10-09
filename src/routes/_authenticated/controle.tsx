@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 
-import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,9 +73,9 @@ function Controle() {
     }
   }, [ass.data]);
 
-  if (acesso.isLoading) return <AppShell><p>Carregando…</p></AppShell>;
+  if (acesso.isLoading) return <><p>Carregando…</p></>;
   if (!acesso.data?.admin)
-    return <AppShell><p className="text-muted-foreground">Área restrita ao administrador.</p></AppShell>;
+    return <><p className="text-muted-foreground">Área restrita ao administrador.</p></>;
 
   const a = ass.data;
   const vencido = a ? a.vencimento < new Date().toISOString().slice(0, 10) : false;
@@ -106,9 +105,15 @@ function Controle() {
     qc.invalidateQueries({ queryKey: ["pagamentos"] });
   }
 
-  async function excluirPagamento(id: string) {
-    if (!confirm("Excluir este pagamento?")) return;
-    await supabase.from("pagamentos").delete().eq("id", id);
+  async function excluirPagamento(id: string, planoPag: string) {
+    if (!confirm("Excluir este pagamento? O vencimento volta ao valor anterior.")) return;
+    const { error } = await supabase.from("pagamentos").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    if (a) {
+      const d = new Date(a.vencimento + "T12:00:00");
+      d.setMonth(d.getMonth() - (PLANOS[planoPag]?.meses ?? 1));
+      await salvarAss({ vencimento: d.toISOString().slice(0, 10) });
+    }
     qc.invalidateQueries({ queryKey: ["pagamentos"] });
   }
 
@@ -127,7 +132,7 @@ function Controle() {
   }
 
   return (
-    <AppShell>
+    <>
       <div className="mx-auto max-w-5xl space-y-6">
         <h1 className="text-2xl font-semibold">Painel de Controle</h1>
 
@@ -192,7 +197,7 @@ function Controle() {
                     <td>{PLANOS[p.plano]?.nome ?? p.plano}</td>
                     <td>{brl(Number(p.valor))}</td>
                     <td className="text-right">
-                      <Button size="icon" variant="ghost" onClick={() => excluirPagamento(p.id)} aria-label="Excluir">
+                      <Button size="icon" variant="ghost" onClick={() => excluirPagamento(p.id, p.plano)} aria-label="Excluir">
                         <Trash2 className="size-4" />
                       </Button>
                     </td>
@@ -218,6 +223,6 @@ function Controle() {
           ))}
         </Card>
       </div>
-    </AppShell>
+    </>
   );
 }

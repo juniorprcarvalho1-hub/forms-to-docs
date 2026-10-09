@@ -1,6 +1,8 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, Files, Award, FileCheck2, Settings, LogOut, Menu } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { verificarAcesso } from "@/lib/acesso.functions";
+import { LayoutDashboard, Files, Award, FileCheck2, Settings, LogOut, Menu, ShieldCheck } from "lucide-react";
 import facesf from "@/assets/facesf.png.asset.json";
 import nupep from "@/assets/nupep.png.asset.json";
 import clinica from "@/assets/clinica-escola.png.asset.json";
@@ -23,6 +25,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [aberto, setAberto] = useState(false);
+  const acessoFn = useServerFn(verificarAcesso);
+  const acesso = useQuery({ queryKey: ["acesso"], queryFn: () => acessoFn(), staleTime: 60_000 });
+  const itens = acesso.data?.admin
+    ? [...links, { to: "/controle", label: "Painel de Controle", icon: ShieldCheck } as const]
+    : links;
 
   async function sair() {
     await queryClient.cancelQueries();
@@ -33,7 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const nav = (
     <nav className="flex flex-col gap-1">
-      {links.map((l) => (
+      {itens.map((l) => (
         <Link
           key={l.to}
           to={l.to}
@@ -85,7 +92,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </aside>
         {aberto && <div className="w-full border-b bg-sidebar p-3 md:hidden">{nav}</div>}
-        <main className="min-w-0 flex-1 p-4 md:p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-4 md:p-8">
+          {acesso.data && !acesso.data.liberado ? (
+            <div className="mx-auto mt-20 max-w-md rounded-2xl border bg-card p-8 text-center">
+              <h1 className="mb-2 text-xl font-semibold">Acesso indisponível</h1>
+              <p className="text-muted-foreground">{acesso.data.motivo}</p>
+            </div>
+          ) : (
+            children
+          )}
+        </main>
       </div>
     </div>
   );

@@ -70,19 +70,19 @@
   --card-foreground: oklch(0.28 0.015 258);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.28 0.015 258);
-  --primary: oklch(0.556 0.187 259.6);
+  --primary: oklch(0.405 0.145 20);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.955 0.008 250);
   --secondary-foreground: oklch(0.35 0.02 258);
   --muted: oklch(0.962 0.004 250);
   --muted-foreground: oklch(0.55 0.017 256);
-  --accent: oklch(0.945 0.028 255);
-  --accent-foreground: oklch(0.44 0.15 259);
+  --accent: oklch(0.955 0.018 20);
+  --accent-foreground: oklch(0.405 0.145 20);
   --destructive: oklch(0.577 0.222 27.5);
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.905 0.006 255);
   --input: oklch(0.905 0.006 255);
-  --ring: oklch(0.556 0.187 259.6);
+  --ring: oklch(0.405 0.145 20);
   --chart-1: oklch(0.556 0.187 259.6);
   --chart-2: oklch(0.68 0.15 150);
   --chart-3: oklch(0.75 0.16 85);
@@ -90,12 +90,12 @@
   --chart-5: oklch(0.6 0.13 300);
   --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.3 0.015 258);
-  --sidebar-primary: oklch(0.556 0.187 259.6);
+  --sidebar-primary: oklch(0.405 0.145 20);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.945 0.028 255);
-  --sidebar-accent-foreground: oklch(0.44 0.15 259);
+  --sidebar-accent: oklch(0.955 0.018 20);
+  --sidebar-accent-foreground: oklch(0.405 0.145 20);
   --sidebar-border: oklch(0.92 0.005 255);
-  --sidebar-ring: oklch(0.556 0.187 259.6);
+  --sidebar-ring: oklch(0.405 0.145 20);
 }
 
 
@@ -253,4 +253,19 @@
 .pagina-a4 img.img-selecionada {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
+}
+
+.auth-scene { background: var(--card); }
+.auth-form { animation: auth-enter 600ms ease-out both; }
+@keyframes auth-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 767px) {
+  .auth-art { opacity: 0.12; object-position: left; }
+  .auth-content { justify-content: center; }
+  .auth-scene footer { justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-form { animation: none; }
 }

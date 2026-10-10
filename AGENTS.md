@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep login artwork decorative and separate from the original institution logo assets, so brand lettering stays faithful and readable.

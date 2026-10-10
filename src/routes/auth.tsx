@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import facesf from "@/assets/facesf.png.asset.json";
-import clinica from "@/assets/clinica-escola.png.asset.json";
+import clinica from "@/assets/clinica-escola-branca.png.asset.json";
+import nupes from "@/assets/nupes.png.asset.json";
 import nupep from "@/assets/nupep.png.asset.json";
 import technology from "@/assets/facesf-technology.jpg";
 import { ArrowRight, ShieldCheck } from "lucide-react";

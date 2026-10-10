@@ -159,6 +159,8 @@ function AuthPage() {
       <footer className="flex min-h-28 flex-wrap items-center justify-end gap-6 border-t border-border/60 bg-card/90 px-6 py-5 md:gap-10 md:px-12">
         <img src={clinica.url} alt="Clínica Escola de Saúde Integrada" className="h-auto w-44 object-contain" />
         <span className="h-10 w-px bg-border" aria-hidden="true" />
+        <img src={nupes.url} alt="NuPES — Núcleo de Práticas e Estudos em Saúde" className="h-auto w-36 object-contain" />
+        <span className="h-10 w-px bg-border" aria-hidden="true" />
         <img src={nupep.url} alt="NuPEP — Núcleo de Práticas e Estudos em Psicologia" className="h-auto w-32 object-contain" />
       </footer>
     </div>

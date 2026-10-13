@@ -131,29 +131,7 @@ function AuthPage() {
               {carregando ? "Aguarde…" : modo === "entrar" ? "Entrar" : "Criar conta"}<ArrowRight className="size-4" />
             </Button>
           </form>
-
-          <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            ou
-            <span className="h-px flex-1 bg-border" />
-          </div>
-
-          <Button variant="outline" className="h-12 w-full bg-card/80" onClick={entrarComGoogle}>
-            Continuar com Google
-          </Button>
         </div>
-
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          {modo === "entrar" ? "Ainda não tem conta?" : "Já possui conta?"}{" "}
-          <Button
-            type="button"
-            variant="link"
-            className="h-auto p-0 font-medium"
-            onClick={() => setModo(modo === "entrar" ? "criar" : "entrar")}
-          >
-            {modo === "entrar" ? "Criar conta" : "Entrar"}
-          </Button>
-        </p>
       </div>
       </main>
       <footer className="flex min-h-28 flex-wrap items-center justify-end gap-6 border-t border-border/60 bg-card/90 px-6 py-5 md:gap-10 md:px-12">

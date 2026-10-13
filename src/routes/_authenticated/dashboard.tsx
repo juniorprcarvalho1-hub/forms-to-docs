@@ -6,7 +6,16 @@ import { CalendarDays, FileStack, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { formatarData, type Oficio } from "@/lib/oficios";
+import { formatarData } from "@/lib/oficios";
+
+function Mini({ label, value }: { label: string; value?: number | undefined }) {
+  return (
+    <div className="surface-card p-3 text-center">
+      <p className="text-2xl font-light">{value ?? "—"}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -25,29 +34,35 @@ function Dashboard() {
   const [busca, setBusca] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard"],
+    queryKey: ["dashboard-todos"],
     queryFn: async () => {
       const inicioMes = new Date();
       inicioMes.setDate(1);
-      const inicio = inicioMes.toISOString().slice(0, 10);
-
-      const [total, mes, ultimos] = await Promise.all([
-        supabase.from("oficios").select("id", { count: "exact", head: true }),
-        supabase
-          .from("oficios")
-          .select("id", { count: "exact", head: true })
-          .gte("data", inicio),
-        supabase
-          .from("oficios")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(6),
+      inicioMes.setHours(0, 0, 0, 0);
+      const inicio = inicioMes.toISOString();
+      const tabelas = ["oficios", "declaracoes", "declaracoes_resposta"] as const;
+      const contagens = await Promise.all(
+        tabelas.flatMap((t) => [
+          supabase.from(t).select("id", { count: "exact", head: true }),
+          supabase.from(t).select("id", { count: "exact", head: true }).gte("created_at", inicio),
+        ]),
+      );
+      const [of, de, dr] = await Promise.all([
+        supabase.from("oficios").select("id,numero_formatado,nome,created_at").order("created_at", { ascending: false }).limit(6),
+        supabase.from("declaracoes").select("id,nome,created_at").order("created_at", { ascending: false }).limit(6),
+        supabase.from("declaracoes_resposta").select("id,supervisor,estagiario,created_at").order("created_at", { ascending: false }).limit(6),
       ]);
-
+      const itens = [
+        ...(of.data ?? []).map((o) => ({ id: "o" + o.id, tipo: o.numero_formatado, nome: o.nome, data: o.created_at, to: "/oficios" as const })),
+        ...(de.data ?? []).map((d) => ({ id: "d" + d.id, tipo: "Declaração de Preceptoria", nome: d.nome, data: d.created_at, to: "/declaracoes" as const })),
+        ...(dr.data ?? []).map((d) => ({ id: "r" + d.id, tipo: "Declaração de Resposta", nome: d.supervisor || d.estagiario, data: d.created_at, to: "/declaracoes-resposta" as const })),
+      ].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 8);
+      const c = contagens.map((r) => r.count ?? 0);
       return {
-        total: total.count ?? 0,
-        mes: mes.count ?? 0,
-        ultimos: (ultimos.data ?? []) as Oficio[],
+        total: c[0]! + c[2]! + c[4]!,
+        mes: c[1]! + c[3]! + c[5]!,
+        porTipo: { oficios: c[0]!, declaracoes: c[2]!, resposta: c[4]! },
+        ultimos: itens,
       };
     },
   });
@@ -57,7 +72,7 @@ function Dashboard() {
       <div>
         <h1 className="text-2xl font-normal">Painel</h1>
         <p className="text-sm text-muted-foreground">
-          Visão geral dos ofícios recebidos do Google Forms.
+          Visão geral de todos os documentos gerados no sistema.
         </p>
       </div>
 
@@ -72,7 +87,7 @@ function Dashboard() {
         <Input
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          placeholder="Pesquisar por número, nome, instituição ou assunto"
+          placeholder="Pesquisar ofícios por número, nome ou assunto"
           className="border-0 shadow-none focus-visible:ring-0"
         />
         <Button type="submit" size="sm">
@@ -83,7 +98,7 @@ function Dashboard() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Card
           icon={<FileStack className="size-5 text-primary" />}
-          label="Total de ofícios gerados"
+          label="Total de documentos gerados"
           value={isLoading ? "—" : String(data?.total ?? 0)}
         />
         <Card
@@ -92,27 +107,29 @@ function Dashboard() {
           value={isLoading ? "—" : String(data?.mes ?? 0)}
         />
       </div>
+      <div className="grid gap-4 grid-cols-3">
+        <Mini label="Ofícios" value={data?.porTipo.oficios} />
+        <Mini label="Decl. Preceptoria" value={data?.porTipo.declaracoes} />
+        <Mini label="Decl. Resposta" value={data?.porTipo.resposta} />
+      </div>
 
       <section className="surface-card overflow-hidden">
         <header className="flex items-center justify-between border-b px-5 py-4">
           <h2 className="text-sm font-medium">Últimos documentos</h2>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/oficios" search={{ q: "" }}>
-              Ver todos
-            </Link>
-          </Button>
         </header>
         <ul className="divide-y">
           {(data?.ultimos ?? []).map((o) => (
-            <li key={o.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3">
-              <span className="text-sm font-medium">{o.numero_formatado}</span>
-              <span className="text-sm text-muted-foreground">{o.nome}</span>
-              <span className="ml-auto text-xs text-muted-foreground">{formatarData(o.data)}</span>
+            <li key={o.id}>
+              <Link to={o.to} search={{ q: "" }} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 hover:bg-muted/50">
+                <span className="text-sm font-medium">{o.tipo}</span>
+                <span className="text-sm text-muted-foreground">{o.nome}</span>
+                <span className="ml-auto text-xs text-muted-foreground">{formatarData(o.data.slice(0, 10))}</span>
+              </Link>
             </li>
           ))}
           {!isLoading && (data?.ultimos.length ?? 0) === 0 && (
             <li className="px-5 py-10 text-center text-sm text-muted-foreground">
-              Nenhum ofício ainda. Assim que o Google Forms enviar uma resposta, ela aparece aqui.
+              Nenhum documento ainda.
             </li>
           )}
         </ul>

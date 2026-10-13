@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { formatarData } from "@/lib/oficios";
 
-function Mini({ label, value }: { label: string; value?: number }) {
+function Mini({ label, value }: { label: string; value?: number | undefined }) {
   return (
     <div className="surface-card p-3 text-center">
       <p className="text-2xl font-light">{value ?? "—"}</p>
@@ -120,7 +120,7 @@ function Dashboard() {
         <ul className="divide-y">
           {(data?.ultimos ?? []).map((o) => (
             <li key={o.id}>
-              <Link to={o.to} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 hover:bg-muted/50">
+              <Link to={o.to} search={{ q: "" }} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 hover:bg-muted/50">
                 <span className="text-sm font-medium">{o.tipo}</span>
                 <span className="text-sm text-muted-foreground">{o.nome}</span>
                 <span className="ml-auto text-xs text-muted-foreground">{formatarData(o.data.slice(0, 10))}</span>

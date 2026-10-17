@@ -1,3 +1,4 @@
+import { validarTokenLegado } from "@/lib/webhook-legado.server";
 import { createFileRoute } from "@tanstack/react-router";
 
 function json(body: unknown, status = 200) {
@@ -41,7 +42,7 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes-resposta"
         }
 
         const token = request.headers.get("x-webhook-token") ?? String(payload["token"] ?? "");
-        if (!token || token !== cfg["webhook_token"]) {
+        if (!(await validarTokenLegado(supabaseAdmin, token, cfg["webhook_token"]))) {
           return json({ error: "Token inválido" }, 401);
         }
 
@@ -71,9 +72,14 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes-resposta"
         );
         const primeiroNome =
           Object.entries(payload).find(
-            ([k, v]) => k.includes("nome") && !k.includes("estagiario") && !k.includes("aluno") && String(v ?? "").trim(),
+            ([k, v]) =>
+              k.includes("nome") &&
+              !k.includes("estagiario") &&
+              !k.includes("aluno") &&
+              String(v ?? "").trim(),
           )?.[1] ?? "";
-        const supervisorFinal = supervisor || String(primeiroNome).trim() || "Supervisor(a) não informado";
+        const supervisorFinal =
+          supervisor || String(primeiroNome).trim() || "Supervisor(a) não informado";
         console.log("[declaracoes-resposta] campos recebidos:", Object.keys(payload).join(", "));
 
         const estagiario = buscar(
@@ -112,15 +118,12 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes-resposta"
 
         // Período: só aceita respostas que contenham número (ex.: "7º"), evitando "Sim"/"Não".
         const numeroDe = (v: unknown) => {
-          const m = String(v ?? "").trim().match(/^(\d{1,2})\s*(º|°|o|ª)?\s*(periodo|período|semestre)?\.?$/i);
+          const m = String(v ?? "")
+            .trim()
+            .match(/^(\d{1,2})\s*(º|°|o|ª)?\s*(periodo|período|semestre)?\.?$/i);
           return m?.[1] ?? "";
         };
-        const chavesPeriodo = [
-          "estagiosupervisionado",
-          "periodo",
-          "semestre",
-          "fase",
-        ];
+        const chavesPeriodo = ["estagiosupervisionado", "periodo", "semestre", "fase"];
         let periodo = "";
         for (const alvo of chavesPeriodo) {
           for (const [k, v] of Object.entries(payload)) {

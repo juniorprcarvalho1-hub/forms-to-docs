@@ -1,4 +1,5 @@
 import { formatarData } from "./oficios";
+import { preencherModeloSeguro } from "./modelo-seguro";
 
 export type DeclaracaoResposta = {
   id: string;
@@ -90,11 +91,7 @@ export function montarDeclaracaoRespostaHtml(
     data_emissao: formatarData(declaracao.data_emissao),
   };
 
-  const substituido = Object.entries(mapa).reduce(
-    (texto, [nome, valor]) => texto.replaceAll(`{{${nome}}}`, valor ?? ""),
-    modelo,
-  );
-  return substituido.replace(/\{\{[^}]+\}\}/g, "");
+  return preencherModeloSeguro(modelo, mapa);
 }
 
 /** Assunto e corpo do e-mail enviado ao professor orientador do curso. */

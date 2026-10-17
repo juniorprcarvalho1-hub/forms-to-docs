@@ -17,10 +17,13 @@ import { Route as AuthenticatedControleRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDeclaracoesRouteImport } from './routes/_authenticated/declaracoes'
 import { Route as AuthenticatedDeclaracoesRespostaRouteImport } from './routes/_authenticated/declaracoes-resposta'
+import { Route as AuthenticatedImportacoesRouteImport } from './routes/_authenticated/importacoes'
 import { Route as AuthenticatedOficiosRouteImport } from './routes/_authenticated/oficios'
+import { Route as AuthenticatedPacientesRouteImport } from './routes/_authenticated/pacientes'
 import { Route as ApiPublicWebhooksDeclaracoesRouteImport } from './routes/api/public/webhooks/declaracoes'
 import { Route as ApiPublicWebhooksDeclaracoesRespostaRouteImport } from './routes/api/public/webhooks/declaracoes-resposta'
 import { Route as ApiPublicWebhooksOficiosRouteImport } from './routes/api/public/webhooks/oficios'
+import { Route as ApiPublicWebhooksPacientesRouteImport } from './routes/api/public/webhooks/pacientes'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -64,9 +67,20 @@ const AuthenticatedDeclaracoesRespostaRoute =
     path: '/declaracoes-resposta',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedImportacoesRoute =
+  AuthenticatedImportacoesRouteImport.update({
+    id: '/importacoes',
+    path: '/importacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOficiosRoute = AuthenticatedOficiosRouteImport.update({
   id: '/oficios',
   path: '/oficios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPacientesRoute = AuthenticatedPacientesRouteImport.update({
+  id: '/pacientes',
+  path: '/pacientes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiPublicWebhooksDeclaracoesRoute =
@@ -87,6 +101,12 @@ const ApiPublicWebhooksOficiosRoute =
     path: '/api/public/webhooks/oficios',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicWebhooksPacientesRoute =
+  ApiPublicWebhooksPacientesRouteImport.update({
+    id: '/api/public/webhooks/pacientes',
+    path: '/api/public/webhooks/pacientes',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,10 +116,13 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/declaracoes': typeof AuthenticatedDeclaracoesRoute
   '/declaracoes-resposta': typeof AuthenticatedDeclaracoesRespostaRoute
+  '/importacoes': typeof AuthenticatedImportacoesRoute
   '/oficios': typeof AuthenticatedOficiosRoute
+  '/pacientes': typeof AuthenticatedPacientesRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
   '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
+  '/api/public/webhooks/pacientes': typeof ApiPublicWebhooksPacientesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -109,10 +132,13 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/declaracoes': typeof AuthenticatedDeclaracoesRoute
   '/declaracoes-resposta': typeof AuthenticatedDeclaracoesRespostaRoute
+  '/importacoes': typeof AuthenticatedImportacoesRoute
   '/oficios': typeof AuthenticatedOficiosRoute
+  '/pacientes': typeof AuthenticatedPacientesRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
   '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
+  '/api/public/webhooks/pacientes': typeof ApiPublicWebhooksPacientesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -124,10 +150,13 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/declaracoes': typeof AuthenticatedDeclaracoesRoute
   '/_authenticated/declaracoes-resposta': typeof AuthenticatedDeclaracoesRespostaRoute
+  '/_authenticated/importacoes': typeof AuthenticatedImportacoesRoute
   '/_authenticated/oficios': typeof AuthenticatedOficiosRoute
+  '/_authenticated/pacientes': typeof AuthenticatedPacientesRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
   '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
+  '/api/public/webhooks/pacientes': typeof ApiPublicWebhooksPacientesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -139,10 +168,13 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/declaracoes'
     | '/declaracoes-resposta'
+    | '/importacoes'
     | '/oficios'
+    | '/pacientes'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/declaracoes-resposta'
     | '/api/public/webhooks/oficios'
+    | '/api/public/webhooks/pacientes'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -152,10 +184,13 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/declaracoes'
     | '/declaracoes-resposta'
+    | '/importacoes'
     | '/oficios'
+    | '/pacientes'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/declaracoes-resposta'
     | '/api/public/webhooks/oficios'
+    | '/api/public/webhooks/pacientes'
   id:
     | '__root__'
     | '/'
@@ -166,10 +201,13 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/declaracoes'
     | '/_authenticated/declaracoes-resposta'
+    | '/_authenticated/importacoes'
     | '/_authenticated/oficios'
+    | '/_authenticated/pacientes'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/declaracoes-resposta'
     | '/api/public/webhooks/oficios'
+    | '/api/public/webhooks/pacientes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -179,6 +217,7 @@ export interface RootRouteChildren {
   ApiPublicWebhooksDeclaracoesRoute: typeof ApiPublicWebhooksDeclaracoesRoute
   ApiPublicWebhooksDeclaracoesRespostaRoute: typeof ApiPublicWebhooksDeclaracoesRespostaRoute
   ApiPublicWebhooksOficiosRoute: typeof ApiPublicWebhooksOficiosRoute
+  ApiPublicWebhooksPacientesRoute: typeof ApiPublicWebhooksPacientesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -239,11 +278,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDeclaracoesRespostaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/importacoes': {
+      id: '/_authenticated/importacoes'
+      path: '/importacoes'
+      fullPath: '/importacoes'
+      preLoaderRoute: typeof AuthenticatedImportacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/oficios': {
       id: '/_authenticated/oficios'
       path: '/oficios'
       fullPath: '/oficios'
       preLoaderRoute: typeof AuthenticatedOficiosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pacientes': {
+      id: '/_authenticated/pacientes'
+      path: '/pacientes'
+      fullPath: '/pacientes'
+      preLoaderRoute: typeof AuthenticatedPacientesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/webhooks/declaracoes': {
@@ -267,6 +320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksOficiosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhooks/pacientes': {
+      id: '/api/public/webhooks/pacientes'
+      path: '/api/public/webhooks/pacientes'
+      fullPath: '/api/public/webhooks/pacientes'
+      preLoaderRoute: typeof ApiPublicWebhooksPacientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -276,7 +336,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeclaracoesRoute: typeof AuthenticatedDeclaracoesRoute
   AuthenticatedDeclaracoesRespostaRoute: typeof AuthenticatedDeclaracoesRespostaRoute
+  AuthenticatedImportacoesRoute: typeof AuthenticatedImportacoesRoute
   AuthenticatedOficiosRoute: typeof AuthenticatedOficiosRoute
+  AuthenticatedPacientesRoute: typeof AuthenticatedPacientesRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -285,7 +347,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeclaracoesRoute: AuthenticatedDeclaracoesRoute,
   AuthenticatedDeclaracoesRespostaRoute: AuthenticatedDeclaracoesRespostaRoute,
+  AuthenticatedImportacoesRoute: AuthenticatedImportacoesRoute,
   AuthenticatedOficiosRoute: AuthenticatedOficiosRoute,
+  AuthenticatedPacientesRoute: AuthenticatedPacientesRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -299,6 +363,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicWebhooksDeclaracoesRespostaRoute:
     ApiPublicWebhooksDeclaracoesRespostaRoute,
   ApiPublicWebhooksOficiosRoute: ApiPublicWebhooksOficiosRoute,
+  ApiPublicWebhooksPacientesRoute: ApiPublicWebhooksPacientesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

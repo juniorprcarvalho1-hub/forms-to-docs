@@ -1,3 +1,5 @@
+import { preencherModeloSeguro } from "./modelo-seguro";
+
 export type Oficio = {
   id: string;
   numero: number;
@@ -140,16 +142,7 @@ export function renderizarModelo(modelo: string, oficio: Oficio, config?: Config
     assunto: oficio.assunto,
   };
 
-  const substituido = Object.entries(mapa).reduce(
-    (texto, [chave, valor]) => texto.replaceAll(`{{${chave}}}`, valor),
-    modelo,
-  );
-  return limparTagsResiduais(substituido);
-}
-
-/** Remove tags automáticas que não foram preenchidas, evitando exibir "}}" no documento final. */
-function limparTagsResiduais(texto: string) {
-  return texto.replace(/\{\{[^}]+\}\}/g, "");
+  return preencherModeloSeguro(modelo, mapa);
 }
 
 function escaparHtml(texto: string) {

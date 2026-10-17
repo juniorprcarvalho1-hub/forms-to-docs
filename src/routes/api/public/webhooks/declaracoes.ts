@@ -1,3 +1,4 @@
+import { validarTokenLegado } from "@/lib/webhook-legado.server";
 import { createFileRoute } from "@tanstack/react-router";
 
 function json(body: unknown, status = 200) {
@@ -41,7 +42,7 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes")({
         }
 
         const token = request.headers.get("x-webhook-token") ?? String(payload["token"] ?? "");
-        if (!token || token !== cfg["webhook_token"]) {
+        if (!(await validarTokenLegado(supabaseAdmin, token, cfg["webhook_token"]))) {
           return json({ error: "Token inválido" }, 401);
         }
 
@@ -71,7 +72,6 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes")({
           ["aluno", "estudante", "discente", "curso", "hospital", "email"],
         );
         if (!nome) return json({ error: "Campo Nome não recebido" }, 422);
-
 
         const cursoForm = texto("curso", "cursodeestagio", "areadeestagio", "area");
 
@@ -120,12 +120,12 @@ export const Route = createFileRoute("/api/public/webhooks/declaracoes")({
             : campoForm,
           data_inicio: texto("datainicio", "datadeinicio", "inicio", "periodoinicio"),
           data_fim: texto("datafim", "datadefim", "fim", "periodofim", "termino"),
-          carga_horaria: String(campoCad?.carga_horaria ?? "") || String(cfg["padrao_carga_horaria"] ?? ""),
+          carga_horaria:
+            String(campoCad?.carga_horaria ?? "") || String(cfg["padrao_carga_horaria"] ?? ""),
           alunos: texto("alunos", "nomedosalunos", "nomedoaluno", "estudantes", "discentes"),
           email: texto("emaildopreceptor", "email", "enderecodeemail"),
           origem: "google_forms",
         };
-
 
         const { data: inserido, error } = await supabaseAdmin
           .from("declaracoes")

@@ -1,3 +1,4 @@
+import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -139,7 +140,7 @@ function DeclaracoesRespostaPage() {
     try {
       const html = await montarHtmlAtual(declaracao);
       const blob = await gerarPdfDeHtml(html);
-      const path = `declaracoes-resposta/${declaracao.id}.pdf`;
+      const path = await caminhoPrivadoDocumento(`declaracoes-resposta/${declaracao.id}.pdf`);
       try {
         await uploadArquivo(path, blob, "application/pdf");
         await supabase.from("declaracoes_resposta").update({ pdf_path: path }).eq("id", declaracao.id);
@@ -173,7 +174,7 @@ function DeclaracoesRespostaPage() {
       const nomeArquivo = `Declaracao-${declaracao.supervisor.replace(/[^\w]+/g, "-")}.pdf`;
 
       try {
-        const path = `declaracoes-resposta/${declaracao.id}.pdf`;
+        const path = await caminhoPrivadoDocumento(`declaracoes-resposta/${declaracao.id}.pdf`);
         await uploadArquivo(path, blob, "application/pdf");
         await supabase.from("declaracoes_resposta").update({ pdf_path: path }).eq("id", declaracao.id);
       } catch {

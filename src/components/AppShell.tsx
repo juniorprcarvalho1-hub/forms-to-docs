@@ -2,7 +2,18 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { verificarAcesso } from "@/lib/acesso.functions";
-import { LayoutDashboard, Files, Award, FileCheck2, Settings, LogOut, Menu, ShieldCheck } from "lucide-react";
+import {
+  LayoutDashboard,
+  Files,
+  Award,
+  FileCheck2,
+  Settings,
+  LogOut,
+  Menu,
+  ShieldCheck,
+  Users,
+  Upload,
+} from "lucide-react";
 import facesf from "@/assets/facesf.png.asset.json";
 import nupep from "@/assets/nupep.png.asset.json";
 import clinica from "@/assets/clinica-escola.png.asset.json";
@@ -17,6 +28,7 @@ const links = [
   { to: "/oficios", label: "Ofícios", icon: Files },
   { to: "/declaracoes", label: "Declarações", icon: Award },
   { to: "/declaracoes-resposta", label: "Declarações de Resposta", icon: FileCheck2 },
+  { to: "/importacoes", label: "Importar dados", icon: Upload },
   { to: "/configuracoes", label: "Configurações", icon: Settings },
 ] as const;
 
@@ -28,7 +40,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const acessoFn = useServerFn(verificarAcesso);
   const acesso = useQuery({ queryKey: ["acesso"], queryFn: () => acessoFn(), staleTime: 60_000 });
   const itens = acesso.data?.admin
-    ? [...links, { to: "/controle", label: "Painel de Controle", icon: ShieldCheck } as const]
+    ? [
+        ...links,
+        { to: "/configuracoes", label: "Configurações", icon: Settings } as const,
+        { to: "/pacientes", label: "Pacientes", icon: Users } as const,
+        { to: "/controle", label: "Painel de Controle", icon: ShieldCheck } as const,
+      ]
     : links;
 
   async function sair() {
@@ -93,7 +110,21 @@ export function AppShell({ children }: { children: ReactNode }) {
         </aside>
         {aberto && <div className="w-full border-b bg-sidebar p-3 md:hidden">{nav}</div>}
         <main className="min-w-0 flex-1 p-4 md:p-8">
-          {acesso.data && !acesso.data.liberado ? (
+          {acesso.isPending ? (
+            <p role="status" className="p-6 text-sm text-muted-foreground">
+              Verificando acesso…
+            </p>
+          ) : acesso.isError ? (
+            <div role="alert" className="mx-auto mt-12 max-w-lg rounded-2xl border bg-card p-6">
+              <h1 className="text-xl font-semibold">Não foi possível verificar seu acesso</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Tente novamente antes de continuar.
+              </p>
+              <Button className="mt-4" onClick={() => void acesso.refetch()}>
+                Tentar novamente
+              </Button>
+            </div>
+          ) : acesso.data && !acesso.data.liberado ? (
             <div className="mx-auto mt-20 max-w-md rounded-2xl border bg-card p-8 text-center">
               <h1 className="mb-2 text-xl font-semibold">Acesso indisponível</h1>
               <p className="text-muted-foreground">{acesso.data.motivo}</p>

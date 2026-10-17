@@ -1,3 +1,4 @@
+import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -118,7 +119,7 @@ function OficiosPage() {
     try {
       const fontes = await buscarFontesOficioAtuais();
       const blob = await gerarPdfDeHtml(montarDocumentoHtml(oficio, fontes.config, fontes.modelos));
-      const path = `documentos/${oficio.ano}/${oficio.numero_formatado.replace(/[^\w]+/g, "-")}.pdf`;
+      const path = await caminhoPrivadoDocumento(`documentos/${oficio.ano}/${oficio.numero_formatado.replace(/[^\w]+/g, "-")}.pdf`);
       try {
         await uploadArquivo(path, blob, "application/pdf");
         await supabase.from("oficios").update({ pdf_path: path }).eq("id", oficio.id);

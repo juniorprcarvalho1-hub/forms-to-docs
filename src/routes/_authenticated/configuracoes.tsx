@@ -1,3 +1,6 @@
+import { useServerFn } from "@tanstack/react-start";
+import { verificarAcesso } from "@/lib/acesso.functions";
+import { IntegracoesLegadas } from "@/components/IntegracoesLegadas";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -49,6 +52,19 @@ export const Route = createFileRoute("/_authenticated/configuracoes")({
 });
 
 function ConfiguracoesPage() {
+  const acessoFn = useServerFn(verificarAcesso);
+  const acesso = useQuery({ queryKey: ["acesso"], queryFn: () => acessoFn() });
+  if (acesso.isPending) return <p role="status">Verificando permissões…</p>;
+  if (!acesso.data?.admin) return <p role="alert">Configurações restritas a administradores.</p>;
+  return (
+    <>
+      <IntegracoesLegadas />
+      <ConfiguracoesEditor />
+    </>
+  );
+}
+
+function ConfiguracoesEditor() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<Configuracoes | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -71,7 +87,6 @@ function ConfiguracoesPage() {
   });
   const respostaSelecionada = (modelosResposta.data ?? []).find((m) => m.chave === respostaAtiva);
 
-
   const modelosDeclaracao = useQuery({
     queryKey: ["modelos_declaracao"],
     queryFn: async () => {
@@ -91,9 +106,7 @@ function ConfiguracoesPage() {
     queryFn: async () => {
       const data = await buscarModelosOficioAtuais();
       const ordem = ["padrao", "nutricao", "psicologia"];
-      return data.sort(
-        (a, b) => ordem.indexOf(a.chave) - ordem.indexOf(b.chave),
-      );
+      return data.sort((a, b) => ordem.indexOf(a.chave) - ordem.indexOf(b.chave));
     },
   });
   const modeloSelecionado = (modelos.data ?? []).find((m) => m.chave === modeloAtivo);
@@ -126,7 +139,8 @@ function ConfiguracoesPage() {
           .select("modelo_html")
           .single();
         if (error) throw error;
-        if (confirmado.modelo_html !== html) throw new Error(`O modelo ${modelo.nome} não foi confirmado pelo banco.`);
+        if (confirmado.modelo_html !== html)
+          throw new Error(`O modelo ${modelo.nome} não foi confirmado pelo banco.`);
       }
       const modeloDeclaracaoEditado = corposDeclaracao[declaracaoAtiva];
       if (modeloDeclaracaoEditado !== undefined) {
@@ -218,7 +232,7 @@ function ConfiguracoesPage() {
 
   if (!form) return <p className="text-sm text-muted-foreground">Carregando…</p>;
 
-  const endpoint = "https://forms-to-docs.lovable.app/api/public/webhooks/oficios";
+  const endpoint = `${window.location.origin}/api/public/webhooks/oficios`;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -282,7 +296,6 @@ function ConfiguracoesPage() {
             </>
           )}
         </div>
-
 
         <div className="space-y-2">
           <Label>Rodapé</Label>
@@ -384,9 +397,7 @@ function ConfiguracoesPage() {
             value={form.formato_numeracao}
             onChange={(e) => setForm({ ...form, formato_numeracao: e.target.value })}
           />
-          <p className="text-xs text-muted-foreground">
-            Use seq e ano para montar a numeração.
-          </p>
+          <p className="text-xs text-muted-foreground">Use seq e ano para montar a numeração.</p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="digitos">Dígitos</Label>
@@ -437,15 +448,17 @@ function ConfiguracoesPage() {
 
       <CadastrosAuxiliares />
 
-
-
       <section className="surface-card grid gap-4 p-6 sm:grid-cols-2">
         <h2 className="text-sm font-medium sm:col-span-2">Dados padrão do ofício de estágio</h2>
         <p className="text-xs text-muted-foreground sm:col-span-2">
-          Usados quando o Google Forms não envia o campo (o formulário atual envia Aluno, CPF,
-          Curso e Matrícula).
+          Usados quando o Google Forms não envia o campo (o formulário atual envia Aluno, CPF, Curso
+          e Matrícula).
         </p>
-        <CampoTexto label="Cidade" valor={form.cidade} onChange={(v) => setForm({ ...form, cidade: v })} />
+        <CampoTexto
+          label="Cidade"
+          valor={form.cidade}
+          onChange={(v) => setForm({ ...form, cidade: v })}
+        />
         <CampoTexto
           label="Destinatário"
           valor={form.padrao_destinatario}

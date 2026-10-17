@@ -1,3 +1,4 @@
+import { validarTokenLegado } from "@/lib/webhook-legado.server";
 import { createFileRoute } from "@tanstack/react-router";
 
 function json(body: unknown, status = 200) {
@@ -51,9 +52,8 @@ export const Route = createFileRoute("/api/public/webhooks/oficios")({
           payload[normalizar(chave)] = Array.isArray(valor) ? valor[0] : valor;
         }
 
-        const token =
-          request.headers.get("x-webhook-token") ?? String(payload["token"] ?? "");
-        if (!token || token !== cfg["webhook_token"]) {
+        const token = request.headers.get("x-webhook-token") ?? String(payload["token"] ?? "");
+        if (!(await validarTokenLegado(supabaseAdmin, token, cfg["webhook_token"]))) {
           return json({ error: "Token inválido" }, 401);
         }
 
@@ -161,7 +161,6 @@ export const Route = createFileRoute("/api/public/webhooks/oficios")({
           coordenador: texto("coordenador") || padrao("padrao_coordenador"),
           origem: texto("origem") || "google_forms",
         };
-
 
         for (let tentativa = 0; tentativa < 5; tentativa++) {
           const { data: ultimo } = await supabaseAdmin

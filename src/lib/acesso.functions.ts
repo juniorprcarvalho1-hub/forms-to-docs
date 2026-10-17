@@ -19,11 +19,24 @@ export const verificarAcesso = createServerFn({ method: "GET" })
       req.headers.get("x-real-ip") ||
       "desconhecido";
 
-    const { data: admin } = await context.supabase.rpc("has_role", {
+    const { data: admin, error: erroPapel } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
       _role: "admin",
     });
+    if (erroPapel) throw new Error("Não foi possível verificar as permissões.");
     if (admin) return { liberado: true, admin: true, ip, motivo: null };
+    const { data: aprovado, error: erroAprovacao } = await context.supabase.rpc(
+      "acesso_documentos_aprovado",
+      {},
+    );
+    if (erroAprovacao || !aprovado)
+      return {
+        liberado: false,
+        admin: false,
+        ip,
+        motivo:
+          "Acesso ainda não autorizado. Solicite a aprovação de um administrador e a ativação das políticas no banco.",
+      };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: bloqueio } = await supabaseAdmin
@@ -31,13 +44,32 @@ export const verificarAcesso = createServerFn({ method: "GET" })
       .select("id")
       .eq("ip", ip)
       .maybeSingle();
-    if (bloqueio) return { liberado: false, admin: false, ip, motivo: "Acesso bloqueado para este endereço de rede." };
+    if (bloqueio)
+      return {
+        liberado: false,
+        admin: false,
+        ip,
+        motivo: "Acesso bloqueado para este endereço de rede.",
+      };
 
-    const { data: ass } = await supabaseAdmin.from("assinatura").select("status, vencimento").maybeSingle();
+    const { data: ass } = await supabaseAdmin
+      .from("assinatura")
+      .select("status, vencimento")
+      .maybeSingle();
     if (ass?.status === "bloqueada")
-      return { liberado: false, admin: false, ip, motivo: "Acesso suspenso. Entre em contato com o administrador." };
+      return {
+        liberado: false,
+        admin: false,
+        ip,
+        motivo: "Acesso suspenso. Entre em contato com o administrador.",
+      };
     if (ass && ass.vencimento < new Date().toISOString().slice(0, 10))
-      return { liberado: false, admin: false, ip, motivo: "Assinatura vencida. Entre em contato com o administrador para renovar." };
+      return {
+        liberado: false,
+        admin: false,
+        ip,
+        motivo: "Assinatura vencida. Entre em contato com o administrador para renovar.",
+      };
 
     return { liberado: true, admin: false, ip, motivo: null };
   });

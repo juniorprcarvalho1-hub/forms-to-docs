@@ -1,4 +1,5 @@
 import { formatarData, type Configuracoes } from "./oficios";
+import { preencherModeloSeguro } from "./modelo-seguro";
 
 export type Declaracao = {
   id: string;
@@ -179,11 +180,7 @@ export function montarDeclaracaoHtml(
   const doCurso = modelos.find((m) => m.chave === chave)?.modelo_html;
   const modelo = (doCurso ?? config.modelo_declaracao_html ?? "").trim();
 
-  const substituido = Object.entries(mapa).reduce(
-    (texto, [chave, valor]) => texto.replaceAll(`{{${chave}}}`, valor),
-    modelo,
-  );
-  return substituido.replace(/\{\{[^}]+\}\}/g, "");
+  return preencherModeloSeguro(modelo, mapa);
 }
 
 

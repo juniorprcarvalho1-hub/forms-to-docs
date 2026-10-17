@@ -1,3 +1,4 @@
+import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -136,7 +137,7 @@ function DeclaracoesPage() {
       if (!html) throw new Error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
       const blob = await gerarPdfDeHtml(html);
 
-      const path = `declaracoes/${declaracao.id}.pdf`;
+      const path = await caminhoPrivadoDocumento(`declaracoes/${declaracao.id}.pdf`);
       try {
         await uploadArquivo(path, blob, "application/pdf");
         await supabase.from("declaracoes").update({ pdf_path: path }).eq("id", declaracao.id);
@@ -169,7 +170,7 @@ function DeclaracoesPage() {
       const arquivo = `Declaracao-${declaracao.nome.replace(/[^\w]+/g, "-")}.pdf`;
       let link: string | undefined;
       try {
-        const path = `declaracoes/${declaracao.id}.pdf`;
+        const path = await caminhoPrivadoDocumento(`declaracoes/${declaracao.id}.pdf`);
         await uploadArquivo(path, blob, "application/pdf");
         await supabase.from("declaracoes").update({ pdf_path: path }).eq("id", declaracao.id);
         link = await urlAssinada(path);

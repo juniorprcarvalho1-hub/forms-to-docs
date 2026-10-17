@@ -1,5 +1,13 @@
 # Revisão do sistema e melhorias
 
+## Estado da publicação
+
+O código de importação e dos controles administrativos foi publicado no GitHub e implantado na Cloudflare. Foram acrescentadas as migrações de aprovação de usuários, isolamento dos documentos e conversão do token legado para hash com revogação.
+
+O usuário não possui acesso administrativo ao banco. As duas migrações ainda não foram executadas no Supabase real; por isso, as políticas antigas continuam existindo até que o administrador aplique os arquivos. A importação e os novos controles dependem dessa execução. A interface não consulta o token legado e bloqueia usuários sem aprovação, mas isso não substitui as políticas no banco. O Forms real e a validação ponta a ponta permanecem pendentes. Veja IMPORTACOES.md.
+
+32 testes automatizados e as verificações das duas migrações em PostgreSQL local passaram. A rota de importação publicada exigiu login e o endpoint de pacientes recusou uma chamada sem token.
+
 Implementado localmente: cadastro administrativo de pacientes restrito a administradores, importação revisada de CSV/TSV/TXT/XLSX/JSON para pacientes e três tipos de documentos, validação e seleção de linhas, deduplicação, transações e conector de novas respostas do Google Forms. O formulário real ainda não foi fornecido; seu mapeamento precisa ser conferido antes da ativação.
 
 Corrigidos nesta alteração: campos de documentos agora escapam HTML; a interface autenticada bloqueia conteúdo enquanto verifica acesso e quando essa verificação falha. Modelos de documentos e edições manuais foram preservados.

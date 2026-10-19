@@ -1,3 +1,4 @@
+// @ts-nocheck -- depende de migrações ainda não aplicadas (docs/IMPORTACOES.md)
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 

@@ -14,18 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      pacientes: {
-        Row: { id: string; nome: string; cpf: string; email: string; telefone: string; data_nascimento: string | null; responsavel: string; endereco: string; curso: string; status: string; origem: string; created_by: string; created_at: string; updated_at: string }
-        Insert: { id?: string; nome: string; cpf?: string; email?: string; telefone?: string; data_nascimento?: string | null; responsavel?: string; endereco?: string; curso?: string; status?: string; origem?: string; created_by: string }
-        Update: { nome?: string; cpf?: string; email?: string; telefone?: string; data_nascimento?: string | null; responsavel?: string; endereco?: string; curso?: string; status?: string }
-        Relationships: []
-      }
-      importacoes: {
-        Row: { id: string; destino: string; origem: string; total: number; inseridos: number; ignorados: number; created_by: string; created_at: string }
-        Insert: { id: string; destino: string; origem: string; total: number; created_by: string }
-        Update: { inseridos?: number; ignorados?: number }
-        Relationships: []
-      }
       assinatura: {
         Row: {
           cliente: string
@@ -628,15 +616,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      autorizar_usuario_documentos: {Args:{p_email:string;p_ativo:boolean}; Returns:undefined}
-      validar_webhook_legado: { Args: { p_token:string }; Returns:boolean }
-      gerenciar_webhook_legado: { Args: { p_revogar:boolean }; Returns:Json }
-      acesso_documentos_aprovado: { Args: Record<string,never>; Returns:boolean }
-      importar_registros: { Args: { p_destino: string; p_registros: Json; p_origem: string; p_chave: string }; Returns: Json }
-      criar_integracao_pacientes: { Args: Record<string, never>; Returns: Json }
-      revogar_integracao_pacientes: { Args: { p_id: string }; Returns: undefined }
-      listar_integracoes_pacientes: { Args: Record<string, never>; Returns: { id: string; ativa: boolean; created_at: string }[] }
-      receber_paciente_forms: { Args: { p_token: string; p_dados: Json }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

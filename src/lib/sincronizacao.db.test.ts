@@ -27,7 +27,7 @@ async function deliver(from:PGlite,to:PGlite){
  }
  return results;
 }
-beforeEach(async()=>{a=await fixture("cloud");b=await fixture("external")},30000);
+beforeEach(async()=>{await a?.close();await b?.close();a=await fixture("cloud");b=await fixture("external")},30000);
 afterAll(async()=>{await a?.close();await b?.close()});
 test("INSERT/UPDATE/DELETE convergem nos dois sentidos sem ciclos",async()=>{
  await a.query("insert into cursos values($1,'Curso A')",[id]);await deliver(a,b);

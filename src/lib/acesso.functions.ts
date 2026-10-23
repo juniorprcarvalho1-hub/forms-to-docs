@@ -1,15 +1,16 @@
-// @ts-nocheck -- depende de migrações ainda não aplicadas (docs/IMPORTACOES.md)
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
+import { donoConfirmado } from "./controle-usuarios";
+import type { ControleDatabase } from "./controle-usuarios.db";
 export type StatusAcesso = {
   liberado: boolean;
   admin: boolean;
+  dono: boolean;
   ip: string;
   motivo: string | null;
 };
-
 export const verificarAcesso = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<StatusAcesso> => {
@@ -19,59 +20,25 @@ export const verificarAcesso = createServerFn({ method: "GET" })
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("x-real-ip") ||
       "desconhecido";
-
-    const { data: admin, error: erroPapel } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (erroPapel) throw new Error("Não foi possível verificar as permissões.");
-    if (admin) return { liberado: true, admin: true, ip, motivo: null };
-    const { data: aprovado, error: erroAprovacao } = await context.supabase.rpc(
-      "acesso_documentos_aprovado",
-      {},
-    );
-    // Aprovação individual só vale quando a função existe no banco (migração aplicada).
-    if (!erroAprovacao && !aprovado)
-      return {
-        liberado: false,
-        admin: false,
-        ip,
-        motivo:
-          "Acesso ainda não autorizado. Solicite a aprovação de um administrador e a ativação das políticas no banco.",
-      };
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: bloqueio } = await supabaseAdmin
-      .from("ips_bloqueados")
-      .select("id")
-      .eq("ip", ip)
-      .maybeSingle();
-    if (bloqueio)
-      return {
-        liberado: false,
-        admin: false,
-        ip,
-        motivo: "Acesso bloqueado para este endereço de rede.",
-      };
-
-    const { data: ass } = await supabaseAdmin
-      .from("assinatura")
-      .select("status, vencimento")
-      .maybeSingle();
-    if (ass?.status === "bloqueada")
-      return {
-        liberado: false,
-        admin: false,
-        ip,
-        motivo: "Acesso suspenso. Entre em contato com o administrador.",
-      };
-    if (ass && ass.vencimento < new Date().toISOString().slice(0, 10))
-      return {
-        liberado: false,
-        admin: false,
-        ip,
-        motivo: "Assinatura vencida. Entre em contato com o administrador para renovar.",
-      };
-
-    return { liberado: true, admin: false, ip, motivo: null };
+    // getUser consulta a identidade atual; metadados editáveis e papéis institucionais não definem o dono.
+    const { data: auth, error: authError } = await context.supabase.auth.getUser();
+    if (authError || !auth.user)
+      throw new Error("Não foi possível verificar a sessão. Entre novamente.");
+    // O dono consegue abrir a gestão sem importar cliente privilegiado ou depender das tabelas de planos.
+    if (donoConfirmado(auth.user))
+      return { liberado: true, admin: true, dono: true, ip, motivo: null };
+    const db = context.supabase as unknown as SupabaseClient<ControleDatabase>;
+    const { data, error } = await db.rpc("status_acesso_usuario", { p_ip: ip });
+    if (error || !data || typeof data !== "object" || Array.isArray(data))
+      throw new Error("Não foi possível verificar as permissões de acesso.");
+    const status = data as { liberado?: unknown; admin?: unknown; motivo?: unknown };
+    if (typeof status.liberado !== "boolean" || typeof status.admin !== "boolean")
+      throw new Error("Resposta de acesso inválida.");
+    return {
+      liberado: status.liberado,
+      admin: status.admin,
+      dono: false,
+      ip,
+      motivo: typeof status.motivo === "string" ? status.motivo : null,
+    };
   });

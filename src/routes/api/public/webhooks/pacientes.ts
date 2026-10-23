@@ -1,3 +1,4 @@
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/lib/supabase-config";
 // @ts-nocheck -- depende de migrações ainda não aplicadas (docs/IMPORTACOES.md)
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
@@ -49,9 +50,9 @@ export async function receberCadastro(request: Request): Promise<Response> {
     if (!linha) return resposta({ error: "Resposta vazia." }, 422);
     if (linha.erros.length)
       return resposta({ error: "Confira as respostas do formulário.", campos: linha.erros }, 422);
-    const url = process.env["SUPABASE_URL"] || import.meta.env["VITE_SUPABASE_URL"];
+    const url = SUPABASE_URL;
     const key =
-      process.env["SUPABASE_PUBLISHABLE_KEY"] || import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+      SUPABASE_PUBLISHABLE_KEY;
     if (!url || !key)
       return resposta({ error: "Integração indisponível. Contate o administrador." }, 503);
     // Só pode executar a RPC com o segredo específico da integração; nunca usa service_role.

@@ -38,15 +38,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [aberto, setAberto] = useState(false);
   const acessoFn = useServerFn(verificarAcesso);
-  const acesso = useQuery({ queryKey: ["acesso"], queryFn: () => acessoFn(), staleTime: 60_000 });
-  const itens = acesso.data?.admin
-    ? [
-        ...links,
-        { to: "/configuracoes", label: "Configurações", icon: Settings } as const,
-        { to: "/pacientes", label: "Pacientes", icon: Users } as const,
-        { to: "/controle", label: "Painel de Controle", icon: ShieldCheck } as const,
-      ]
-    : links;
+  const acesso = useQuery({
+    queryKey: ["acesso"],
+    queryFn: () => acessoFn(),
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+  const itens = [
+    ...links,
+    ...(acesso.data?.admin ? [{ to: "/pacientes", label: "Pacientes", icon: Users } as const] : []),
+    ...(acesso.data?.dono
+      ? [{ to: "/controle", label: "Painel de Controle", icon: ShieldCheck } as const]
+      : []),
+  ];
 
   async function sair() {
     await queryClient.cancelQueries();

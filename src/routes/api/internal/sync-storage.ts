@@ -30,6 +30,6 @@ async function probe(request: Request): Promise<Response> {
   });
   return new Response(JSON.stringify(result.body),{status:result.status,headers:{"content-type":"application/json","cache-control":"no-store"}});
 }
-export const Route=createFileRoute("/api/internal/sync-storage" as never)({
+export const Route=createFileRoute("/api/internal/sync-storage")({
   server:{handlers:{POST:({request}:{request:Request})=>probe(request)}}
 });

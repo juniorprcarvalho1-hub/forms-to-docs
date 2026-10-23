@@ -1,0 +1,53 @@
+name: Conferir publicação
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/publicacao.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Conferir sites e backend publicado
+        run: |
+          node <<'NODE'
+          const hosts = ["https://forms-to-docs.lovable.app", "https://sintegradoscursosfacesf.com.br"];
+          const ref = "auxsyadqijcjngmujagx";
+          async function verificar(host) {
+            const page = await fetch(host + "/auth", {signal: AbortSignal.timeout(20000)});
+            if (!page.ok) throw new Error(host + ": HTTP " + page.status);
+            const html = await page.text();
+            const queue = [...html.matchAll(/(?:src|href)=["']([^"']+\.js(?:\?[^"']*)?)["']/g)].map(match => new URL(match[1], page.url).href);
+            const visited = new Set();
+            let found = html.includes(ref);
+            while(queue.length && visited.size < 70 && !found) {
+              const url = queue.shift();
+              if(visited.has(url) || new URL(url).origin !== new URL(page.url).origin) continue;
+              visited.add(url);
+              const asset = await fetch(url, {signal: AbortSignal.timeout(12000)});
+              if(!asset.ok) continue;
+              const source = await asset.text();
+              found = source.includes(ref);
+              for(const match of source.matchAll(/["']([^"'\s]+\.js(?:\?[^"'\s]*)?)["']/g)) {
+                try { queue.push(new URL(match[1],url).href); } catch {}
+              }
+            }
+            console.log(JSON.stringify({host,status:page.status,server:page.headers.get("server"),cloudflare:!!page.headers.get("cf-ray"),assets:visited.size,novoSupabase:found}));
+            if(!found) throw new Error(host + ": ainda não encontrei o backend novo nos scripts publicados.");
+          }
+          (async() => {
+            let failed = false;
+            for(const host of hosts) {
+              let ready = false;
+              for(let attempt=0;attempt<8;attempt++) {
+                try { await verificar(host); ready=true; break; }
+                catch(error) { console.log(error.message); if(attempt<7) await new Promise(resolve=>setTimeout(resolve,10000)); }
+              }
+              if(!ready) failed=true;
+            }
+            if(failed) process.exitCode=1;
+          })();
+          NODE

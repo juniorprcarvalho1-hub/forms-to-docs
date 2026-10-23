@@ -22,3 +22,8 @@ test("erro na autorização falha fechado",async()=>{
  const r=await probeLegacyStorage("server-secret",{authorize:async()=>{throw Error("key")},inspect:async()=>({files:14,readable:true})});
  expect(r.status).toBe(403);
 });
+
+test("listagem vazia não é prova de leitura privada",async()=>{
+ const r=await probeLegacyStorage("server-secret",{authorize:async()=>true,inspect:async()=>({files:0,readable:true})});
+ expect(r.status).toBe(503);
+});

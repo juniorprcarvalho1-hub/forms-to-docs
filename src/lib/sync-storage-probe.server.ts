@@ -4,6 +4,6 @@ export async function probeLegacyStorage(key: string, deps: Dependencies): Promi
   if (!key || key.length > 8192) return {status:401,body:{error:"Credencial de servidor necessária."}};
   try { if (!(await deps.authorize(key))) return {status:403,body:{error:"Acesso restrito ao sincronizador."}}; }
   catch { return {status:403,body:{error:"Acesso restrito ao sincronizador."}}; }
-  try { const result=await deps.inspect(); return {status:200,body:{ok:true,files:result.files,readable:result.readable}}; }
+  try { const result=await deps.inspect(); if(!result.readable || result.files<1) throw Error("No private read"); return {status:200,body:{ok:true,files:result.files,readable:result.readable}}; }
   catch { return {status:503,body:{error:"Storage legado indisponível. Sincronização permanece pausada."}}; }
 }

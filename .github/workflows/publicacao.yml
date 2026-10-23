@@ -4,6 +4,11 @@ on:
     branches: [main]
     paths: [".github/workflows/publicacao.yml"]
   workflow_dispatch:
+    inputs:
+      custom_domain:
+        description: "URL HTTPS do domínio personalizado, se houver"
+        required: false
+        type: string
 permissions:
   contents: read
 jobs:
@@ -12,9 +17,13 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Conferir sites e backend publicado
+        env:
+          DOMINIO_PERSONALIZADO: ${{ inputs.custom_domain }}
         run: |
           node <<'NODE'
-          const hosts = ["https://forms-to-docs.lovable.app", "https://sintegradoscursosfacesf.com.br"];
+          const hosts = ["https://forms-to-docs.lovable.app"];
+          const dominio = process.env.DOMINIO_PERSONALIZADO?.trim();
+          if (dominio) hosts.push(dominio.replace(/\/$/, ""));
           const ref = "auxsyadqijcjngmujagx";
           async function verificar(host) {
             const page = await fetch(host + "/auth", {signal: AbortSignal.timeout(20000)});

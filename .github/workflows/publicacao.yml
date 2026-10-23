@@ -21,7 +21,7 @@ jobs:
           DOMINIO_PERSONALIZADO: ${{ inputs.custom_domain }}
         run: |
           node <<'NODE'
-          const hosts = ["https://forms-to-docs.lovable.app"];
+          const hosts = ["https://forms-to-docs.lovable.app", "https://sintegradocursosfacesf.com.br"];
           const dominio = process.env.DOMINIO_PERSONALIZADO?.trim();
           if (dominio) hosts.push(dominio.replace(/\/$/, ""));
           const ref = "auxsyadqijcjngmujagx";

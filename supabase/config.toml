@@ -1,1 +1,6 @@
-project_id = "qwhvceqqubofxpdxnhtz"
+project_id = "auxsyadqijcjngmujagx"
+
+[functions.controle-master]
+verify_jwt = false
+entrypoint = "./functions/controle-master.ts"
+import_map = "./functions/deno.json"

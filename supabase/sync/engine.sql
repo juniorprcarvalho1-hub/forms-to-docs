@@ -31,12 +31,12 @@ create function sync_private.merge_clock(a jsonb,b jsonb) returns jsonb language
  select jsonb_build_object('cloud',greatest((a->>'cloud')::bigint,(b->>'cloud')::bigint),'external',greatest((a->>'external')::bigint,(b->>'external')::bigint))
 $$;
 create function sync_private.project_row(t text,p jsonb) returns jsonb language sql stable security definer set search_path='' as $$
- select coalesce(jsonb_object_agg(e.key,e.value),'{}'::jsonb) from jsonb_each(p) e
- where e.key=any((select columns from sync_private.tables where name=t))
+ select coalesce(jsonb_object_agg(e.key,e.value),'{}'::jsonb) from sync_private.tables m cross join lateral jsonb_each(p) e
+ where m.name=t and e.key=any(m.columns)
 $$;
 create function sync_private.row_key(t text,p jsonb) returns jsonb language sql stable security definer set search_path='' as $$
- select coalesce(jsonb_object_agg(e.key,e.value),'{}'::jsonb) from jsonb_each(p) e
- where e.key=any((select key_columns from sync_private.tables where name=t))
+ select coalesce(jsonb_object_agg(e.key,e.value),'{}'::jsonb) from sync_private.tables m cross join lateral jsonb_each(p) e
+ where m.name=t and e.key=any(m.key_columns)
 $$;
 create function sync_private.canonical_row(t text,p jsonb) returns jsonb language plpgsql stable security definer set search_path='' as $$
 declare r jsonb;col text;email_value text;
@@ -121,7 +121,7 @@ begin
  select columns into allowed_keys from sync_private.tables where name=t;
  if not found then raise exception 'SYNC_TABLE_DENIED';end if;
  if jsonb_typeof(p)<>'object' or jsonb_typeof(k)<>'object' or k='{}'::jsonb or p<>sync_private.project_row(t,p) or k<>sync_private.row_key(t,p) then raise exception 'SYNC_EVENT_INVALID';end if;
- select result into result from sync_private.inbox where id=event_id;
+ select i.result into result from sync_private.inbox i where id=event_id;
  if found then return result;end if;
  perform pg_advisory_xact_lock(hashtextextended(t||k::text,0));
  -- Check again after acquiring the lock (parallel duplicate delivery).

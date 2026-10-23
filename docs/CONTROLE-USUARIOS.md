@@ -28,3 +28,5 @@ O novo projeto auxsyadqijcjngmujagx foi inicializado a partir das migrações do
 
 
 A configuração pública do backend fica em src/lib/supabase-config.ts para impedir que variáveis antigas do Lovable redirecionem a aplicação ao projeto anterior. A inicialização de um banco vazio usa supabase/bootstrap/base.sql e depois as migrações em ordem; qualificar gen_random_bytes e digest com o esquema extensions, conforme a instalação do pgcrypto.
+
+A conta master pode trocar sua própria senha no final do Painel de Controle. Senhas temporárias de provisionamento são entregues separadamente, sem inclusão em arquivos ou commits.

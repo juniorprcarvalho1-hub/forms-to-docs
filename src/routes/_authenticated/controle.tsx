@@ -1,3 +1,4 @@
+import { SenhaMaster } from "@/components/SenhaMaster";
 import { ControleIps } from "@/components/ControleIps";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -27,6 +28,7 @@ function Controle() {
       <ControleUsuarios />
       <HistoricoFinanceiro />
       <ControleIps />
+      <SenhaMaster />
     </div>
   );
 }

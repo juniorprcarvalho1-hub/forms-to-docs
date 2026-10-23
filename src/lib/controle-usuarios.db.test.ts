@@ -194,3 +194,17 @@ describe("autorização real no PostgreSQL", () => {
     expect((await asUser(ids.user, "SELECT * FROM oficios")).rows).toHaveLength(1);
   });
 });
+
+
+test("RLS impede auto-reativação mesmo com grants UPDATE padrão do Supabase", async () => {
+  await db.exec("GRANT UPDATE ON public.assinaturas_usuarios TO authenticated");
+  try {
+    await db.query("UPDATE public.assinaturas_usuarios SET suspenso=true WHERE user_id=$1", [ids.user]);
+    const tentativa=await asUser(ids.user, "UPDATE public.assinaturas_usuarios SET suspenso=false RETURNING user_id");
+    expect(tentativa.rows).toHaveLength(0);
+    const estado=await asUser(ids.user, "SELECT public.status_acesso_usuario('') AS dados");
+    expect((estado.rows[0] as any).dados.liberado).toBe(false);
+  } finally {
+    await db.exec("REVOKE UPDATE ON public.assinaturas_usuarios FROM authenticated");
+  }
+});

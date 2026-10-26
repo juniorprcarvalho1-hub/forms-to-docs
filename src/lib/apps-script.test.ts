@@ -55,3 +55,15 @@ test("HTTP200 com HTML não é sucesso e token inválido exige reenvio manual",(
 test("instalador exige token e contexto de formulário",()=>{
  const a=app();delete a.values.FACESF_TOKEN;expect(()=>a.ctx.instalarIntegracao()).toThrow();
 });
+
+test("pendências bloqueadas não impedem reenvio de respostas posteriores",()=>{
+ const a=app();a.ctx.instalarIntegracao();
+ for(let i=0;i<10;i++){
+  const k=a.ctx.enfileirarFACESF_("form-1","blocked-"+i);
+  const item=JSON.parse(a.values[k]!);item.blocked=true;item.createdAt=i;a.values[k]=JSON.stringify(item);
+ }
+ a.ctx.enfileirarFACESF_("form-1","due-response");
+ a.ctx.processarPendentesFACESF();
+ expect(a.calls).toHaveLength(1);
+ expect(Object.keys(a.values).filter(k=>k.startsWith("FACESF_P_"))).toHaveLength(10);
+});

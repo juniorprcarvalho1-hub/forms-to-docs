@@ -30,7 +30,11 @@ function enviarFACESF(e) {
 function processarPendentesFACESF() {
   const props = PropertiesService.getScriptProperties().getProperties();
   const deadline = Date.now() + 220000;
-  const keys = Object.keys(props).filter(function(k) { return k.indexOf(FACESF_PREFIXO) === 0; }).sort(function(a,b) {
+  const keys = Object.keys(props).filter(function(k) {
+    if (k.indexOf(FACESF_PREFIXO) !== 0) return false;
+    const item = JSON.parse(props[k]);
+    return !item.blocked && (item.nextAt || 0) <= Date.now() && (item.leaseUntil || 0) <= Date.now();
+  }).sort(function(a,b) {
     return JSON.parse(props[a]).createdAt - JSON.parse(props[b]).createdAt;
   });
   for (let i=0; i<Math.min(keys.length,10) && Date.now()<deadline; i++) processarItemFACESF_(keys[i]);

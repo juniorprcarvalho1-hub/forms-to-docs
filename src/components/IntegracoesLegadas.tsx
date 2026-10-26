@@ -64,11 +64,21 @@ export function IntegracoesLegadas() {
       setOcupado(false);
     }
   }
+  async function definirResponsavel() {
+    setOcupado(true);setMensagem("");
+    try {
+      const { error } = await supabase.rpc("definir_responsavel_forms", { p_email: email });
+      if (error) throw erroImportacao(error);
+      setMensagem("Responsável atualizado. Novos documentos dos formulários serão vinculados a essa conta.");
+    } catch (e) {
+      setMensagem(e instanceof Error ? e.message : "Não foi possível definir o responsável.");
+    } finally { setOcupado(false); }
+  }
   return (
     <section className="mb-6 rounded-2xl border bg-card p-5 space-y-3">
       <h2 className="text-lg font-semibold">Acessos e integrações</h2>
       <p className="text-sm text-muted-foreground">
-        Convites e criação de contas são feitos pelo administrador do Supabase. Após a migração,
+        O proprietário cria as contas no Painel de Controle. Nos documentos,
         administradores consultam todos os documentos; usuários aprovados consultam somente os
         próprios. Cadastros antigos sem responsável ficam restritos a administradores.
       </p>
@@ -94,6 +104,15 @@ export function IntegracoesLegadas() {
           Suspender usuário
         </Button>
       </div>
+      <p className="text-sm text-muted-foreground">
+        Use o e-mail acima para definir a conta que receberá os ofícios e declarações dos formulários.
+        Somente o proprietário pode mudar essa responsabilidade. A suspensão ou o vencimento da conta
+        interrompe novos envios. Os códigos completos estão na pasta apps-script do repositório.
+      </p>
+      <div>        <Button variant="outline" disabled={ocupado || !email.includes("@")} onClick={definirResponsavel}>
+          Definir responsável pelos formulários
+        </Button>
+</div>
       <h3 className="font-semibold">Webhooks de documentos</h3>
       <p className="text-sm text-muted-foreground">
         Ofícios e declarações compartilham o token legado. Após aplicar a migração, somente o hash

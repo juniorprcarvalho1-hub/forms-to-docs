@@ -2,6 +2,7 @@ import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./supabase-config";
 type Destination="oficios"|"declaracoes"|"declaracoes-resposta";
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{"content-type":"application/json","cache-control":"no-store"}});
 export async function encaminharFormulario(request:Request,destination:Destination,send:typeof fetch=fetch):Promise<Response>{
+ let phase="body";
  try{
   const reader=request.body?.getReader();if(!reader)return json({error:"Dados ausentes."},400);
   const parts:Uint8Array[]=[];let size=0;
@@ -13,11 +14,17 @@ export async function encaminharFormulario(request:Request,destination:Destinati
   if(!token||token.length>256)return json({error:"Token obrigatório."},401);
   let id=request.headers.get("x-facesf-id");
   if(!id){const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(crypto.randomUUID()));id=Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,"0")).join("")}
+  phase="request";
   const response=await send(SUPABASE_URL+"/functions/v1/formularios/"+destination,{method:"POST",headers:{"content-type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"x-webhook-token":token,"x-facesf-id":id},body,redirect:"error",signal:AbortSignal.timeout(20000)});
+  phase="response";
   if(!response.headers.get("content-type")?.includes("application/json"))return json({error:"Serviço temporariamente indisponível."},503);
   const data:unknown=await response.json();
   if(response.status>=500)return json({error:"Serviço temporariamente indisponível. Reenvie com o mesmo identificador."},503);
   if(response.ok&&(!data||typeof data!=="object"||!("ok" in data)||(data as {ok:unknown}).ok!==true))return json({error:"Resposta inesperada do serviço."},503);
   return json(data,response.status);
- }catch{return json({error:"Serviço temporariamente indisponível. O envio pode ser repetido com o mesmo identificador."},503)}
+ }catch(error){
+  const message=error instanceof Error?error.message:"";
+  const kind=/illegal invocation|incorrect this/i.test(message)?"FETCH_BINDING":/AbortSignal.*timeout|timeout.*function/i.test(message)?"TIMEOUT_API":error instanceof TypeError?"TYPE_ERROR":"ERROR";
+  return json({error:"Serviço temporariamente indisponível. O envio pode ser repetido com o mesmo identificador.",codigo:"PROXY_"+phase.toUpperCase()+"_"+kind},503);
+ }
 }

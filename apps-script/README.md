@@ -39,12 +39,12 @@ No painel do proprietário juniorprcarvalho1@gmail.com, use o e-mail da conta j�
 Os pacientes seguem a conta da conexão criada na aba Pacientes e as permissões administrativas já existentes. Nenhuma conta, senha ou permissão é criada pelos scripts.
 
 ## Pendências e reenvio
-- Falhas de rede, HTTP429 e falhas temporárias ficam pendentes e são tentadas novamente com espera progressiva, pelo gatilho de cinco minutos.
+- Falhas de rede, HTTP 429 e falhas temporárias ficam pendentes e são tentadas novamente com espera progressiva, pelo gatilho de cinco minutos.
 - **verPendenciasFACESF()** mostra apenas quantidades, sem dados pessoais.
 - Depois de corrigir token, conta suspensa ou campos inválidos, execute **reenviarPendentesFACESF()**.
-- **reenviarUltimasRespostasFACESF()** coloca as últimas20 respostas do Google Forms na fila. Use para recuperar envios antigos deste formulário. A mesma resposta recebe a mesma chave; documentos já recebidos não são duplicados.
-- Se uma resposta já salva tiver sido alterada depois, o receptor retorna409 e preserva o registro existente para conferência. O script não sobrescreve documentos.
-- A fila guarda até200 referências de respostas nas Propriedades do script, sem copiar nomes, CPF ou respostas. Se ficar cheia, o gatilho informa o erro; as respostas originais continuam no Google Forms. Resolva as pendências antes de reenviar mais respostas.
+- **reenviarUltimasRespostasFACESF()** coloca as últimas 20 respostas do Google Forms na fila. Use para recuperar envios antigos deste formulário. A mesma resposta recebe a mesma chave; documentos já recebidos não são duplicados.
+- Se uma resposta já salva tiver sido alterada depois, o receptor retorna 409 e preserva o registro existente para conferência. O script não sobrescreve documentos.
+- A fila guarda até 200 referências de respostas nas Propriedades do script, sem copiar nomes, CPF ou respostas. Se ficar cheia, o gatilho informa o erro; as respostas originais continuam no Google Forms. Resolva as pendências antes de reenviar mais respostas.
 - Registros já salvos no antigo banco da Lovable não são transferidos por esses scripts. Essa migração é separada.
 
 Guarde apenas o token de integração nas Propriedades do script. A chave sb_publishable presente no código é pública; nenhuma service_role ou senha é necessária. Os scripts não registram respostas ou tokens em logs.

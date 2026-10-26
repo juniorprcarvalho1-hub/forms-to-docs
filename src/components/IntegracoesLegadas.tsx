@@ -68,7 +68,11 @@ export function IntegracoesLegadas() {
     setOcupado(true);setMensagem("");
     try {
       const { error } = await supabase.rpc("definir_responsavel_forms", { p_email: email });
-      if (error) throw erroImportacao(error);
+      if (error) {
+        if (error.message.includes("FORMS_OWNER_REQUIRED")) throw new Error("Somente o proprietário pode definir o responsável.");
+        if (error.message.includes("FORMS_ACCOUNT_INACTIVE")) throw new Error("Use uma conta confirmada, ativa e com plano vigente.");
+        throw new Error("Não foi possível definir o responsável.");
+      }
       setMensagem("Responsável atualizado. Novos documentos dos formulários serão vinculados a essa conta.");
     } catch (e) {
       setMensagem(e instanceof Error ? e.message : "Não foi possível definir o responsável.");

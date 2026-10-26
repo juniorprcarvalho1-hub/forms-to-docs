@@ -8,7 +8,7 @@ export async function encaminharFormulario(request:Request,destination:Destinati
   while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>64000){await reader.cancel();return json({error:"Resposta muito grande."},413)}parts.push(value)}
   const bytes=new Uint8Array(size);let offset=0;for(const p of parts){bytes.set(p,offset);offset+=p.length}
   const body=new TextDecoder().decode(bytes);let raw:unknown;try{raw=JSON.parse(body)}catch{return json({error:"JSON inválido."},400)}
-  const priorToken=raw&&typeof raw==="object"&&!Array.isArray(raw)?(raw as Record<string,unknown>).token:"";
+  const priorToken=raw&&typeof raw==="object"&&!Array.isArray(raw)?(raw as Record<string,unknown>)["token"]:"";
   const token=request.headers.get("x-webhook-token")??(typeof priorToken==="string"?priorToken:"");
   if(!token||token.length>256)return json({error:"Token obrigatório."},401);
   let id=request.headers.get("x-facesf-id");

@@ -4,3 +4,9 @@ project_id = "auxsyadqijcjngmujagx"
 verify_jwt = false
 entrypoint = "./functions/controle-master.ts"
 import_map = "./functions/deno.json"
+
+
+[functions.formularios]
+verify_jwt = false
+entrypoint = "./functions/formularios.ts"
+import_map = "./functions/deno.json"

@@ -11,3 +11,19 @@ test("timeout ou resposta não JSON preserva falha para reenvio",async()=>{
  const r=await encaminharFormulario(req(),"declaracoes",async()=>new Response("<html>error</html>",{status:200}));expect(r.status).toBe(503);
  const e=await encaminharFormulario(req(),"declaracoes",async()=>{throw Error("secret")});expect(e.status).toBe(503);expect(await e.text()).not.toContain("secret");
 });
+
+test("proxy usa redirecionamento manual aceito pelo ambiente publicado",async()=>{
+ const req=new Request("https://site/api",{method:"POST",headers:{"x-webhook-token":"token","x-facesf-id":"b".repeat(64)},body:"{}"});
+ const r=await encaminharFormulario(req,"oficios",async(_url,init)=>{
+  if(init?.redirect==="error")throw new TypeError("Redirect mode 'error' not supported");
+  expect(init?.redirect).toBe("manual");
+  return Response.json({error:"Token inválido"},{status:401});
+ });
+ expect(r.status).toBe(401);
+});
+test("proxy rejeita redirecionamentos sem encaminhar token a outro destino",async()=>{
+ let calls=0;
+ const req=new Request("https://site/api",{method:"POST",headers:{"x-webhook-token":"token","x-facesf-id":"c".repeat(64)},body:"{}"});
+ const r=await encaminharFormulario(req,"oficios",async()=>{calls++;return Response.json({ok:true},{status:302,headers:{Location:"https://example.invalid"}})});
+ expect(r.status).toBe(503);expect(calls).toBe(1);
+});

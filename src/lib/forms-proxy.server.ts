@@ -31,7 +31,7 @@ export async function encaminharFormulario(request:Request,destination:Destinati
     /invalid.*url|parse.*url|url.*invalid|absolute.*url/i.test(message)?"URL":
     /header|bytestring/i.test(message)?"HEADERS":
     /blocked|not allowed|not permitted|denied/i.test(message)?"NETWORK_POLICY":
-    /fetch failed|network|connection|dns|certificate|ssl/i.test(message)?"NETWORK":
+    /fetch failed|failed.*fetch|network|connection|dns|certificate|ssl|socket|ECONN|ENOTFOUND|ENETUNREACH/i.test(message)?"NETWORK":
     error instanceof TypeError?"TYPE_ERROR":"ERROR";
   return json({error:"Serviço temporariamente indisponível. O envio pode ser repetido com o mesmo identificador.",codigo:"PROXY_"+phase.toUpperCase()+"_"+kind},503);
  }

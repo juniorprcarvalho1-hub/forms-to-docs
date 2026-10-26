@@ -23,8 +23,16 @@ export async function encaminharFormulario(request:Request,destination:Destinati
   if(response.ok&&(!data||typeof data!=="object"||!("ok" in data)||(data as {ok:unknown}).ok!==true))return json({error:"Resposta inesperada do serviço."},503);
   return json(data,response.status);
  }catch(error){
-  const message=error instanceof Error?error.message:"";
-  const kind=/illegal invocation|incorrect this/i.test(message)?"FETCH_BINDING":/AbortSignal.*timeout|timeout.*function/i.test(message)?"TIMEOUT_API":error instanceof TypeError?"TYPE_ERROR":"ERROR";
+  const details=error && typeof error==="object" ? error as {message?:unknown;cause?:{message?:unknown;code?:unknown}} : {};
+  const message=(typeof details.message==="string"?details.message:"")+" "+(typeof details.cause?.message==="string"?details.cause.message:"");
+  const kind=/illegal invocation|incorrect this|this.*(?:Fetcher|WorkerGlobalScope)|receiver/i.test(message)?"FETCH_BINDING":
+    /redirect/i.test(message)?"REDIRECT":
+    /abort|signal|timeout/i.test(message)?"SIGNAL":
+    /invalid.*url|parse.*url|url.*invalid|absolute.*url/i.test(message)?"URL":
+    /header|bytestring/i.test(message)?"HEADERS":
+    /blocked|not allowed|not permitted|denied/i.test(message)?"NETWORK_POLICY":
+    /fetch failed|failed.*fetch|network|connection|dns|certificate|ssl|socket|ECONN|ENOTFOUND|ENETUNREACH/i.test(message)?"NETWORK":
+    error instanceof TypeError?"TYPE_ERROR":"ERROR";
   return json({error:"Serviço temporariamente indisponível. O envio pode ser repetido com o mesmo identificador.",codigo:"PROXY_"+phase.toUpperCase()+"_"+kind},503);
  }
 }

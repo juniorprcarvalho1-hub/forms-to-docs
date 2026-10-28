@@ -1,10 +1,11 @@
+import { enviarDocumentoAutorizado, validarReferenciaEmail, type ReferenciaEmail } from "./email-documento";
 import { comContaAtiva } from "./conta-ativa";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ControleDatabase } from "./controle-usuarios.db";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-type Entrada = {
+type Entrada = ReferenciaEmail & {
   to: string;
   assunto: string;
   corpo: string;
@@ -27,6 +28,7 @@ function cabecalho(valor: string) {
 export const enviarEmailComPdf = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: Entrada) => {
+    validarReferenciaEmail(input);
     if (!input || typeof input.to !== "string" || !input.to.includes("@")) {
       throw new Error("E-mail de destino inválido.");
     }
@@ -40,7 +42,13 @@ export const enviarEmailComPdf = createServerFn({ method: "POST" })
           "status_acesso_usuario",
           { p_ip: "" },
         ),
-      async () => {
+      async () => enviarDocumentoAutorizado(data, {
+        carregar: async (tipo, id) => {
+          const result = await context.supabase.from(tipo).select("origem").eq("id", id).maybeSingle();
+          if (result.error) throw new Error("Documento indisponível.");
+          return result.data;
+        },
+        enviar: async () => {
         const lovableKey = process.env["LOVABLE_API_KEY"];
         const gmailKey = process.env["GOOGLE_MAIL_API_KEY"];
         if (!lovableKey || !gmailKey) {
@@ -91,6 +99,7 @@ export const enviarEmailComPdf = createServerFn({ method: "POST" })
         }
 
         return { enviado: true as const };
-      },
+        },
+      }),
     ),
   );

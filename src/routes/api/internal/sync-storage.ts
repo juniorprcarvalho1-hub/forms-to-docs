@@ -37,7 +37,7 @@ async function probe(request: Request): Promise<Response> {
     }
   });
   const downloaded=content as Blob|null;
-  if(result.status===200&&downloaded)return new Response(downloaded,{status:200,headers:{"content-type":downloaded.type||"application/octet-stream","cache-control":"no-store","x-content-type-options":"nosniff"}});
+  if(result.status===200&&downloaded)return new Response(await downloaded.arrayBuffer(),{status:200,headers:{"content-type":downloaded.type||"application/octet-stream","cache-control":"no-store","x-content-type-options":"nosniff"}});
   return new Response(JSON.stringify(result.body),{status:result.status,headers:{"content-type":"application/json","cache-control":"no-store"}});
 }
 export const Route=createFileRoute("/api/internal/sync-storage")({

@@ -185,6 +185,9 @@ function DeclaracoesRespostaPage() {
       const { assunto, corpo } = mensagemEmailResposta(declaracao);
       await enviarEmail({
         data: {
+          tipoDocumento: "declaracoes_resposta",
+          registroId: declaracao.id,
+          automatico,
           to: destino,
           assunto,
           corpo,

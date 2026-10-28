@@ -12,3 +12,8 @@ test("encaminha os quatro destinos e recusa JSON inválido",async()=>{
 test("erros internos não vazam detalhes do provedor",async()=>{
  const r=await handleFormsRequest(new Request("https://x/formularios/oficios",{method:"POST",headers:{"x-webhook-token":"token","x-facesf-id":"a".repeat(64),"content-type":"application/json"},body:'{"Nome":"Teste"}'}),{documents:async()=>{throw Error("secret-key")},patients:async()=>Response.json({ok:true})});expect(r.status).toBe(503);expect(await r.text()).not.toContain("secret-key");
 });
+
+test("pacientes não integra os três fluxos documentais",async()=>{
+ const p=ports();const r=await handleFormsRequest(new Request("https://x/formularios/pacientes",{method:"POST",headers:{"x-webhook-token":"token","x-facesf-id":"a".repeat(64),"content-type":"application/json"},body:'{"Nome":"Exemplo"}'}),p);
+ expect(r.status).toBe(404);expect(p.calls()).toBe(0);
+});

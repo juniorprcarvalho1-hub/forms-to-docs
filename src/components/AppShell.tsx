@@ -11,7 +11,6 @@ import {
   LogOut,
   Menu,
   ShieldCheck,
-  Users,
   Upload,
 } from "lucide-react";
 import facesf from "@/assets/facesf.png.asset.json";
@@ -46,7 +45,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
   const itens = [
     ...links,
-    ...(acesso.data?.admin ? [{ to: "/pacientes", label: "Pacientes", icon: Users } as const] : []),
     ...(acesso.data?.dono
       ? [{ to: "/controle", label: "Painel de Controle", icon: ShieldCheck } as const]
       : []),

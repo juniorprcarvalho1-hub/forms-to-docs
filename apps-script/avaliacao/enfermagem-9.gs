@@ -1,7 +1,9 @@
 // Cole este código no Apps Script vinculado ao próprio GOOGLE FORMULÁRIO.
-// Propriedade obrigatória: FACESF_TOKEN. Opcional: FACESF_CURSO.
+// Propriedade obrigatória: FACESF_TOKEN. Opcionais: FACESF_CURSO e FACESF_PERIODO.
 // Execute instalarIntegracao() uma vez na conta que administra o formulário.
 const FACESF_DESTINO = "declaracoes-resposta";
+const FACESF_CURSO_PADRAO = "Enfermagem";
+const FACESF_PERIODO_PADRAO = "9";
 const FACESF_BASE = "https://auxsyadqijcjngmujagx.supabase.co/functions/v1/formularios";
 const FACESF_PUBLIC_KEY = "sb_publishable_JdbnI0QtC05QkWrgt1eqlQ_3k8VEaIu";
 const FACESF_PREFIXO = "FACESF_P_";
@@ -114,9 +116,17 @@ function payloadFACESF_(response,props) {
   });
   const email=response.getRespondentEmail();
   if(email && !seen.email && !seen.enderecodeemail)payload["Endereço de e-mail"]=email;
-  const curso=props.getProperty("FACESF_CURSO");
+  const curso=props.getProperty("FACESF_CURSO") || FACESF_CURSO_PADRAO;
   const hasCourse=Object.keys(payload).some(function(k){return /curso|especialidade/i.test(k) && String(payload[k]).trim();});
   if(curso && !hasCourse)payload.Curso=curso;
+  if(FACESF_DESTINO==="declaracoes-resposta"){
+    const periodo=(props.getProperty("FACESF_PERIODO") || FACESF_PERIODO_PADRAO).trim();
+    const hasPeriod=Object.keys(payload).some(function(k){
+      const key=k.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
+      return /estagiosupervisionado|periodo|semestre|fase/.test(key) && /^\d{1,2}\s*(º|°|o|ª)?\s*(periodo|período|semestre)?\.?$/i.test(String(payload[k]).trim());
+    });
+    if(periodo && !hasPeriod)payload["Período"]=periodo;
+  }
   return payload;
 }
 function processarItemFACESF_(key) {

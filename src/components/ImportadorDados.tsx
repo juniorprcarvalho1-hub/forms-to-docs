@@ -57,8 +57,8 @@ function baixarTexto(nome: string, texto: string, tipo = "text/csv;charset=utf-8
 }
 
 export function ImportadorDados({
-  destinoInicial = "pacientes",
-  permitePacientes = true,
+  destinoInicial = "oficios",
+  permitePacientes = false,
   onImportar,
 }: Props) {
   const [destino, setDestino] = useState<DestinoImportacao>(destinoInicial);
@@ -212,7 +212,7 @@ export function ImportadorDados({
               ))}
           </select>
           <p className="text-xs text-muted-foreground">
-            Pacientes e documentos são cadastros diferentes. Escolha o destino de cada arquivo.
+            Escolha o tipo de documento correspondente a cada arquivo.
           </p>
         </div>
       )}

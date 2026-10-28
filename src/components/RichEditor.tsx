@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { EscalaA4 } from "@/components/PaginaA4";
 import { cn } from "@/lib/utils";
-import { uploadArquivo, urlAssinada } from "@/lib/storage";
+import { uploadArquivo, urlAssinada, prepararImagensInstitucionais } from "@/lib/storage";
 import { etiquetasParaTags, tagsParaEtiquetas } from "@/lib/tags";
 
 type Props = {
@@ -72,6 +72,7 @@ export function RichEditor({
     if (!area) return;
     if (etiquetasParaTags(area.innerHTML) !== (value || "")) {
       area.innerHTML = tagsParaEtiquetas(value || "", rotulos);
+      void prepararImagensInstitucionais(area).catch(() => {});
     }
   }, [value, rotulos]);
 

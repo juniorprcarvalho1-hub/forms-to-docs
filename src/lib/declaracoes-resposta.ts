@@ -110,4 +110,4 @@ export function mensagemEmailResposta(declaracao: DeclaracaoResposta) {
 }
 
 /** Seleciona respostas novas, preservando o histórico importado sem reenvios. */
-export function respostasParaEnvioAutomatico<T extends Pick<DeclaracaoResposta,"id"|"origem"|"email_enviado_em">>(declaracoes:readonly T[],processados:ReadonlySet<string>):T[]{return [];}
+export function respostasParaEnvioAutomatico<T extends Pick<DeclaracaoResposta,"id"|"origem"|"email_enviado_em">>(declaracoes:readonly T[],processados:ReadonlySet<string>):T[]{return declaracoes.filter(d=>d.origem!=="lovable_migracao"&&!d.email_enviado_em&&!processados.has(d.id));}

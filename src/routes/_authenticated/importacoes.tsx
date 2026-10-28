@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { ImportadorDados } from "@/components/ImportadorDados";
 import { importarRegistros } from "@/lib/importacao-dados";
-import { verificarAcesso } from "@/lib/acesso.functions";
 
 export const Route = createFileRoute("/_authenticated/importacoes")({
   head: () => ({ meta: [{ title: "Importar dados | FACESF" }] }),
@@ -12,8 +10,6 @@ export const Route = createFileRoute("/_authenticated/importacoes")({
 
 function ImportacoesPage() {
   const queryClient = useQueryClient();
-  const acessoFn = useServerFn(verificarAcesso);
-  const acesso = useQuery({ queryKey: ["acesso"], queryFn: () => acessoFn(), staleTime: 60_000 });
   return (
     <div className="mx-auto max-w-6xl space-y-7">
       <header>
@@ -28,11 +24,11 @@ function ImportacoesPage() {
       </header>
       <ImportadorDados
         destinoInicial="oficios"
-        permitePacientes={!!acesso.data?.admin}
+        permitePacientes={false}
         onImportar={async (...args) => {
           const r = await importarRegistros(...args);
           await Promise.all(
-            ["oficios", "declaracoes", "declaracoes_resposta", "pacientes", "importacoes"].map(
+            ["oficios", "declaracoes", "declaracoes_resposta", "importacoes"].map(
               (k) => queryClient.invalidateQueries({ queryKey: [k] }),
             ),
           );

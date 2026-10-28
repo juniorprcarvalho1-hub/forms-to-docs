@@ -10,3 +10,8 @@ import_map = "./functions/deno.json"
 verify_jwt = false
 entrypoint = "./functions/formularios.ts"
 import_map = "./functions/deno.json"
+
+[functions.arquivos-institucionais]
+verify_jwt = false
+entrypoint = "./functions/arquivos-institucionais.ts"
+import_map = "./functions/deno.json"

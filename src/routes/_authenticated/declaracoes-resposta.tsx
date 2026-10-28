@@ -33,6 +33,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   mensagemEmailResposta,
   montarDeclaracaoRespostaHtml,
+  respostasParaEnvioAutomatico,
   NOMES_CURSO,
   ORDEM_MODELOS_RESPOSTA,
   ROTULOS_DECLARACAO_RESPOSTA,
@@ -208,9 +209,7 @@ function DeclaracoesRespostaPage() {
   // Envio automático das declarações novas para o orientador do curso.
   useEffect(() => {
     if (declaracoes.length === 0 || orientadores.length === 0) return;
-    const pendentes = declaracoes.filter(
-      (d) => !d.email_enviado_em && !processados.current.has(d.id) && emailDoOrientador(d),
-    );
+    const pendentes = respostasParaEnvioAutomatico(declaracoes, processados.current).filter(emailDoOrientador);
     if (pendentes.length === 0) return;
     pendentes.forEach((d) => processados.current.add(d.id));
     void (async () => {

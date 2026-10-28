@@ -67,3 +67,19 @@ test("pendências bloqueadas não impedem reenvio de respostas posteriores",()=>
  expect(a.calls).toHaveLength(1);
  expect(Object.keys(a.values).filter(k=>k.startsWith("FACESF_P_"))).toHaveLength(10);
 });
+
+test("avaliação usa período configurado sem alterar perguntas do formulário",()=>{
+ const a=app("declaracoes-resposta");a.values.FACESF_CURSO="Nutrição";a.values.FACESF_PERIODO="8";a.ctx.instalarIntegracao();a.ctx.enviarFACESF(a.event);
+ expect(JSON.parse(a.calls[0].options.payload)).toMatchObject({Curso:"Nutrição","Período":"8","Nome do aluno":"Aluno Ficticio"});
+});
+test("período respondido prevalece sobre o padrão do formulário",()=>{
+ const a=app("declaracoes-resposta");a.values.FACESF_PERIODO="9";
+ a.answer.getItemResponses=()=>[{getItem:()=>({getTitle:()=>"Período do estagiário"}),getResponse:()=>"10º período"}];
+ a.ctx.instalarIntegracao();a.ctx.enviarFACESF(a.event);const payload=JSON.parse(a.calls[0].options.payload);
+ expect(payload["Período do estagiário"]).toBe("10º período");expect(payload["Período"]).toBeUndefined();
+});
+const profiles=[["enfermagem","Enfermagem",[9,10]],["fisioterapia","Fisioterapia",[9,10]],["nutricao","Nutrição",[7,8]],["psicologia","Psicologia",[9,10]]] as const;
+for(const [key,course,periods] of profiles)for(const period of periods)test("script de avaliação "+key+" "+period+" mantém o perfil correto",()=>{
+ const a=app("avaliacao/"+key+"-"+period);a.ctx.instalarIntegracao();a.ctx.enviarFACESF(a.event);
+ expect(a.calls[0].url).toEndWith("/formularios/declaracoes-resposta");expect(JSON.parse(a.calls[0].options.payload)).toMatchObject({Curso:course,"Período":String(period)});
+});

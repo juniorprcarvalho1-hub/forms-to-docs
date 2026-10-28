@@ -1,7 +1,7 @@
 export type ReferenciaEmail={tipoDocumento:"declaracoes"|"declaracoes_resposta";registroId:string;automatico:boolean};
 export function validarReferenciaEmail(input:unknown):ReferenciaEmail{
  if(!input||typeof input!=="object"||Array.isArray(input))throw new Error("Recarregue o sistema antes de enviar o documento.");
- const p=input as Record<string,unknown>,tipo=p.tipoDocumento,id=p.registroId,automatico=p.automatico;
+ const p=input as Record<string,unknown>,tipo=p["tipoDocumento"],id=p["registroId"],automatico=p["automatico"];
  if((tipo!=="declaracoes"&&tipo!=="declaracoes_resposta")||typeof id!=="string"||
     !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(id)||typeof automatico!=="boolean")
   throw new Error("Recarregue o sistema antes de enviar o documento.");

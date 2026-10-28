@@ -1,7 +1,6 @@
 type Destination="oficios"|"declaracoes"|"declaracoes-resposta";
 export type FormsPorts={
  documents:(destination:Destination,request:Request,raw:Record<string,unknown>,token:string,id:string,hash:string)=>Promise<Response>;
- patients:(request:Request,raw:Record<string,unknown>,token:string,id:string)=>Promise<Response>;
 };
 export const formsJson=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{"content-type":"application/json","cache-control":"no-store"}});
 export function formsFailure(error:{message?:string;code?:string}|null):Response{
@@ -24,7 +23,7 @@ export async function handleFormsRequest(request:Request,ports:FormsPorts):Promi
  const destination=new URL(request.url).pathname.split("/").filter(Boolean).pop()??"";
  if(request.method==="GET"&&destination==="health")return formsJson({ok:true,service:"formularios"});
  if(request.method!=="POST")return formsJson({error:"Envie POST."},405);
- if(!["oficios","declaracoes","declaracoes-resposta","pacientes"].includes(destination))return formsJson({error:"Destino inexistente."},404);
+ if(!["oficios","declaracoes","declaracoes-resposta"].includes(destination))return formsJson({error:"Destino inexistente."},404);
  const token=(request.headers.get("x-webhook-token")??"").trim();
  if(!token||token.length>256)return formsJson({error:"Token obrigatório."},401);
  const id=request.headers.get("x-facesf-id")??"";
@@ -43,7 +42,6 @@ export async function handleFormsRequest(request:Request,ports:FormsPorts):Promi
   if(!Object.values(data).every(v=>valid(v)))return formsJson({error:"Formato de resposta inválido."},400);
   const headers=new Headers(request.headers);const hash=await hashFormsResponses(data);headers.set("x-facesf-source-hash",hash);
   const replay=new Request(request.url,{method:"POST",headers,body:text});
-  if(destination==="pacientes")return await ports.patients(replay,data,token,id);
   return await ports.documents(destination as Destination,replay,data,token,id,hash);
  }catch{return formsJson({error:"Serviço indisponível. O reenvio pode ser feito com o mesmo identificador."},503)}
 }

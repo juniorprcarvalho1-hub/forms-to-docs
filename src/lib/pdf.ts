@@ -1,3 +1,4 @@
+import { prepararImagensInstitucionais } from "./storage";
 import { jsPDF } from "jspdf";
 
 const LARGURA_A4 = 210;
@@ -66,6 +67,7 @@ export async function gerarPdfDeHtml(html: string): Promise<Blob> {
 
   try {
     await quadro.contentDocument?.fonts.ready;
+    await prepararImagensInstitucionais(pagina);
     const imagens = Array.from(pagina.querySelectorAll("img"));
     await Promise.all(imagens.map(aguardarImagem));
     imagens.forEach((imagem) => {

@@ -20,11 +20,11 @@ import { Route as AuthenticatedDeclaracoesRespostaRouteImport } from './routes/_
 import { Route as AuthenticatedImportacoesRouteImport } from './routes/_authenticated/importacoes'
 import { Route as AuthenticatedOficiosRouteImport } from './routes/_authenticated/oficios'
 import { Route as AuthenticatedPacientesRouteImport } from './routes/_authenticated/pacientes'
+import { Route as ApiInternalSyncStorageRouteImport } from './routes/api/internal/sync-storage'
 import { Route as ApiPublicWebhooksDeclaracoesRouteImport } from './routes/api/public/webhooks/declaracoes'
 import { Route as ApiPublicWebhooksDeclaracoesRespostaRouteImport } from './routes/api/public/webhooks/declaracoes-resposta'
 import { Route as ApiPublicWebhooksOficiosRouteImport } from './routes/api/public/webhooks/oficios'
 import { Route as ApiPublicWebhooksPacientesRouteImport } from './routes/api/public/webhooks/pacientes'
-import { Route as ApiInternalSyncStorageRouteImport } from './routes/api/internal/sync-storage'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -84,6 +84,11 @@ const AuthenticatedPacientesRoute = AuthenticatedPacientesRouteImport.update({
   path: '/pacientes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiInternalSyncStorageRoute = ApiInternalSyncStorageRouteImport.update({
+  id: '/api/internal/sync-storage',
+  path: '/api/internal/sync-storage',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksDeclaracoesRoute =
   ApiPublicWebhooksDeclaracoesRouteImport.update({
     id: '/api/public/webhooks/declaracoes',
@@ -108,12 +113,6 @@ const ApiPublicWebhooksPacientesRoute =
     path: '/api/public/webhooks/pacientes',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiInternalSyncStorageRoute =
-  ApiInternalSyncStorageRouteImport.update({
-    id: '/api/internal/sync-storage',
-    path: '/api/internal/sync-storage',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -126,11 +125,11 @@ export interface FileRoutesByFullPath {
   '/importacoes': typeof AuthenticatedImportacoesRoute
   '/oficios': typeof AuthenticatedOficiosRoute
   '/pacientes': typeof AuthenticatedPacientesRoute
+  '/api/internal/sync-storage': typeof ApiInternalSyncStorageRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
   '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
   '/api/public/webhooks/pacientes': typeof ApiPublicWebhooksPacientesRoute
-  '/api/internal/sync-storage': typeof ApiInternalSyncStorageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -143,11 +142,11 @@ export interface FileRoutesByTo {
   '/importacoes': typeof AuthenticatedImportacoesRoute
   '/oficios': typeof AuthenticatedOficiosRoute
   '/pacientes': typeof AuthenticatedPacientesRoute
+  '/api/internal/sync-storage': typeof ApiInternalSyncStorageRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
   '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
   '/api/public/webhooks/pacientes': typeof ApiPublicWebhooksPacientesRoute
-  '/api/internal/sync-storage': typeof ApiInternalSyncStorageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -162,11 +161,11 @@ export interface FileRoutesById {
   '/_authenticated/importacoes': typeof AuthenticatedImportacoesRoute
   '/_authenticated/oficios': typeof AuthenticatedOficiosRoute
   '/_authenticated/pacientes': typeof AuthenticatedPacientesRoute
+  '/api/internal/sync-storage': typeof ApiInternalSyncStorageRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
   '/api/public/webhooks/oficios': typeof ApiPublicWebhooksOficiosRoute
   '/api/public/webhooks/pacientes': typeof ApiPublicWebhooksPacientesRoute
-  '/api/internal/sync-storage': typeof ApiInternalSyncStorageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -181,11 +180,11 @@ export interface FileRouteTypes {
     | '/importacoes'
     | '/oficios'
     | '/pacientes'
+    | '/api/internal/sync-storage'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/declaracoes-resposta'
     | '/api/public/webhooks/oficios'
     | '/api/public/webhooks/pacientes'
-    | '/api/internal/sync-storage'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -198,11 +197,11 @@ export interface FileRouteTypes {
     | '/importacoes'
     | '/oficios'
     | '/pacientes'
+    | '/api/internal/sync-storage'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/declaracoes-resposta'
     | '/api/public/webhooks/oficios'
     | '/api/public/webhooks/pacientes'
-    | '/api/internal/sync-storage'
   id:
     | '__root__'
     | '/'
@@ -216,22 +215,22 @@ export interface FileRouteTypes {
     | '/_authenticated/importacoes'
     | '/_authenticated/oficios'
     | '/_authenticated/pacientes'
+    | '/api/internal/sync-storage'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/declaracoes-resposta'
     | '/api/public/webhooks/oficios'
     | '/api/public/webhooks/pacientes'
-    | '/api/internal/sync-storage'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiInternalSyncStorageRoute: typeof ApiInternalSyncStorageRoute
   ApiPublicWebhooksDeclaracoesRoute: typeof ApiPublicWebhooksDeclaracoesRoute
   ApiPublicWebhooksDeclaracoesRespostaRoute: typeof ApiPublicWebhooksDeclaracoesRespostaRoute
   ApiPublicWebhooksOficiosRoute: typeof ApiPublicWebhooksOficiosRoute
   ApiPublicWebhooksPacientesRoute: typeof ApiPublicWebhooksPacientesRoute
-  ApiInternalSyncStorageRoute: typeof ApiInternalSyncStorageRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -313,6 +312,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPacientesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/internal/sync-storage': {
+      id: '/api/internal/sync-storage'
+      path: '/api/internal/sync-storage'
+      fullPath: '/api/internal/sync-storage'
+      preLoaderRoute: typeof ApiInternalSyncStorageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/declaracoes': {
       id: '/api/public/webhooks/declaracoes'
       path: '/api/public/webhooks/declaracoes'
@@ -339,13 +345,6 @@ declare module '@tanstack/react-router' {
       path: '/api/public/webhooks/pacientes'
       fullPath: '/api/public/webhooks/pacientes'
       preLoaderRoute: typeof ApiPublicWebhooksPacientesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/internal/sync-storage': {
-      id: '/api/internal/sync-storage'
-      path: '/api/internal/sync-storage'
-      fullPath: '/api/internal/sync-storage'
-      preLoaderRoute: typeof ApiInternalSyncStorageRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -380,12 +379,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiInternalSyncStorageRoute: ApiInternalSyncStorageRoute,
   ApiPublicWebhooksDeclaracoesRoute: ApiPublicWebhooksDeclaracoesRoute,
   ApiPublicWebhooksDeclaracoesRespostaRoute:
     ApiPublicWebhooksDeclaracoesRespostaRoute,
   ApiPublicWebhooksOficiosRoute: ApiPublicWebhooksOficiosRoute,
   ApiPublicWebhooksPacientesRoute: ApiPublicWebhooksPacientesRoute,
-  ApiInternalSyncStorageRoute: ApiInternalSyncStorageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

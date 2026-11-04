@@ -1,3 +1,4 @@
+import {AndamentoDocumento} from "@/components/AndamentoDocumento";
 import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -244,7 +245,7 @@ function DeclaracoesRespostaPage() {
           <TableBody>
             {filtrados.map((d) => (
               <TableRow key={d.id}>
-                <TableCell className="font-medium">{d.supervisor}</TableCell>
+                <TableCell className="font-medium">{d.supervisor}<AndamentoDocumento tipo="declaracoes_resposta" id={d.id}/></TableCell>
                 <TableCell className="hidden md:table-cell">{d.estagiario}</TableCell>
                 <TableCell className="hidden lg:table-cell">
                   {NOMES_CURSO[d.modelo_chave] ?? d.curso}

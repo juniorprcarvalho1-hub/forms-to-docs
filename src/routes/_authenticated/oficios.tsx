@@ -1,3 +1,4 @@
+import {AndamentoDocumento} from "@/components/AndamentoDocumento";
 import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -227,7 +228,7 @@ function OficiosPage() {
             {filtrados.map((o) => (
               <TableRow key={o.id}>
                 <TableCell className="font-medium">{o.numero_formatado}</TableCell>
-                <TableCell>{o.nome}</TableCell>
+                <TableCell>{o.nome}<AndamentoDocumento tipo="oficios" id={o.id}/></TableCell>
                 <TableCell className="hidden md:table-cell">{o.curso}</TableCell>
                 <TableCell className="hidden max-w-xs truncate lg:table-cell">
                   {o.matricula}

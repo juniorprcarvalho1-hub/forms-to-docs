@@ -366,6 +366,37 @@ do $$begin
  end if;
 end $$;
 
+
+-- Permissão documental não confere gestão de contas, planos ou suspensão.
+create function private.automacao_proteger_config() returns trigger language plpgsql security invoker set search_path='' as $$
+begin
+ if current_user in('postgres','supabase_admin','service_role') or private.automacao_dono() then return new;end if;
+ if not private.automacao_pode_configurar() or
+  (to_jsonb(new)-array['modelo','modelo_html','cabecalho_html','rodape_html','modelo_declaracao_html','logo_url','assinatura_url','formato_numeracao','digitos','cidade','form_url','form_declaracao_url','form_resposta_url','padrao_destinatario','padrao_area_estagio','padrao_professor','padrao_registro_professor','padrao_carga_horaria','padrao_periodo','padrao_seguradora','padrao_apolice','padrao_coordenador','padrao_cargo_coordenador','updated_at'])
+  is distinct from
+  (to_jsonb(old)-array['modelo','modelo_html','cabecalho_html','rodape_html','modelo_declaracao_html','logo_url','assinatura_url','formato_numeracao','digitos','cidade','form_url','form_declaracao_url','form_resposta_url','padrao_destinatario','padrao_area_estagio','padrao_professor','padrao_registro_professor','padrao_carga_horaria','padrao_periodo','padrao_seguradora','padrao_apolice','padrao_coordenador','padrao_cargo_coordenador','updated_at'])
+ then raise exception 'CONFIGURACAO_PROTEGIDA';end if;
+ return new;
+end $$;
+create trigger automacao_proteger_config before update on public.configuracoes for each row execute function private.automacao_proteger_config();
+do $$
+declare t text;
+begin
+ foreach t in array array['configuracoes','modelos_oficio','modelos_declaracao','modelos_declaracao_resposta','orientadores','cursos','professores','modulos_estagio'] loop
+  if to_regclass('public.'||t) is null then continue;end if;
+  execute format('alter table public.%I enable row level security',t);
+  execute format('drop policy if exists "Administradores configuram" on public.%I',t);
+  if t='orientadores' then execute 'drop policy if exists "Autenticados gerenciam orientadores" on public.orientadores';end if;
+  execute format('grant select,insert,update,delete on public.%I to authenticated',t);
+  execute format('create policy "Configuracao documental leitura" on public.%I for select to authenticated using ((select private.automacao_pode_configurar()))',t);
+  if t='configuracoes' then
+   execute format('create policy "Configuracao documental escrita" on public.%I for update to authenticated using ((select private.automacao_pode_configurar())) with check ((select private.automacao_pode_configurar()))',t);
+  else
+   execute format('create policy "Configuracao documental escrita" on public.%I for all to authenticated using ((select private.automacao_pode_configurar())) with check ((select private.automacao_pode_configurar()))',t);
+  end if;
+ end loop;
+end $$;
+
 do $$
 declare f record;
 begin
@@ -381,3 +412,5 @@ end $$;
 grant usage on schema private to service_role,authenticated;
 
 grant execute on function private.automacao_pode_configurar() to authenticated;
+
+grant execute on function private.automacao_dono() to authenticated;

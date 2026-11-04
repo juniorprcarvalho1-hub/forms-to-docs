@@ -8,6 +8,7 @@ export type StatusAcesso = {
   liberado: boolean;
   admin: boolean;
   dono: boolean;
+  configurarDocumentos: boolean;
   ip: string;
   motivo: string | null;
 };
@@ -26,7 +27,7 @@ export const verificarAcesso = createServerFn({ method: "GET" })
       throw new Error("Não foi possível verificar a sessão. Entre novamente.");
     // O dono consegue abrir a gestão sem importar cliente privilegiado ou depender das tabelas de planos.
     if (donoConfirmado(auth.user))
-      return { liberado: true, admin: true, dono: true, ip, motivo: null };
+      return { liberado: true, admin: true, dono: true, configurarDocumentos:true, ip, motivo: null };
     const db = context.supabase as unknown as SupabaseClient<ControleDatabase>;
     const { data, error } = await db.rpc("status_acesso_usuario", { p_ip: ip });
     if (error || !data || typeof data !== "object" || Array.isArray(data))
@@ -34,7 +35,9 @@ export const verificarAcesso = createServerFn({ method: "GET" })
     const status = data as { liberado?: unknown; admin?: unknown; motivo?: unknown };
     if (typeof status.liberado !== "boolean" || typeof status.admin !== "boolean")
       throw new Error("Resposta de acesso inválida.");
+    const permission=await db.rpc("permissao_config_documental");
     return {
+      configurarDocumentos: !permission.error&&permission.data===true,
       liberado: status.liberado,
       admin: status.admin,
       dono: false,

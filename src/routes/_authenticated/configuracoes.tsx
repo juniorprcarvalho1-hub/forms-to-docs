@@ -55,10 +55,10 @@ function ConfiguracoesPage() {
   const acessoFn = useServerFn(verificarAcesso);
   const acesso = useQuery({ queryKey: ["acesso"], queryFn: () => acessoFn() });
   if (acesso.isPending) return <p role="status">Verificando permissões…</p>;
-  if (!acesso.data?.admin) return <p role="alert">Configurações restritas a administradores.</p>;
+  if (!acesso.data?.configurarDocumentos) return <p role="alert">Configurações documentais indisponíveis para esta conta.</p>;
   return (
     <>
-      <IntegracoesLegadas />
+      {acesso.data.dono && <IntegracoesLegadas />}
       <ConfiguracoesEditor />
     </>
   );

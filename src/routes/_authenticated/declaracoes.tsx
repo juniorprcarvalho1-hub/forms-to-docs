@@ -1,3 +1,4 @@
+import {AndamentoDocumento} from "@/components/AndamentoDocumento";
 import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -289,7 +290,7 @@ function DeclaracoesPage() {
           <TableBody>
             {filtrados.map((d) => (
               <TableRow key={d.id}>
-                <TableCell className="font-medium">{d.nome}</TableCell>
+                <TableCell className="font-medium">{d.nome}<AndamentoDocumento tipo="declaracoes" id={d.id}/></TableCell>
                 <TableCell className="hidden md:table-cell">{d.coren}</TableCell>
                 <TableCell className="hidden max-w-xs truncate lg:table-cell">
                   {d.hospital}

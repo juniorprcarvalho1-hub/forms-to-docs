@@ -15,3 +15,8 @@ Task3: em andamento. RED CI41879233751/41880276035: módulos HTML/PDF/processado
 Ruling: Chromium REST usa somente script interno com nonce aleatório para aguardar imagens/fontes e detectar overflow — HTML ativo/eventos são recusados, CSP permite só o nonce e dados locais, rede externa bloqueada — custo se errado: PDF pode ficar pendente, nunca arquivar uma saída truncada.
 Ruling: Gmail continuará na Lovable; será usado bridge interno com ticket de uso único validado no Supabase — credenciais gerenciadas não podem ser copiadas para Edge ou frontend — custo: uma chamada interna adicional e configuração de bridge, sem expor chaves.
 Cloudflare: nenhum plugin retornado na busca; wrangler/OAuth local não encontrado. Pedido de configuração das duas secrets está pendente de resposta. Não contratar serviço ou habilitar cobrança.
+
+Task3/4 core: GREEN CI41910402294 (head a290e69):212pass/0fail, tipos/build success. Corrigida montagem literal da migração antes de aplicar; nenhuma alteração de banco em produção foi realizada.
+Hardening: RED CI41913616392:212pass/5fail — limite de retries, retomada antes do cron, confirmação com consumidor pausado, curso editado/modelo divergente e GIF.
+Integração pendente: worker HTTP/cron, bridge real hospedado, UI de andamento/configuração e implantação. Cloudflare secrets não confirmadas; usuário aprovou continuidade, pediu passo a passo ou configuração por nós. Controle CUA indisponível (timeout/transport closed); guia oficial enviado, sem criar token ou contratar serviço.
+Testes nativos: pacote Puppeteer-core24.26.1 isolado em tests/renderizador, lock16.800bytes gerado por CI. Nenhum dado real nos fixtures.

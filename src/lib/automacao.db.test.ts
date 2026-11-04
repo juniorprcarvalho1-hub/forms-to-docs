@@ -158,3 +158,19 @@ test("automação pausada ainda mostra e permite confirmar uma entrega incerta",
  expect((await db.query<any>("select public.automacao_status('declaracoes_resposta',$1) as r",[e.documento_id])).rows[0].r.email.estado).toBe("envio_a_confirmar");
  expect((await db.query<any>("select public.automacao_confirmar_envio($1,true) as r",[e.documento_id])).rows[0].r).toBe(true);
 });
+
+test("ticket do consumidor é único e já retorna a tarefa reivindicada",async()=>{
+ const d=await save();const ticket=(await db.query<any>("select public.automacao_emitir_ticket('processar',0) as t")).rows[0].t;
+ expect(ticket).toMatch(/^[a-f0-9]{64}$/);const result=(await db.query<any>("select public.automacao_consumir_ticket($1) as r",[ticket])).rows[0].r;
+ expect(result.modo).toBe("processar");expect(result.job.documento_id).toBe(d.id);
+ expect((await db.query<any>("select public.automacao_consumir_ticket($1) as r",[ticket])).rows[0].r).toBeNull();
+});
+test("escopo de diagnóstico não pode ser alterado nem reaproveitado",async()=>{
+ const ticket=(await db.query<any>("select public.automacao_emitir_ticket('verificar',0) as t")).rows[0].t;
+ expect((await db.query<any>("select public.automacao_consumir_ticket($1) as r",[ticket])).rows[0].r).toMatchObject({modo:"verificar",indice:0});
+ await expect(db.query("select public.automacao_emitir_ticket('outro',0)")).rejects.toThrow();
+ await db.exec("set role authenticated");await expect(db.query("select public.automacao_emitir_ticket('processar',0)")).rejects.toThrow();await db.exec("reset role");
+});
+test("limite global evita exceder dois processamentos simultâneos",async()=>{
+ await save();await save();await save();expect(await claim()).not.toBeNull();expect(await claim()).not.toBeNull();expect(await claim()).toBeNull();
+});

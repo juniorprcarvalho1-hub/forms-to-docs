@@ -134,3 +134,13 @@ test("configuração documental não concede permissão de dono ou de consumidor
  await expect(db.query("select public.automacao_ticket_email(gen_random_uuid(),gen_random_uuid())")).rejects.toThrow();
  await db.query("select set_config('request.jwt.claim.sub',$1,false)",[other]);expect((await db.query<any>("select public.permissao_config_documental() as p")).rows[0].p).toBe(false);await db.exec("reset role");
 });
+
+test("reserva preserva bytes do PDF entre leases sem trocar o arquivo",async()=>{
+ await save();const a=await claim();const b64="YXJxdWl2by1kZS10ZXN0ZQ==";
+ const hash=(await db.query<any>("select encode(sha256(decode($1,'base64')),'hex') as h",[b64])).rows[0].h;
+ expect((await db.query<any>("select public.automacao_pdf_reservar($1,$2,$3,$4,$5) as r",[a.id,a.lease_token,hash,b64,"<p>Documento</p>"])).rows[0].r).toBe(true);
+ await db.query("update private.documento_jobs set lease_ate=now()-interval '1 second' where id=$1",[a.id]);const b=await claim();
+ expect(b.pdf_base64).toBe(b64);expect(b.pdf_sha256).toBe(hash);
+ const other="b3V0cm8=";const hashOther=(await db.query<any>("select encode(sha256(decode($1,'base64')),'hex') as h",[other])).rows[0].h;
+ expect((await db.query<any>("select public.automacao_pdf_reservar($1,$2,$3,$4,$5) as r",[b.id,b.lease_token,hashOther,other,"<p>Documento</p>"])).rows[0].r).toBe(false);
+});

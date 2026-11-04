@@ -33,3 +33,10 @@ test("PDF arquivado é validado antes de iniciar envio",async()=>{const f=fixtur
 test("erro indeterminado após iniciar Gmail não gera retry cego",async()=>{const f=fixture("email");f.setSendError(Error("network timeout"));await processarDocumento(f.job,f.ports);expect(f.failures).toEqual([{codigo:"gmail_indisponivel",incerto:true}]);expect(f.events).not.toContain("email-concluido");});
 test("recusa explícita do Gmail não é tratada como entrega incerta",async()=>{const f=fixture("email");f.setSendError(new ErroAutomacao("gmail_recusado",false));await processarDocumento(f.job,f.ports);expect(f.failures).toEqual([{codigo:"gmail_recusado",incerto:false}]);});
 test("Gmail ausente bloqueia etapa sem começar envio",async()=>{const f=fixture("email");f.ports.gmailConfigurado=false;await processarDocumento(f.job,f.ports);expect(f.failures).toEqual([{codigo:"gmail_ausente",incerto:false}]);expect(f.events).not.toContain("iniciar-envio");});
+
+test("PDF já reservado é retomado sem chamar renderer novamente",async()=>{
+ const f=fixture();f.ports.rendererConfigurado=false;
+ f.ports.recuperarPdf=async()=>({bytes:new Uint8Array([1,2,3]),html:"<p>Supervisor 9</p>"});
+ expect(await processarDocumento(f.job,f.ports)).toBe("concluido");expect(f.events).not.toContain("render");
+ expect(f.events).toContain("storage:conta/automacao/documento/v2.pdf");
+});

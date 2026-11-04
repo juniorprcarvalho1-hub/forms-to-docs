@@ -174,3 +174,12 @@ test("escopo de diagnóstico não pode ser alterado nem reaproveitado",async()=>
 test("limite global evita exceder dois processamentos simultâneos",async()=>{
  await save();await save();await save();expect(await claim()).not.toBeNull();expect(await claim()).not.toBeNull();expect(await claim()).toBeNull();
 });
+
+test("instituição altera modelo mas não token nem privilégios de outro usuário",async()=>{
+ await db.exec("set role authenticated");
+ const result=await db.query("update modelos_oficio set modelo_html='<p>Modelo institucional</p>' where chave='padrao' returning chave");expect(result.rows.length).toBe(1);
+ await expect(db.query("update configuracoes set webhook_token='troca-nao-permitida' where id")).rejects.toThrow("CONFIGURACAO_PROTEGIDA");
+ await db.query("select set_config('request.jwt.claim.sub',$1,false)",[other]);
+ expect((await db.query("update modelos_oficio set modelo_html='<p>Intruso</p>' where chave='padrao' returning chave")).rows.length).toBe(0);
+ await db.exec("reset role");
+});

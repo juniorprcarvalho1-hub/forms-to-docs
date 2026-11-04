@@ -1,4 +1,4 @@
-import { preencherModeloSeguro } from "./modelo-seguro";
+import { preencherModeloSeguro } from "./modelo-seguro.ts";
 
 export type Oficio = {
   id: string;

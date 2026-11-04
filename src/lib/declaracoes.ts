@@ -1,5 +1,5 @@
-import { formatarData, type Configuracoes } from "./oficios";
-import { preencherModeloSeguro } from "./modelo-seguro";
+import { formatarData, type Configuracoes } from "./oficios.ts";
+import { preencherModeloSeguro } from "./modelo-seguro.ts";
 
 export type Declaracao = {
   id: string;

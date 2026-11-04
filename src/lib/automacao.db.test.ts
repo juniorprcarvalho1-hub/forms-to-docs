@@ -144,3 +144,17 @@ test("reserva preserva bytes do PDF entre leases sem trocar o arquivo",async()=>
  const other="b3V0cm8=";const hashOther=(await db.query<any>("select encode(sha256(decode($1,'base64')),'hex') as h",[other])).rows[0].h;
  expect((await db.query<any>("select public.automacao_pdf_reservar($1,$2,$3,$4,$5) as r",[b.id,b.lease_token,hashOther,other,"<p>Documento</p>"])).rows[0].r).toBe(false);
 });
+
+test("limite de tentativas não vira repetição infinita de um erro permanente",async()=>{
+ await save();for(let i=0;i<7;i++){const j=await claim();expect(j).not.toBeNull();await db.query("select public.automacao_falhar($1,$2,'storage_indisponivel',false)",[j.id,j.lease_token]);await db.query("update private.documento_jobs set disponivel_em=now()-interval '1 minute' where id=$1",[j.id]);}
+ expect(await claim()).toBeNull();
+});
+test("retomar antes do cron não libera email iniciado com lease vencido",async()=>{
+ await save("declaracoes-resposta",{supervisor:"Supervisor",estagiario:"Aluno"});const p=await claim();await finish(p);await db.exec("update orientadores set email='orientador@example.com'");const e=await claim();await db.query("select public.automacao_email_iniciar($1,$2)",[e.id,e.lease_token]);await db.query("update private.documento_jobs set lease_ate=now()-interval '1 second' where id=$1",[e.id]);
+ await expect(db.query("select public.automacao_retomar('declaracoes_resposta',$1,'email')",[e.documento_id])).rejects.toThrow("ENVIO_PRECISA_CONFIRMACAO");
+});
+test("automação pausada ainda mostra e permite confirmar uma entrega incerta",async()=>{
+ await save("declaracoes-resposta",{supervisor:"Supervisor",estagiario:"Aluno"});const p=await claim();await finish(p);await db.exec("update orientadores set email='orientador@example.com'");const e=await claim();await db.query("select public.automacao_email_iniciar($1,$2)",[e.id,e.lease_token]);await db.query("update private.documento_jobs set lease_ate=now()-interval '1 second' where id=$1",[e.id]);await db.exec("update private.automacao_config set habilitada=false");
+ expect((await db.query<any>("select public.automacao_status('declaracoes_resposta',$1) as r",[e.documento_id])).rows[0].r.email.estado).toBe("envio_a_confirmar");
+ expect((await db.query<any>("select public.automacao_confirmar_envio($1,true) as r",[e.documento_id])).rows[0].r).toBe(true);
+});

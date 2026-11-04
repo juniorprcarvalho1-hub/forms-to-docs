@@ -1,0 +1,8 @@
+{
+  "name": "facesf-testes-impressao",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "puppeteer-core": "24.26.1"
+  }
+}

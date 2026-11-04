@@ -72,11 +72,16 @@ test("avaliação usa período configurado sem alterar perguntas do formulário"
  const a=app("declaracoes-resposta");a.values.FACESF_CURSO="Nutrição";a.values.FACESF_PERIODO="8";a.ctx.instalarIntegracao();a.ctx.enviarFACESF(a.event);
  expect(JSON.parse(a.calls[0].options.payload)).toMatchObject({Curso:"Nutrição","Período":"8","Nome do aluno":"Aluno Ficticio"});
 });
-test("período respondido prevalece sobre o padrão do formulário",()=>{
+test("período contraditório com configuração fica pendente sem POST",()=>{
  const a=app("declaracoes-resposta");a.values.FACESF_PERIODO="9";
  a.answer.getItemResponses=()=>[{getItem:()=>({getTitle:()=>"Período do estagiário"}),getResponse:()=>"10º período"}];
- a.ctx.instalarIntegracao();a.ctx.enviarFACESF(a.event);const payload=JSON.parse(a.calls[0].options.payload);
- expect(payload["Período do estagiário"]).toBe("10º período");expect(payload["Período"]).toBeUndefined();
+ a.ctx.instalarIntegracao();expect(()=>a.ctx.enviarFACESF(a.event)).toThrow();expect(a.calls).toHaveLength(0);
+ expect(a.ctx.verPendenciasFACESF().bloqueadas).toBe(1);
+});
+test("curso contraditório com configuração fica pendente sem POST",()=>{
+ const a=app("declaracoes-resposta");a.values.FACESF_CURSO="Enfermagem";
+ a.answer.getItemResponses=()=>[{getItem:()=>({getTitle:()=>"Curso"}),getResponse:()=>"Fisioterapia"}];
+ a.ctx.instalarIntegracao();expect(()=>a.ctx.enviarFACESF(a.event)).toThrow();expect(a.calls).toHaveLength(0);
 });
 const profiles=[["enfermagem","Enfermagem",[9,10]],["fisioterapia","Fisioterapia",[9,10]],["nutricao","Nutrição",[7,8]],["psicologia","Psicologia",[9,10]]] as const;
 for(const [key,course,periods] of profiles)for(const period of periods)test("script de avaliação "+key+" "+period+" mantém o perfil correto",()=>{

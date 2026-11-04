@@ -6,7 +6,8 @@ export type ProcessadorPorts={
  rendererConfigurado:boolean;gmailConfigurado:boolean;
  autorizar:(job:DocumentoJob)=>Promise<boolean>;
  incorporar:(html:string)=>Promise<string>;renderizar:(html:string)=>Promise<Uint8Array>;validarPdf:(bytes:Uint8Array)=>Promise<void>;
- salvar:(path:string,bytes:Uint8Array)=>Promise<void>;concluirPdf:(job:DocumentoJob,path:string,html:string)=>Promise<boolean>;
+ recuperarPdf?:(job:DocumentoJob)=>Promise<{bytes:Uint8Array;html:string}|null>;
+ salvar:(path:string,bytes:Uint8Array,html:string)=>Promise<void>;concluirPdf:(job:DocumentoJob,path:string,html:string)=>Promise<boolean>;
  lerPdf:(path:string)=>Promise<Uint8Array>;iniciarEnvio:(job:DocumentoJob)=>Promise<DestinoEnvio|null>;
  enviar:(job:DocumentoJob,destino:DestinoEnvio,bytes:Uint8Array)=>Promise<{id:string}>;
  concluirEnvio:(job:DocumentoJob,id:string)=>Promise<boolean>;
@@ -17,14 +18,19 @@ export async function processarDocumento(job:DocumentoJob,ports:ProcessadorPorts
  try{
   if(!await ports.autorizar(job))return "obsoleto";
   if(job.etapa==="pdf"){
-   if(!ports.rendererConfigurado)throw new ErroAutomacao("renderizador_ausente");
-   fase="compor";const html=montarHtmlAutomacao(job.tipo,job.snapshot);
-   fase="imagens";const incorporado=await ports.incorporar(html);
-   fase="render";const bytes=await ports.renderizar(incorporado);
+   fase="storage";const reservado=ports.recuperarPdf?await ports.recuperarPdf(job):null;
+   let html:string,bytes:Uint8Array;
+   if(reservado){html=reservado.html;bytes=reservado.bytes;}
+   else{
+    if(!ports.rendererConfigurado)throw new ErroAutomacao("renderizador_ausente");
+    fase="compor";html=montarHtmlAutomacao(job.tipo,job.snapshot);
+    fase="imagens";const incorporado=await ports.incorporar(html);
+    fase="render";bytes=await ports.renderizar(incorporado);
+   }
    fase="validar";await ports.validarPdf(bytes);
    if(!await ports.autorizar(job))return "obsoleto";
    const path=job.usuario_id+"/automacao/"+job.documento_id+"/v"+job.versao+".pdf";
-   fase="storage";await ports.salvar(path,bytes);
+   fase="storage";await ports.salvar(path,bytes,html);
    fase="concluir";return await ports.concluirPdf(job,path,html)?"concluido":"obsoleto";
   }
   if(!ports.gmailConfigurado)throw new ErroAutomacao("gmail_ausente");

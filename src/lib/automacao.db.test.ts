@@ -112,3 +112,25 @@ test("numeração continua anual no recebimento e não reinicia após reenvio",a
  const a=await save("oficios",{nome:"Pessoa Teste",data:"2026-12-31"});const b=await save("oficios",{nome:"Pessoa Teste",data:"2027-01-01"});
  const rows=await db.query<any>("select ano,numero from oficios where id in($1,$2) order by ano",[a.id,b.id]);expect(rows.rows).toEqual([{ano:2026,numero:1},{ano:2027,numero:1}]);
 });
+
+test("ticket de email só libera envelope e autorização uma vez",async()=>{
+ await save("declaracoes-resposta",{supervisor:"Supervisor",estagiario:"Aluno"});const p=await claim();await finish(p);await db.exec("update orientadores set email='orientador@example.com'");const e=await claim();
+ await db.query("select public.automacao_email_iniciar($1,$2)",[e.id,e.lease_token]);
+ const t=(await db.query<any>("select public.automacao_ticket_email($1,$2) as t",[e.id,e.lease_token])).rows[0].t;expect(t).toMatch(/^[a-f0-9]{64}$/);
+ const read=()=>db.query<any>("select public.automacao_consumir_ticket_email($1,false) as r",[t]);
+ expect((await read()).rows[0].r.id).toBe(e.id);expect((await read()).rows[0].r).toBeNull();
+ expect((await db.query<any>("select public.automacao_consumir_ticket_email($1,true) as r",[t])).rows[0].r.autorizado).toBe(true);
+ expect((await db.query<any>("select public.automacao_consumir_ticket_email($1,true) as r",[t])).rows[0].r).toBeNull();
+});
+test("mudança do orientador depois de ler envelope nega autorização de envio antigo",async()=>{
+ await save("declaracoes-resposta",{supervisor:"Supervisor",estagiario:"Aluno"});const p=await claim();await finish(p);await db.exec("update orientadores set email='orientador@example.com'");const e=await claim();
+ await db.query("select public.automacao_email_iniciar($1,$2)",[e.id,e.lease_token]);const t=(await db.query<any>("select public.automacao_ticket_email($1,$2) as t",[e.id,e.lease_token])).rows[0].t;
+ await db.query("select public.automacao_consumir_ticket_email($1,false)",[t]);await db.exec("update orientadores set email='novo@example.com'");
+ expect((await db.query<any>("select public.automacao_consumir_ticket_email($1,true) as r",[t])).rows[0].r).toBeNull();
+});
+test("configuração documental não concede permissão de dono ou de consumidor",async()=>{
+ await db.exec("set role authenticated");
+ expect((await db.query<any>("select public.permissao_config_documental() as p")).rows[0].p).toBe(true);
+ await expect(db.query("select public.automacao_ticket_email(gen_random_uuid(),gen_random_uuid())")).rejects.toThrow();
+ await db.query("select set_config('request.jwt.claim.sub',$1,false)",[other]);expect((await db.query<any>("select public.permissao_config_documental() as p")).rows[0].p).toBe(false);await db.exec("reset role");
+});

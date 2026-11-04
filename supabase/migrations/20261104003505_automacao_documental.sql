@@ -361,6 +361,7 @@ end $$;
 create function public.automacao_despachar() returns integer language sql security invoker set search_path='' as $$select private.automacao_despachar()$$;
 -- O consumidor só inicia após habilitação explícita. O histórico não é enfileirado.
 do $$begin
+ if exists(select 1 from pg_available_extensions where name='pg_cron') and not exists(select 1 from pg_extension where extname='pg_cron') then execute 'create extension pg_cron with schema pg_catalog';end if;
  if exists(select 1 from pg_extension where extname='pg_cron') then
   execute $cron$select cron.schedule('facesf-automacao-documental','* * * * *','select private.automacao_despachar()')$cron$;
  end if;

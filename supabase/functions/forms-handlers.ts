@@ -1,3 +1,4 @@
+import {resolverCursoFormulario,resolverPeriodoFormulario,buscarCampoFormulario,ValidacaoFormularioError} from "../../src/lib/forms-identificacao.ts";
 import {dataISO} from "../../src/lib/importacao.ts";
 import {formsFailure,formsJson} from "./forms-http.ts";
 export type FormsAdmin={from:(table:string)=>any;rpc:(name:string,args:Record<string,unknown>)=>PromiseLike<{data:unknown;error:{message:string;code?:string}|null}>};
@@ -10,11 +11,12 @@ async function saveDocument(admin:FormsAdmin,request:Request,token:string,destin
   const raw=String(data[field]);const iso=dataISO(/^\d{4}-\d{2}-\d{2}T/.test(raw)?raw.slice(0,10):raw);
   if(!iso)return json({error:"Confira as datas do formulário."},422);data[field]=iso;
  }
- if(data.supervisor==="Supervisor(a) não informado")return json({error:"Informe o nome do supervisor."},422);
+ if(destination==="declaracoes-resposta" && (String(data.supervisor??"").trim().length<2 || String(data.estagiario??"").trim().length<2))return json({error:"Informe o nome do supervisor."},422);
+ if(data.data_inicio && data.data_fim && String(data.data_inicio)>String(data.data_fim))return json({error:"A data de término deve ser igual ou posterior à data de início."},422);
  const {data:saved,error}=await admin.rpc("registrar_documento_forms",{p_token:token,p_destino:destination,p_chave:request.headers.get("x-facesf-id"),p_hash:request.headers.get("x-facesf-source-hash"),p_dados:data});
  return error?formsFailure(error):json(saved);
 }
-export async function handleOficios(request: Request,supabaseAdmin:FormsAdmin,validatedToken:string):Promise<Response>{
+async function oficiosInterno(request: Request,supabaseAdmin:FormsAdmin,validatedToken:string):Promise<Response>{
 
         
 
@@ -75,6 +77,7 @@ if(professoresError) throw Error('Lookup unavailable');
           (c) => normalizar(String(c.nome_formulario)) === normalizar(cursoForm),
         );
         const curso = cursoCad?.nome_oficial?.trim() || cursoForm;
+        const cursoChave = resolverCursoFormulario(curso);
 
         const professorCad = (professores ?? []).find((p: any) => {
           const alvo = normalizar(String(p.nome_formulario));
@@ -89,11 +92,7 @@ if(professoresError) throw Error('Lookup unavailable');
         // Módulo do estágio e modelo aplicável (1 padrão, 2 nutrição, 3 psicologia)
         const moduloForm = texto("modulo", "moduloestagio", "estagio", "modulos");
         const cursoNorm = normalizar(curso || cursoForm);
-        const modeloChave = cursoNorm.includes("nutricao")
-          ? "nutricao"
-          : cursoNorm.includes("psicologia")
-            ? "psicologia"
-            : "padrao";
+        const modeloChave = cursoChave === "nutricao" ? "nutricao" : cursoChave === "psicologia" ? "psicologia" : "padrao";
 
         let moduloNome = moduloForm;
         let cargaModulo = "";
@@ -115,10 +114,8 @@ if(modulosError) throw Error('Lookup unavailable');
           }
         }
 
-        const cargaFinal =
-          texto("cargahoraria") ||
-          (modeloChave === "padrao" ? "420 horas" : cargaModulo) ||
-          padrao("padrao_carga_horaria");
+        const cargaFinal = modeloChave === "padrao" ? "420 horas" : (texto("cargahoraria") || cargaModulo);
+        if(modeloChave!=="padrao" && (!moduloNome.trim() || !cargaFinal.trim()))throw new ValidacaoFormularioError("Cadastre o módulo e a carga horária ou informe esses dados no formulário.");
 
         const registro = {
           modulo: moduloNome,
@@ -154,7 +151,7 @@ if(modulosError) throw Error('Lookup unavailable');
 return saveDocument(supabaseAdmin,request,token,"oficios",registro);
 
 }
-export async function handleDeclaracoes(request: Request,supabaseAdmin:FormsAdmin,validatedToken:string):Promise<Response>{
+async function declaracoesInterno(request: Request,supabaseAdmin:FormsAdmin,validatedToken:string):Promise<Response>{
 
         
 
@@ -183,24 +180,7 @@ export async function handleDeclaracoes(request: Request,supabaseAdmin:FormsAdmi
         }
 
         /** Procura o valor por correspondência exata e, depois, aproximada do título da pergunta. */
-        const buscar = (chaves: string[], evitar: string[] = []) => {
-          const alvos = chaves.map(normalizar);
-          const usavel = (k: string) => !evitar.some((e) => k.includes(normalizar(e)));
-          const valor = (k: string) => {
-            const v = payload[k];
-            return v !== undefined && String(v).trim() !== "" ? String(v).trim() : "";
-          };
-          for (const alvo of alvos) {
-            if (usavel(alvo) && valor(alvo)) return valor(alvo);
-          }
-          for (const alvo of alvos) {
-            for (const k of Object.keys(payload)) {
-              if (!usavel(k)) continue;
-              if ((k.includes(alvo) || alvo.includes(k)) && valor(k)) return valor(k);
-            }
-          }
-          return "";
-        };
+        const buscar = (chaves:string[], evitar:string[]=[]) => buscarCampoFormulario(payload,chaves,evitar);
         const texto = (...chaves: string[]) => buscar(chaves);
 
         const nome = buscar(
@@ -220,14 +200,9 @@ if(cursosError) throw Error('Lookup unavailable');
           (c) => normalizar(String(c.nome_formulario)) === normalizar(cursoForm),
         );
         const curso = cursoCad?.nome_oficial?.trim() || cursoForm;
+        const cursoChave = resolverCursoFormulario(curso);
 
-        const modeloChave = (() => {
-          const t = normalizar(curso || cursoForm);
-          if (t.includes("fisio")) return "fisioterapia";
-          if (t.includes("nutri")) return "nutricao";
-          if (t.includes("psico")) return "psicologia";
-          return "enfermagem";
-        })();
+        const modeloChave = cursoChave;
 
         // Campo de estágio: nome oficial e carga horária vêm do cadastro do sistema
         const campoForm = texto(
@@ -268,7 +243,7 @@ if(modulosError) throw Error('Lookup unavailable');
 return saveDocument(supabaseAdmin,request,token,"declaracoes",registro);
 
 }
-export async function handleRespostas(request: Request,supabaseAdmin:FormsAdmin,validatedToken:string):Promise<Response>{
+async function respostasInterno(request: Request,supabaseAdmin:FormsAdmin,validatedToken:string):Promise<Response>{
 
         
 
@@ -296,40 +271,14 @@ export async function handleRespostas(request: Request,supabaseAdmin:FormsAdmin,
           return json({ error: "Token inválido" }, 401);
         }
 
-        const buscar = (chaves: string[], evitar: string[] = []) => {
-          const alvos = chaves.map(normalizar);
-          const usavel = (k: string) => !evitar.some((e) => k.includes(normalizar(e)));
-          const valor = (k: string) => {
-            const v = payload[k];
-            return v !== undefined && String(v).trim() !== "" ? String(v).trim() : "";
-          };
-          for (const alvo of alvos) {
-            if (usavel(alvo) && valor(alvo)) return valor(alvo);
-          }
-          for (const alvo of alvos) {
-            for (const k of Object.keys(payload)) {
-              if (!usavel(k)) continue;
-              if ((k.includes(alvo) || alvo.includes(k)) && valor(k)) return valor(k);
-            }
-          }
-          return "";
-        };
+        const buscar = (chaves:string[], evitar:string[]=[]) => buscarCampoFormulario(payload,chaves,evitar);
         const texto = (...chaves: string[]) => buscar(chaves);
 
         const supervisor = buscar(
-          ["nomedosupervisor", "supervisor", "nomecompletodosupervisor", "nome"],
+          ["nomedosupervisor", "supervisor", "nomecompletodosupervisor", "nomecompletodosupervisordecampo", "nomedosupervisordecampo", "nome"],
           ["estagiario", "aluno", "discente", "curso", "email"],
         );
-        const primeiroNome =
-          Object.entries(payload).find(
-            ([k, v]) =>
-              k.includes("nome") &&
-              !k.includes("estagiario") &&
-              !k.includes("aluno") &&
-              String(v ?? "").trim(),
-          )?.[1] ?? "";
-        const supervisorFinal =
-          supervisor || String(primeiroNome).trim() || "Supervisor(a) não informado";
+        const supervisorFinal = supervisor;
 
         const estagiario = buscar(
           ["nomedoestagiario", "estagiario", "aluno", "nomedoaluno", "discente"],
@@ -345,14 +294,9 @@ if(cursosError) throw Error('Lookup unavailable');
           (c) => normalizar(String(c.nome_formulario)) === normalizar(cursoForm),
         );
         const curso = cursoCad?.nome_oficial?.trim() || cursoForm;
+        const cursoChave = resolverCursoFormulario(curso);
 
-        const modeloChave = (() => {
-          const t = normalizar(curso || cursoForm);
-          if (t.includes("fisio")) return "fisioterapia";
-          if (t.includes("nutri")) return "nutricao";
-          if (t.includes("psico")) return "psicologia";
-          return "enfermagem";
-        })();
+        const modeloChave = cursoChave;
 
         const avaliacaoBruta = texto(
           "tipodeavaliacao",
@@ -366,34 +310,7 @@ if(cursosError) throw Error('Lookup unavailable');
             ? "AVALIAÇÃO PARCIAL"
             : avaliacaoBruta;
 
-        // Período: só aceita respostas que contenham número (ex.: "7º"), evitando "Sim"/"Não".
-        const numeroDe = (v: unknown) => {
-          const m = String(v ?? "")
-            .trim()
-            .match(/^(\d{1,2})\s*(º|°|o|ª)?\s*(periodo|período|semestre)?\.?$/i);
-          return m?.[1] ?? "";
-        };
-        const chavesPeriodo = ["estagiosupervisionado", "periodo", "semestre", "fase"];
-        let periodo = "";
-        for (const alvo of chavesPeriodo) {
-          for (const [k, v] of Object.entries(payload)) {
-            if (k.includes(alvo) && numeroDe(v)) {
-              periodo = numeroDe(v);
-              break;
-            }
-          }
-          if (periodo) break;
-        }
-        if (!periodo) {
-          // Qualquer resposta que seja apenas um número de período (ex.: "7º").
-          for (const v of Object.values(payload)) {
-            if (numeroDe(v)) {
-              periodo = numeroDe(v);
-              break;
-            }
-          }
-        }
-        if (!periodo) periodo = cursoForm.match(/\d+/)?.[0] ?? "";
+        const periodo = resolverPeriodoFormulario(payload,cursoChave);
 
         const registro = {
           supervisor: supervisorFinal,
@@ -409,3 +326,15 @@ if(cursosError) throw Error('Lookup unavailable');
 return saveDocument(supabaseAdmin,request,token,"declaracoes-resposta",registro);
 
 }
+
+function comValidacao(handler:(request:Request,admin:FormsAdmin,token:string)=>Promise<Response>){
+ return async(request:Request,admin:FormsAdmin,token:string):Promise<Response>=>{
+  try{return await handler(request,admin,token);}catch(error){
+   if(error instanceof ValidacaoFormularioError)return json({error:error.message},422);
+   throw error;
+  }
+ };
+}
+export const handleOficios=comValidacao(oficiosInterno);
+export const handleDeclaracoes=comValidacao(declaracoesInterno);
+export const handleRespostas=comValidacao(respostasInterno);

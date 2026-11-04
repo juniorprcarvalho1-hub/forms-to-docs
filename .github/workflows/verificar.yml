@@ -15,8 +15,6 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.4"
-      - name: Gerar nome oficial da migração
-        run: bunx supabase@2.81.3 migration new automacao_documental
       - run: bun install --frozen-lockfile
       - run: bun test
       - run: bunx tsc --noEmit

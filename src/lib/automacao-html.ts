@@ -71,6 +71,13 @@ export async function incorporarImagensAutomacao(html:string,origin:string,load:
 /** Apenas este script, com nonce aleatório, pode executar no navegador de impressão. */
 export function paginaHtmlRenderizacao(html:string,nonce:string):{html:string;seletor:string}{
  if(!/^[a-f0-9]{32}$/.test(nonce))throw new ErroAutomacao("pdf_invalido");
+ // O provedor mede o DOM antes de entrar na mídia print. Fixe a mídia de impressão já na composição.
+ html=html.replace(/@media\s+([^{}]+)\{/gi,(_all,media:string)=>{
+  const value=media.trim().toLowerCase();
+  if(value==="print"||value==="all")return "@media all{";
+  if(value==="screen")return "@media not all{";
+  throw new ErroAutomacao("pdf_layout");
+ });
  const {document}=parseHTML("<html><head></head><body>"+html+"</body></html>");
  if(document.querySelector("script,iframe,object,embed,base,link,meta,svg,form"))throw new ErroAutomacao("imagem_invalida");
  for(const node of document.querySelectorAll("*"))for(const a of [...node.attributes])if(/^on/i.test(a.name)||a.name==="srcdoc")throw new ErroAutomacao("imagem_invalida");

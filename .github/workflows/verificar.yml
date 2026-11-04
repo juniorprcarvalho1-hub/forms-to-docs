@@ -16,11 +16,9 @@ jobs:
         with:
           bun-version: "1.4.4"
       - run: bun install --frozen-lockfile
-      - name: Preparar lockfile do teste Chromium
+      - name: Preparar teste Chromium
         working-directory: tests/renderizador
-        run: |
-          bun install
-          node -e "console.log('AUTOMACAO_RENDER_LOCK_BASE64='+require('fs').readFileSync('bun.lock').toString('base64'))"
+        run: bun install --frozen-lockfile
       - run: bun test
       - run: bunx tsc --noEmit
       - run: bun run build

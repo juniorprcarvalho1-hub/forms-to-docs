@@ -14,7 +14,7 @@ create table private.documento_jobs(
 );
 create index documento_jobs_prontos on private.documento_jobs(estado,disponivel_em,created_at);
 create index documento_jobs_documento on private.documento_jobs(tipo,documento_id,versao);
-create table private.automacao_tickets(token_hash text primary key,expira_em timestamptz not null);
+create table private.automacao_tickets(token_hash text primary key,expira_em timestamptz not null,modo text not null check(modo in('processar','verificar','auditar')),indice integer not null check(indice between 0 and 14));
 create table private.automacao_mail_tickets(token_hash text primary key,job_id uuid not null references private.documento_jobs(id) on delete cascade,lease_token uuid not null,expira_em timestamptz not null,envelope_lido_em timestamptz,envio_autorizado_em timestamptz);
 alter table private.automacao_mail_tickets enable row level security;
 revoke all on private.automacao_mail_tickets from public,anon,authenticated;
@@ -88,11 +88,13 @@ create trigger automacao_respostas after insert or update or delete on public.de
 create function private.automacao_claim() returns jsonb language plpgsql security definer set search_path='' as $$
 declare j private.documento_jobs;
 begin
+ perform 1 from private.automacao_config where id for update;
  if not coalesce((select habilitada from private.automacao_config where id),false) then return null;end if;
+ if (select count(*) from private.documento_jobs where estado='processando' and lease_ate>clock_timestamp())>=2 then return null;end if;
  update private.documento_jobs set estado='envio_a_confirmar',erro_codigo='confirmar_envio',lease_token=null,lease_ate=null,updated_at=now()
  where etapa='email' and estado='processando' and lease_ate<now() and envio_iniciado_em is not null;
  select * into j from private.documento_jobs
- where (estado='pendente' or (estado='erro_recuperavel' and tentativas<7) or estado='bloqueado_configuracao' or (estado='processando' and lease_ate<now() and envio_iniciado_em is null))
+ where (estado='pendente' or (estado='erro_recuperavel' and tentativas<7) or (estado='bloqueado_configuracao' and erro_codigo in('renderizador_ausente','gmail_ausente','orientador_ausente','conta_inativa')) or (estado='processando' and lease_ate<now() and envio_iniciado_em is null))
  and disponivel_em<=now() and coalesce(private.controle_conta_ativa(usuario_id),false)
  order by created_at,id for update skip locked limit 1;
  if not found then return null;end if;
@@ -186,7 +188,7 @@ begin
  d:=private.automacao_documento(p_tipo,p_documento);
  if not private.automacao_permitido(d) then return null;end if;
  select jsonb_build_object('estado',estado,'erro_codigo',erro_codigo,'tentativas',tentativas,'atualizado_em',updated_at) into pdf from private.documento_jobs where tipo=p_tipo and documento_id=p_documento and versao=(d->>'automacao_versao')::int and etapa='pdf';
- select jsonb_build_object('estado',estado,'erro_codigo',erro_codigo,'tentativas',tentativas,'atualizado_em',updated_at) into email from private.documento_jobs where tipo=p_tipo and documento_id=p_documento and versao=(d->>'automacao_versao')::int and etapa='email';
+ select jsonb_build_object('estado',case when estado='processando' and envio_iniciado_em is not null and lease_ate<=now() then 'envio_a_confirmar' else estado end,'erro_codigo',erro_codigo,'tentativas',tentativas,'atualizado_em',updated_at) into email from private.documento_jobs where tipo=p_tipo and documento_id=p_documento and versao=(d->>'automacao_versao')::int and etapa='email';
  return jsonb_build_object('versao',(d->>'automacao_versao')::int,'habilitada',(select habilitada from private.automacao_config where id),'pdf',pdf,'email',email);
 end $$;
 create function private.automacao_retomar(p_tipo text,p_documento uuid,p_etapa text default 'pdf') returns boolean language plpgsql security definer set search_path='' as $$
@@ -197,7 +199,7 @@ begin
  if not private.automacao_permitido(d) then raise exception 'DOCUMENTO_NAO_AUTORIZADO';end if;
  select * into j from private.documento_jobs where tipo=p_tipo and documento_id=p_documento and versao=(d->>'automacao_versao')::int and etapa=p_etapa for update;
  if found then
-  if j.estado='envio_a_confirmar' then raise exception 'ENVIO_PRECISA_CONFIRMACAO';end if;
+  if j.estado='envio_a_confirmar' or (j.etapa='email' and j.estado='processando' and j.envio_iniciado_em is not null and j.lease_ate<=clock_timestamp()) then raise exception 'ENVIO_PRECISA_CONFIRMACAO';end if;
   if j.estado='processando' and j.lease_ate>now() then raise exception 'PROCESSAMENTO_EM_ANDAMENTO';end if;
   if j.estado='concluido' then return false;end if;
   update private.documento_jobs set estado='pendente',tentativas=0,disponivel_em=now(),lease_token=null,lease_ate=null,envio_iniciado_em=null,erro_codigo=null,
@@ -230,7 +232,7 @@ declare d jsonb;j private.documento_jobs;
 begin
  d:=private.automacao_documento('declaracoes_resposta',p_documento,true);
  if not private.automacao_permitido(d) then raise exception 'DOCUMENTO_NAO_AUTORIZADO';end if;
- select * into j from private.documento_jobs where tipo='declaracoes_resposta' and documento_id=p_documento and versao=(d->>'automacao_versao')::int and etapa='email' and estado='envio_a_confirmar' for update;
+ select * into j from private.documento_jobs where tipo='declaracoes_resposta' and documento_id=p_documento and versao=(d->>'automacao_versao')::int and etapa='email' and (estado='envio_a_confirmar' or (estado='processando' and envio_iniciado_em is not null and lease_ate<=clock_timestamp())) for update;
  if not found or p_enviado is null then return false;end if;
  if p_enviado then
   update public.declaracoes_resposta set email_enviado_em=now(),email_destino=j.email_destino where id=p_documento;
@@ -316,6 +318,27 @@ create function public.permissao_config_documental() returns boolean language sq
 revoke all on function public.permissao_config_documental() from public,anon;
 grant execute on function public.permissao_config_documental() to authenticated,service_role;
 alter function private.forms_save(text,text,text,text,jsonb) set timezone to 'America/Fortaleza';
+
+
+create function private.automacao_emitir_ticket(p_modo text,p_indice integer default 0) returns text language plpgsql security definer set search_path='' as $$
+declare token text;
+begin
+ if p_modo is null or p_modo not in('processar','verificar','auditar') or p_indice is null or p_indice not between 0 and 14 or (p_modo<>'auditar' and p_indice<>0) then raise exception 'ESCOPO_INVALIDO';end if;
+ token:=replace(gen_random_uuid()::text,'-','')||replace(gen_random_uuid()::text,'-','');
+ insert into private.automacao_tickets(token_hash,expira_em,modo,indice) values(encode(sha256(convert_to(token,'UTF8')),'hex'),clock_timestamp()+interval '90 seconds',p_modo,p_indice);
+ return token;
+end $$;
+create function private.automacao_consumir_ticket(p_ticket text) returns jsonb language plpgsql security definer set search_path='' as $$
+declare t private.automacao_tickets;j jsonb;
+begin
+ if p_ticket is null or p_ticket !~ '^[a-f0-9]{64}$' then return null;end if;
+ delete from private.automacao_tickets where token_hash=encode(sha256(convert_to(p_ticket,'UTF8')),'hex') and expira_em>clock_timestamp() returning * into t;
+ if not found then return null;end if;
+ if t.modo='processar' then j:=private.automacao_claim();return jsonb_build_object('modo',t.modo,'job',j);end if;
+ return jsonb_build_object('modo',t.modo,'indice',t.indice);
+end $$;
+create function public.automacao_emitir_ticket(p_modo text,p_indice integer default 0) returns text language sql security invoker set search_path='' as $$select private.automacao_emitir_ticket(p_modo,p_indice)$$;
+create function public.automacao_consumir_ticket(p_ticket text) returns jsonb language sql security invoker set search_path='' as $$select private.automacao_consumir_ticket(p_ticket)$$;
 
 do $$
 declare f record;

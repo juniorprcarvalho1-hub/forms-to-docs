@@ -4,12 +4,17 @@ import {montarDocumentoHtml,type Oficio,type Configuracoes,type ModeloOficio} fr
 import {montarDeclaracaoHtml,type Declaracao,type ModeloDeclaracao} from "./declaracoes.ts";
 import {montarDeclaracaoRespostaHtml,type DeclaracaoResposta,type ModeloDeclaracaoResposta} from "./declaracoes-resposta.ts";
 import {identificarImagemInstitucional,type ReferenciaImagem} from "./imagens-institucionais.ts";
+import {resolverCursoFormulario} from "./forms-identificacao.ts";
 import {ErroAutomacao} from "./automacao-erros.ts";
 export type TipoDocumento="oficios"|"declaracoes"|"declaracoes_resposta";
 export type SnapshotDocumento={documento:Record<string,unknown>;config:Record<string,unknown>;modelos:Array<Record<string,unknown>>};
 export function montarHtmlAutomacao(tipo:TipoDocumento,snapshot:SnapshotDocumento):string{
  const d=snapshot.documento,c=snapshot.config;
  if(typeof d["conteudo_html"]==="string"&&d["conteudo_html"].trim())return d["conteudo_html"];
+ const curso=resolverCursoFormulario(String(d["curso"]??""));
+ const chave=curso.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+ const esperado=tipo==="oficios"?(["enfermagem","fisioterapia"].includes(chave)?"padrao":chave):chave;
+ if(d["modelo_chave"]!==esperado)throw new ErroAutomacao("modelo_incompativel");
  const modelo=snapshot.modelos.find(m=>m["chave"]===d["modelo_chave"]);
  if(!modelo||typeof modelo["modelo_html"]!=="string"||!modelo["modelo_html"].trim())throw new ErroAutomacao("modelo_ausente");
  const texto=[tipo==="oficios"?c["cabecalho_html"]:"",modelo["modelo_html"],tipo==="oficios"?c["rodape_html"]:""].filter(Boolean).join("");
@@ -35,6 +40,7 @@ async function imagemBase64(image:ImagemAutomacao):Promise<string>{
   const p=await PDFDocument.create();
   if(image.mime==="image/png")await p.embedPng(bytes);
   else if(image.mime==="image/jpeg")await p.embedJpg(bytes);
+  else if(image.mime==="image/gif"){const sig=String.fromCharCode(...bytes.subarray(0,6));if(!["GIF87a","GIF89a"].includes(sig)||bytes.length<14||!bytes[6]&&!bytes[7]||!bytes[8]&&!bytes[9])throw Error();}
   else throw Error();
  }catch{throw new ErroAutomacao("imagem_invalida");}
  return "data:"+image.mime+";base64,"+bytesBase64(bytes);
@@ -68,9 +74,9 @@ export function paginaHtmlRenderizacao(html:string,nonce:string):{html:string;se
  const {document}=parseHTML("<html><head></head><body>"+html+"</body></html>");
  if(document.querySelector("script,iframe,object,embed,base,link,meta,svg,form"))throw new ErroAutomacao("imagem_invalida");
  for(const node of document.querySelectorAll("*"))for(const a of [...node.attributes])if(/^on/i.test(a.name)||a.name==="srcdoc")throw new ErroAutomacao("imagem_invalida");
- for(const img of document.querySelectorAll("img"))if(!/^data:image\/(?:png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(img.getAttribute("src")??""))throw new ErroAutomacao("imagem_invalida");
+ for(const img of document.querySelectorAll("img"))if(!/^data:image\/(?:png|jpeg|gif);base64,[A-Za-z0-9+/=]+$/.test(img.getAttribute("src")??""))throw new ErroAutomacao("imagem_invalida");
  const seletor="#facesf-ready-"+nonce;
- const script="(async function(nonce){\n let valido=true;\n try{\n  await document.fonts.ready;\n  await Promise.all(Array.from(document.images).map(async img=>{await img.decode();if(!img.naturalWidth)throw Error();}));\n  const root=document.getElementById(\"facesf-document\"),box=root.getBoundingClientRect();\n  if(!root.textContent.trim()||box.width<700||root.scrollHeight>1123||root.scrollWidth>795)throw Error();\n  for(const node of root.querySelectorAll(\"*\")){\n   const r=node.getBoundingClientRect();\n   if(r.width===0&&r.height===0)continue;\n   if(r.left<box.left-1||r.right>box.right+1||r.top<box.top-1||r.bottom>box.top+1123||\n      (node.clientHeight>0&&node.scrollHeight>node.clientHeight+1)||(node.clientWidth>0&&node.scrollWidth>node.clientWidth+1))throw Error();\n  }\n }catch{valido=false;}\n if(!valido){document.body.innerHTML='<div style=\"height:400mm;break-after:page\">Documento inválido: composição ou imagem incompleta.</div><p>Não arquivar.</p>';}\n const ready=document.createElement(\"span\");ready.id=\"facesf-ready-\"+nonce;ready.style.display=\"none\";document.body.appendChild(ready);\n})";
+ const script="(async function(nonce){\n function invalido(){document.body.innerHTML='<div style=\"height:400mm;break-after:page\">Documento inválido: composição ou imagem incompleta.</div><p>Não arquivar.</p>';}\n function validar(){\n  const root=document.getElementById(\"facesf-document\");if(!root)throw Error();\n  const box=root.getBoundingClientRect();\n  if(!root.textContent.trim()||box.width<700||root.scrollHeight>1123||root.scrollWidth>795)throw Error();\n  for(const node of root.querySelectorAll(\"*\")){\n   const r=node.getBoundingClientRect();\n   if(r.width===0&&r.height===0)continue;\n   if(r.left<box.left-1||r.right>box.right+1||r.top<box.top-1||r.bottom>box.top+1123||\n      (node.clientHeight>0&&node.scrollHeight>node.clientHeight+1)||(node.clientWidth>0&&node.scrollWidth>node.clientWidth+1))throw Error();\n  }\n }\n try{\n  await document.fonts.ready;\n  await Promise.all(Array.from(document.images).map(async img=>{await img.decode();if(!img.naturalWidth)throw Error();}));\n  validar();\n }catch{invalido();}\n window.addEventListener(\"beforeprint\",()=>{try{validar();}catch{invalido();}});\n const ready=document.createElement(\"span\");ready.id=\"facesf-ready-\"+nonce;ready.style.display=\"none\";document.body.appendChild(ready);\n})";
  const executable=script+"("+JSON.stringify(nonce)+");";
  return {seletor,html:'<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'nonce-'+nonce+'\'; style-src \'unsafe-inline\'; img-src data:; font-src data:; base-uri \'none\'; form-action \'none\'"><style>*{box-sizing:border-box}html,body{margin:0;width:210mm;background:#fff}.pagina-a4{width:210mm;min-height:297mm;padding:38px 48px;overflow:visible;background:#fff;color:#000;font-family:\'Times New Roman\',serif;font-size:14px;line-height:1.35}h1{font-size:1.6em}h2{font-size:1.35em}h3{font-size:1.15em}h1,h2,h3{font-weight:700;margin:.45em 0}p{margin:0 0 .4em}ul,ol{padding-left:1.6em;margin:0 0 .6em}blockquote{border-left:3px solid #d1d5db;padding-left:1em;margin:0 0 .6em}img{display:inline-block;max-width:100%}table{max-width:100%}.img-selecionada{outline:none!important}</style></head><body><div id="facesf-document" class="prose-oficio pagina-a4">'+document.body.innerHTML+'</div><style>@page{size:A4!important;margin:0!important}</style><script nonce="'+nonce+'">'+executable+'</script></body></html>'};
 }

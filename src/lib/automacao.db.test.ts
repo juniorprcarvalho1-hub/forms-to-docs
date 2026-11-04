@@ -40,6 +40,7 @@ afterAll(async()=>{await db?.close()});
 beforeEach(async()=>{
  await db.exec("reset role");
  await db.query("select set_config('request.jwt.claim.sub',$1,false)",[user]);
+ if((await db.query<any>("select to_regclass('private.documento_jobs') as t")).rows[0].t)await db.exec("delete from private.documento_jobs");
  await db.exec("update auth.users set active=true;delete from oficios;delete from declaracoes;delete from declaracoes_resposta;delete from private.forms_receipts;update orientadores set email='';");
  if((await db.query<any>("select to_regclass('private.automacao_config') as t")).rows[0].t)await db.exec("update private.automacao_config set habilitada=true");
 });

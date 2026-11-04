@@ -20,8 +20,8 @@ jobs:
         working-directory: tests/renderizador
         run: bun install --frozen-lockfile
       - run: bun test
-      - run: bunx tsc --noEmit
       - run: bun run build
+      - run: bunx tsc --noEmit
       - name: Verificar impressão em Chromium
         working-directory: tests/renderizador
         run: |

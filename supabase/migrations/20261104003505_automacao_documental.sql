@@ -340,6 +340,32 @@ end $$;
 create function public.automacao_emitir_ticket(p_modo text,p_indice integer default 0) returns text language sql security invoker set search_path='' as $$select private.automacao_emitir_ticket(p_modo,p_indice)$$;
 create function public.automacao_consumir_ticket(p_ticket text) returns jsonb language sql security invoker set search_path='' as $$select private.automacao_consumir_ticket(p_ticket)$$;
 
+
+create function private.automacao_despachar() returns integer language plpgsql security definer set search_path='' as $$
+declare livres integer;token text;pedido bigint;total integer:=0;
+begin
+ delete from private.automacao_tickets where expira_em<=clock_timestamp();
+ delete from private.automacao_mail_tickets where expira_em<=clock_timestamp();
+ perform 1 from private.automacao_config where id for update;
+ if not coalesce((select habilitada from private.automacao_config where id),false) or to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') is null then return 0;end if;
+ select greatest(0,2-(select count(*) from private.documento_jobs where estado='processando' and lease_ate>clock_timestamp())-(select count(*) from private.automacao_tickets where modo='processar' and expira_em>clock_timestamp())) into livres;
+ for i in 1..livres loop
+  token:=private.automacao_emitir_ticket('processar',0);
+  execute 'select net.http_post(url:=$1,headers:=$2,body:=$3,timeout_milliseconds:=90000)' into pedido
+   using 'https://auxsyadqijcjngmujagx.supabase.co/functions/v1/documentos-worker',
+   jsonb_build_object('Content-Type','application/json','apikey','sb_publishable_JdbnI0QtC05QkWrgt1eqlQ_3k8VEaIu'),jsonb_build_object('ticket',token);
+  total:=total+1;
+ end loop;
+ return total;
+end $$;
+create function public.automacao_despachar() returns integer language sql security invoker set search_path='' as $$select private.automacao_despachar()$$;
+-- O consumidor só inicia após habilitação explícita. O histórico não é enfileirado.
+do $$begin
+ if exists(select 1 from pg_extension where extname='pg_cron') then
+  execute $cron$select cron.schedule('facesf-automacao-documental','* * * * *','select private.automacao_despachar()')$cron$;
+ end if;
+end $$;
+
 do $$
 declare f record;
 begin

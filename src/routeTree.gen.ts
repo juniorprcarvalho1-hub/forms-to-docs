@@ -20,6 +20,7 @@ import { Route as AuthenticatedDeclaracoesRespostaRouteImport } from './routes/_
 import { Route as AuthenticatedImportacoesRouteImport } from './routes/_authenticated/importacoes'
 import { Route as AuthenticatedOficiosRouteImport } from './routes/_authenticated/oficios'
 import { Route as AuthenticatedPacientesRouteImport } from './routes/_authenticated/pacientes'
+import { Route as ApiInternalDocumentosEmailRouteImport } from './routes/api/internal/documentos-email'
 import { Route as ApiInternalSyncStorageRouteImport } from './routes/api/internal/sync-storage'
 import { Route as ApiPublicWebhooksDeclaracoesRouteImport } from './routes/api/public/webhooks/declaracoes'
 import { Route as ApiPublicWebhooksDeclaracoesRespostaRouteImport } from './routes/api/public/webhooks/declaracoes-resposta'
@@ -84,6 +85,12 @@ const AuthenticatedPacientesRoute = AuthenticatedPacientesRouteImport.update({
   path: '/pacientes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiInternalDocumentosEmailRoute =
+  ApiInternalDocumentosEmailRouteImport.update({
+    id: '/api/internal/documentos-email',
+    path: '/api/internal/documentos-email',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiInternalSyncStorageRoute = ApiInternalSyncStorageRouteImport.update({
   id: '/api/internal/sync-storage',
   path: '/api/internal/sync-storage',
@@ -125,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/importacoes': typeof AuthenticatedImportacoesRoute
   '/oficios': typeof AuthenticatedOficiosRoute
   '/pacientes': typeof AuthenticatedPacientesRoute
+  '/api/internal/documentos-email': typeof ApiInternalDocumentosEmailRoute
   '/api/internal/sync-storage': typeof ApiInternalSyncStorageRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
@@ -142,6 +150,7 @@ export interface FileRoutesByTo {
   '/importacoes': typeof AuthenticatedImportacoesRoute
   '/oficios': typeof AuthenticatedOficiosRoute
   '/pacientes': typeof AuthenticatedPacientesRoute
+  '/api/internal/documentos-email': typeof ApiInternalDocumentosEmailRoute
   '/api/internal/sync-storage': typeof ApiInternalSyncStorageRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
@@ -161,6 +170,7 @@ export interface FileRoutesById {
   '/_authenticated/importacoes': typeof AuthenticatedImportacoesRoute
   '/_authenticated/oficios': typeof AuthenticatedOficiosRoute
   '/_authenticated/pacientes': typeof AuthenticatedPacientesRoute
+  '/api/internal/documentos-email': typeof ApiInternalDocumentosEmailRoute
   '/api/internal/sync-storage': typeof ApiInternalSyncStorageRoute
   '/api/public/webhooks/declaracoes': typeof ApiPublicWebhooksDeclaracoesRoute
   '/api/public/webhooks/declaracoes-resposta': typeof ApiPublicWebhooksDeclaracoesRespostaRoute
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/importacoes'
     | '/oficios'
     | '/pacientes'
+    | '/api/internal/documentos-email'
     | '/api/internal/sync-storage'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/declaracoes-resposta'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/importacoes'
     | '/oficios'
     | '/pacientes'
+    | '/api/internal/documentos-email'
     | '/api/internal/sync-storage'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/declaracoes-resposta'
@@ -215,6 +227,7 @@ export interface FileRouteTypes {
     | '/_authenticated/importacoes'
     | '/_authenticated/oficios'
     | '/_authenticated/pacientes'
+    | '/api/internal/documentos-email'
     | '/api/internal/sync-storage'
     | '/api/public/webhooks/declaracoes'
     | '/api/public/webhooks/declaracoes-resposta'
@@ -226,6 +239,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiInternalDocumentosEmailRoute: typeof ApiInternalDocumentosEmailRoute
   ApiInternalSyncStorageRoute: typeof ApiInternalSyncStorageRoute
   ApiPublicWebhooksDeclaracoesRoute: typeof ApiPublicWebhooksDeclaracoesRoute
   ApiPublicWebhooksDeclaracoesRespostaRoute: typeof ApiPublicWebhooksDeclaracoesRespostaRoute
@@ -312,6 +326,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPacientesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/internal/documentos-email': {
+      id: '/api/internal/documentos-email'
+      path: '/api/internal/documentos-email'
+      fullPath: '/api/internal/documentos-email'
+      preLoaderRoute: typeof ApiInternalDocumentosEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/internal/sync-storage': {
       id: '/api/internal/sync-storage'
       path: '/api/internal/sync-storage'
@@ -379,6 +400,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiInternalDocumentosEmailRoute: ApiInternalDocumentosEmailRoute,
   ApiInternalSyncStorageRoute: ApiInternalSyncStorageRoute,
   ApiPublicWebhooksDeclaracoesRoute: ApiPublicWebhooksDeclaracoesRoute,
   ApiPublicWebhooksDeclaracoesRespostaRoute:

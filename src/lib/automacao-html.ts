@@ -48,7 +48,7 @@ async function imagemBase64(image:ImagemAutomacao):Promise<string>{
 }
 export async function incorporarImagensAutomacao(html:string,origin:string,load:(ref:ReferenciaImagem)=>Promise<ImagemAutomacao>):Promise<string>{
  if(html.length>2000000)throw new ErroAutomacao("pdf_layout");
- const {document}=parseHTML("<html><head></head><body>"+html+"</body></html>") as unknown as HtmlDocumento;
+ const {document}=parseHTML("<html><head></head><body>"+html+"</body></html>") as unknown as {document:HtmlDocumento};
  if(document.querySelector("script,iframe,object,embed,base,link,meta,svg,form"))throw new ErroAutomacao("imagem_invalida");
  for(const node of document.querySelectorAll("*")){
   for(const attr of [...node.attributes])if(/^on/i.test(attr.name)||attr.name==="srcdoc")throw new ErroAutomacao("imagem_invalida");
@@ -79,7 +79,7 @@ export function paginaHtmlRenderizacao(html:string,nonce:string):{html:string;se
   if(value==="screen")return "@media not all{";
   throw new ErroAutomacao("pdf_layout");
  });
- const {document}=parseHTML("<html><head></head><body>"+html+"</body></html>") as unknown as HtmlDocumento;
+ const {document}=parseHTML("<html><head></head><body>"+html+"</body></html>") as unknown as {document:HtmlDocumento};
  if(document.querySelector("script,iframe,object,embed,base,link,meta,svg,form"))throw new ErroAutomacao("imagem_invalida");
  for(const node of document.querySelectorAll("*"))for(const a of [...node.attributes])if(/^on/i.test(a.name)||a.name==="srcdoc")throw new ErroAutomacao("imagem_invalida");
  for(const img of document.querySelectorAll("img"))if(!/^data:image\/(?:png|jpeg|gif);base64,[A-Za-z0-9+/=]+$/.test(img.getAttribute("src")??""))throw new ErroAutomacao("imagem_invalida");

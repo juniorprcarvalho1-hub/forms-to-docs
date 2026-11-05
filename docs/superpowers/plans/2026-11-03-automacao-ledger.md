@@ -20,3 +20,12 @@ Task3/4 core: GREEN CI41910402294 (head a290e69):212pass/0fail, tipos/build succ
 Hardening: RED CI41913616392:212pass/5fail — limite de retries, retomada antes do cron, confirmação com consumidor pausado, curso editado/modelo divergente e GIF.
 Integração pendente: worker HTTP/cron, bridge real hospedado, UI de andamento/configuração e implantação. Cloudflare secrets não confirmadas; usuário aprovou continuidade, pediu passo a passo ou configuração por nós. Controle CUA indisponível (timeout/transport closed); guia oficial enviado, sem criar token ou contratar serviço.
 Testes nativos: pacote Puppeteer-core24.26.1 isolado em tests/renderizador, lock16.800bytes gerado por CI. Nenhum dado real nos fixtures.
+
+Task4/5: GREEN CI41934855529:235pass, build/tipos e impressão Chromium (imagem, excesso de página e CSS de impressão) verdes. Consumidor HTTP, bridge real, fila no servidor e configuração documental implementados.
+Revisão independente de branch inteira (review_automacao_whole_branch) encontrou 3Important, semCritical: falha de persistência após Gmail, cliente antigo manual confirmando antes de enviar, download divergente do arquivo imutável. Correções cobertas por RED CI41938627981 e implementadas em uma passagem.
+Ruling: endpoint legado de avaliação deve rejeitar e pedir recarga, em vez de resolver apenas ao enfileirar — cliente antigo ignora retorno e marca enviado — custo: usuário com página antiga recarrega uma vez.
+Ruling: downloads/impressão usam PDF privado da versão concluída; fallback local não sobrescreve arquivo — preservar snapshot/anexo — custo: consulta de andamento antes de baixar.
+Verificação de formulários originais via páginas públicas: ofício tinha títulos Professor(a) orientador(a) e Qual seu estagio?; preceptoria tinha Nome completo do preceptor e Nome(s) do(s) aluno(s). Testes reais desses títulos observaram RED antes dos aliases explícitos.
+Deno: CI41937724872 revelou tipagem Window do linkedom; corrigido contrato estrutural do DOM para não depender de document global do navegador.
+Ruling: criação de extensão pg_cron somente se disponível, cron com consumidor inicialmente desabilitado — projeto tinha pg_net mas não pg_cron habilitado — sem tráfego de documentos antes da ativação.
+Task6 em andamento: fixtures dos onze modelos originais com dados técnicos e16perfis adicionados. Sem e-mails reais de teste, sem exposição de secrets. Migração/publicação/diagnóstico de produção ainda não executados.

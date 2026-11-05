@@ -10,3 +10,15 @@ test("falha externa não expõe corpo nem credenciais",async()=>{
  const response=await executarBridgeEmail(req(),{lovableKey:"test",gmailKey:"test",request:async()=>Response.json({message:"private-value"},{status:403})});
  expect(response.status).toBe(503);expect(response.headers.get("x-facesf-upstream-status")).toBe("403");expect(await response.text()).not.toContain("private-value");
 });
+
+test("transporte compatível com workerd não usa modo redirect error",async()=>{
+ const response=await executarBridgeEmail(req(),{lovableKey:"test",gmailKey:"test",request:async(_url,init)=>{
+  if(init?.redirect==="error")throw new TypeError('Invalid redirect value; use manual');
+  expect(init?.redirect).toBe("manual");return Response.json({erro:"ticket_invalido"},{status:401});
+ }});
+ expect(response.status).toBe(401);expect(response.headers.get("x-facesf-upstream-status")).toBe("401");
+});
+test("redirecionamento não é seguido com credenciais",async()=>{
+ let calls=0;const response=await executarBridgeEmail(req(),{lovableKey:"test",gmailKey:"test",request:async(_url,init)=>{calls++;expect(init?.redirect).toBe("manual");return new Response(null,{status:302,headers:{location:"https://outro.example"}});}});
+ expect(calls).toBe(1);expect(response.status).toBe(503);expect(response.headers.get("x-facesf-upstream-status")).toBe("302");
+});

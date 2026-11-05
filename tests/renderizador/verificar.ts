@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {readFile,mkdir,writeFile} from "node:fs/promises";
 import puppeteer from "puppeteer-core";
-import {paginaHtmlRenderizacao,incorporarImagensAutomacao} from "../../src/lib/automacao-html.ts";
+import {paginaHtmlRenderizacao,incorporarImagensAutomacao,montarHtmlAutomacao} from "../../src/lib/automacao-html.ts";
 import {validarPdfA4} from "../../src/lib/pdf-validacao.ts";
 const browser=await puppeteer.launch({headless:true,executablePath:process.env["CHROME_BIN"]||"/usr/bin/google-chrome",args:["--no-sandbox","--disable-dev-shm-usage","--host-resolver-rules=MAP * ~NOTFOUND"]});
 const out=new URL("./artifacts/",import.meta.url);await mkdir(out,{recursive:true});
@@ -23,4 +23,14 @@ try{
  await assert.rejects(validarPdfA4(await imprimir('<p style="height:400mm">Conteúdo além de uma página</p>',"excesso-vertical")),(e:any)=>e.codigo==="pdf_layout");console.log("PASS: excesso vertical recusado");
  const clipped='<style>@media print{.cortado{height:5px;overflow:hidden}}</style><p class="cortado">'+Array(30).fill("Texto que não pode ser cortado<br>").join("")+'</p>';
  await assert.rejects(validarPdfA4(await imprimir(clipped,"recorte-na-impressao")),(e:any)=>e.codigo==="pdf_layout");console.log("PASS: recorte em CSS de impressão recusado");
+ const fixtures=JSON.parse(await readFile(new URL("./modelos-originais.json",import.meta.url),"utf8"));
+ for(const fixture of fixtures.perfis){
+  const grupo=fixture.tipo==="oficios"?"oficios":fixture.tipo==="declaracoes"?"preceptoria":"avaliacao";
+  const modelo=fixtures.modelos[grupo].find((m:any)=>m.chave===fixture.chave);
+  const snapshot={config:fixtures.config,documento:{...fixtures.documento,curso:fixture.curso,modelo_chave:fixture.chave,periodo:fixture.periodo},modelos:[{chave:modelo.chave,modelo_html:modelo.html}]};
+  const rendered=montarHtmlAutomacao(fixture.tipo,snapshot);
+  // Este teste mede o layout original com o logo público da instituição; o Storage real é verificado no servidor.
+  const html=await incorporarImagensAutomacao(rendered,"https://auxsyadqijcjngmujagx.supabase.co",async()=>({bytes:new Uint8Array(image),mime:"image/png"}));
+  await validarPdfA4(await imprimir(html,fixture.nome));console.log("PASS: modelo original "+fixture.nome);
+ }
 }finally{await browser.close();}

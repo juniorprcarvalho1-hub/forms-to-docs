@@ -35,3 +35,8 @@ Preflight de políticas reais encontrou a antiga política permissiva Autenticad
 
 Migração automacao_documental aplicada com sucesso no Supabase externo em05/11UTC, inicialmente desabilitada. Histórico não foi reenfileirado. A instalação ativa apenas agendamento e infraestrutura; falta diagnóstico de secrets para ativar processamento.
 GREEN CI41943548322:241pass/0fail, build/tipos,16perfis+3casos Chromium e Deno tanto no consumidor quanto no receptor formularios. Lockfile Deno gerado pelo runtime, persistido e etapa final usa --frozen.
+
+Publicação PR11: merge5ce8dece, Lovable sincronizada e publicada. Receptor formularios v3 e documentos-worker v1 respondemhealth200. Diagnóstico protegido do worker:renderizador_configurado=false/pdf_a4=false; automação mantida desativada. Nenhum e-mail real enviado.
+Falha real de publicação: /auth e bridge retornaram500 enquanto logoestático retornou200. Logs reais da Lovable confirmaram TypeError __extends em _libs/pdf-lib+tslib.mjs:19; CJSinterop, não dadosnem RLS. Hotfix PR12 usa entrada ESM de pdf-lib, inclui helpers no bundle SSR e isola importPDF/DOM da inicialização global.
+Ruling: não aliasar todas as versões de tslib para um único helper — lock raiz contém1.14.1 e depsSupabase2.8.1 — usar pdf-lib/es/index.js e resolução por dependência. Duas tentativas de subpath .mjs falharam no build e não foram publicadas.
+Verificação final da correção exige saúde no domínio publicado; build local/CI sozinho não comprova runtime Worker.

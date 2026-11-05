@@ -24,6 +24,11 @@ beforeAll(async()=>{
  insert into modelos_oficio values('padrao','<p>{{nome}}</p>');
  insert into modelos_declaracao values('enfermagem','<p>{{nome}}</p>');
  insert into modelos_declaracao_resposta values('enfermagem','<p>{{supervisor}} {{periodo}}</p>');
+ create table modulos_estagio(id uuid primary key default gen_random_uuid(),nome text);
+ insert into modulos_estagio(nome) values('Módulo técnico');
+ alter table modulos_estagio enable row level security;
+ grant select,update on modulos_estagio to authenticated;
+ create policy "Autenticados gerenciam modulos" on modulos_estagio for all to authenticated using(true) with check(true);
  create table orientadores(id uuid primary key default gen_random_uuid(),curso text unique,nome text,email text);
  insert into orientadores(curso,nome,email) values('enfermagem','Orientador','');
  grant usage on schema public,auth to authenticated,service_role;
@@ -181,5 +186,11 @@ test("instituição altera modelo mas não token nem privilégios de outro usuá
  await expect(db.query("update configuracoes set webhook_token='troca-nao-permitida' where id")).rejects.toThrow("CONFIGURACAO_PROTEGIDA");
  await db.query("select set_config('request.jwt.claim.sub',$1,false)",[other]);
  expect((await db.query("update modelos_oficio set modelo_html='<p>Intruso</p>' where chave='padrao' returning chave")).rows.length).toBe(0);
+ await db.exec("reset role");
+});
+
+test("política antiga de módulos não deixa outra conta alterar a configuração",async()=>{
+ await db.exec("set role authenticated");await db.query("select set_config('request.jwt.claim.sub',$1,false)",[other]);
+ expect((await db.query("update modulos_estagio set nome='Alterado por terceiro' returning id")).rows.length).toBe(0);
  await db.exec("reset role");
 });

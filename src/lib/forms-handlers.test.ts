@@ -61,3 +61,12 @@ for(const [curso,periodos] of [["Enfermagem",["9","10"]],["Fisioterapia",["9","1
   expect(r.status).toBe(200);expect(f.saved.p_dados.periodo).toBe(periodo);
  });
 }
+
+test("ofício aceita títulos exatos do formulário original",async()=>{
+ const f=fixture();const r=await handleOficios(f.request({"Aluno(a)":"Aluno Exemplo",Curso:"Enfermagem","MATRÍCULA":"2026001","Professor(a) orientador(a)":"Docente Técnico","Qual seu estagio?":"Enfermagem Basico 1","CPF":"00000000000"}),f.db,"token");
+ expect(r.status).toBe(200);expect(f.saved.p_dados.professor_orientador).toBe("Docente Técnico");expect(f.saved.p_dados.modulo).toBe("Enfermagem Basico 1");
+});
+test("preceptoria aceita títulos exatos do formulário original",async()=>{
+ const f=fixture();const r=await handleDeclaracoes(f.request({"Nome completo do preceptor":"Preceptor Exemplo",Curso:"Enfermagem","Registro profissional":"0000","Campo de estágio":"Campo Técnico","Data de início":"02/10/2026","Data de fim":"30/10/2026","Nome(s) do(s) aluno(s)":"Aluno Um; Aluno Dois","E-mail do preceptor":"preceptor@example.com"}),f.db,"token");
+ expect(r.status).toBe(200);expect(f.saved.p_dados.nome).toBe("Preceptor Exemplo");expect(f.saved.p_dados.alunos).toBe("Aluno Um; Aluno Dois");
+});

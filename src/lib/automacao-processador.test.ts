@@ -40,3 +40,8 @@ test("PDF já reservado é retomado sem chamar renderer novamente",async()=>{
  expect(await processarDocumento(f.job,f.ports)).toBe("concluido");expect(f.events).not.toContain("render");
  expect(f.events).toContain("storage:conta/automacao/documento/v2.pdf");
 });
+
+test("recibo Gmail seguido de falha estruturada do banco exige confirmação",async()=>{
+ const f=fixture("email");f.ports.concluirEnvio=async()=>{throw new ErroAutomacao("banco_indisponivel");};
+ await processarDocumento(f.job,f.ports);expect(f.events).toContain("gmail");expect(f.failures[0].incerto).toBe(true);
+});

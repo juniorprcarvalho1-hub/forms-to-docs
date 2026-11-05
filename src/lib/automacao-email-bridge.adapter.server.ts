@@ -1,7 +1,7 @@
 import {handleEmailBridge,type EnvelopeEmail} from "./automacao-email-bridge.server";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./supabase-config";
 import {ErroAutomacao} from "./automacao-erros";
-type BridgeRuntime={lovableKey?:string;gmailKey?:string;request?:(url:string,init?:RequestInit)=>Promise<Response>};
+type BridgeRuntime={lovableKey?:string|undefined;gmailKey?:string|undefined;request?:(url:string,init?:RequestInit)=>Promise<Response>};
 export async function executarBridgeEmail(request:Request,runtime:BridgeRuntime={lovableKey:process.env["LOVABLE_API_KEY"],gmailKey:process.env["GOOGLE_MAIL_API_KEY"]}):Promise<Response>{
  const {lovableKey,gmailKey}=runtime,requester=runtime.request??fetch;
  let upstreamStatus="not_called";

@@ -29,3 +29,6 @@ Verificação de formulários originais via páginas públicas: ofício tinha t�
 Deno: CI41937724872 revelou tipagem Window do linkedom; corrigido contrato estrutural do DOM para não depender de document global do navegador.
 Ruling: criação de extensão pg_cron somente se disponível, cron com consumidor inicialmente desabilitado — projeto tinha pg_net mas não pg_cron habilitado — sem tráfego de documentos antes da ativação.
 Task6 em andamento: fixtures dos onze modelos originais com dados técnicos e16perfis adicionados. Sem e-mails reais de teste, sem exposição de secrets. Migração/publicação/diagnóstico de produção ainda não executados.
+
+Task6 validação GREEN CI41942231314:240pass/0fail, build/tipos/Deno verdes, Chromium validou16perfis dos11modelos originais e3casos de integridade. Fixtures usam logo público como asset de teste; Storage/Cloudflare reais dependem do diagnóstico externo.
+Preflight de políticas reais encontrou a antiga política permissiva Autenticados gerenciam modulos. RED CI41942502812:240pass/1fail reproduz acesso indevido; removida essa política ao instalar a permissão documental restrita.

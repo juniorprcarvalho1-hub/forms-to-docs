@@ -387,6 +387,7 @@ begin
   if to_regclass('public.'||t) is null then continue;end if;
   execute format('alter table public.%I enable row level security',t);
   execute format('drop policy if exists "Administradores configuram" on public.%I',t);
+  if t='modulos_estagio' then execute 'drop policy if exists "Autenticados gerenciam modulos" on public.modulos_estagio';end if;
   if t='orientadores' then execute 'drop policy if exists "Autenticados gerenciam orientadores" on public.orientadores';end if;
   execute format('grant select,insert,update,delete on public.%I to authenticated',t);
   execute format('create policy "Configuracao documental leitura" on public.%I for select to authenticated using ((select private.automacao_pode_configurar()))',t);

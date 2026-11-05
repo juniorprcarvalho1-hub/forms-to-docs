@@ -1,6 +1,5 @@
-import {PDFDocument} from "pdf-lib";
 import {validarPdfA4} from "./pdf-validacao.ts";
-import {bytesBase64} from "./automacao-html.ts";
+import {bytesBase64} from "./automacao-bytes.ts";
 import {ErroAutomacao} from "./automacao-erros.ts";
 export type EnvelopeEmail={job_id:string;to:string;message_id:string;assunto:string;corpo:string;pdf_url:string;pdf_sha256:string};
 export type EmailBridgePorts={configurado:boolean;consumir:(ticket:string)=>Promise<EnvelopeEmail|null>;lerPdf:(envelope:EnvelopeEmail)=>Promise<Uint8Array>;autorizar:(ticket:string)=>Promise<boolean>;enviarMime:(raw:string)=>Promise<{id:string}>};

@@ -1,3 +1,4 @@
+import {bytesBase64} from "./automacao-bytes.ts";
 import {parseHTML} from "linkedom";
 import {PDFDocument} from "pdf-lib";
 import {montarDocumentoHtml,type Oficio,type Configuracoes,type ModeloOficio} from "./oficios.ts";
@@ -32,9 +33,7 @@ export function montarHtmlAutomacao(tipo:TipoDocumento,snapshot:SnapshotDocument
  return montarDeclaracaoRespostaHtml(d as unknown as DeclaracaoResposta,snapshot.modelos as unknown as ModeloDeclaracaoResposta[]);
 }
 export type ImagemAutomacao={bytes:Uint8Array;mime:string};
-export function bytesBase64(bytes:Uint8Array):string{
- let s="";for(let i=0;i<bytes.length;i+=32768)s+=String.fromCharCode(...bytes.subarray(i,i+32768));return btoa(s);
-}
+export {bytesBase64} from "./automacao-bytes.ts";
 async function imagemBase64(image:ImagemAutomacao):Promise<string>{
  const bytes=image.bytes;if(bytes.length>2000000)throw new ErroAutomacao("imagem_invalida");
  try{

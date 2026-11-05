@@ -32,5 +32,5 @@ jobs:
           deno-version: v2.x
       - name: Verificar consumidor Deno
         run: |
-          deno check --config supabase/functions/deno.json supabase/functions/documentos-worker.ts
+          deno check --config supabase/functions/deno.json supabase/functions/documentos-worker.ts supabase/functions/formularios.ts
           node -e "console.log('AUTOMACAO_DENO_LOCK_BASE64='+require('fs').readFileSync('supabase/functions/deno.lock').toString('base64'))"

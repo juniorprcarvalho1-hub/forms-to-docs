@@ -74,7 +74,7 @@ if(cursosError) throw Error('Lookup unavailable');
 if(professoresError) throw Error('Lookup unavailable');
 
         const cursoCad = (cursos ?? []).find(
-          (c) => normalizar(String(c.nome_formulario)) === normalizar(cursoForm),
+          (c:any) => normalizar(String(c.nome_formulario)) === normalizar(cursoForm),
         );
         const curso = cursoCad?.nome_oficial?.trim() || cursoForm;
         const cursoChave = resolverCursoFormulario(curso);
@@ -103,7 +103,7 @@ if(professoresError) throw Error('Lookup unavailable');
             .select("curso, nome_formulario, nome_oficial, carga_horaria, area_estagio");
 if(modulosError) throw Error('Lookup unavailable');
           const moduloCad = (modulos ?? []).find(
-            (m) =>
+            (m:any) =>
               normalizar(String(m.nome_formulario)) === normalizar(moduloForm) &&
               (!String(m.curso).trim() || normalizar(String(m.curso)) === cursoNorm),
           );
@@ -197,7 +197,7 @@ async function declaracoesInterno(request: Request,supabaseAdmin:FormsAdmin,vali
           .select("nome_formulario, nome_oficial");
 if(cursosError) throw Error('Lookup unavailable');
         const cursoCad = (cursos ?? []).find(
-          (c) => normalizar(String(c.nome_formulario)) === normalizar(cursoForm),
+          (c:any) => normalizar(String(c.nome_formulario)) === normalizar(cursoForm),
         );
         const curso = cursoCad?.nome_oficial?.trim() || cursoForm;
         const cursoChave = resolverCursoFormulario(curso);
@@ -218,7 +218,7 @@ if(cursosError) throw Error('Lookup unavailable');
           .select("curso, nome_formulario, nome_oficial, carga_horaria");
 if(modulosError) throw Error('Lookup unavailable');
         const campoCad = (modulos ?? []).find(
-          (m) =>
+          (m:any) =>
             normalizar(String(m.nome_formulario)) === normalizar(campoForm) &&
             (!String(m.curso).trim() || normalizar(String(m.curso)) === cursoNorm),
         );
@@ -291,7 +291,7 @@ async function respostasInterno(request: Request,supabaseAdmin:FormsAdmin,valida
           .select("nome_formulario, nome_oficial");
 if(cursosError) throw Error('Lookup unavailable');
         const cursoCad = (cursos ?? []).find(
-          (c) => normalizar(String(c.nome_formulario)) === normalizar(cursoForm),
+          (c:any) => normalizar(String(c.nome_formulario)) === normalizar(cursoForm),
         );
         const curso = cursoCad?.nome_oficial?.trim() || cursoForm;
         const cursoChave = resolverCursoFormulario(curso);

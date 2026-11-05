@@ -1,5 +1,7 @@
 {
   "imports": {
+    "zod": "npm:zod@3.25.76",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.112.3",
     "pdf-lib": "npm:pdf-lib@1.17.1",
     "linkedom": "npm:linkedom@0.18.12"
   }

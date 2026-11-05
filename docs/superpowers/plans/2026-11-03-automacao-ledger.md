@@ -32,3 +32,6 @@ Task6 em andamento: fixtures dos onze modelos originais com dados técnicos e16p
 
 Task6 validação GREEN CI41942231314:240pass/0fail, build/tipos/Deno verdes, Chromium validou16perfis dos11modelos originais e3casos de integridade. Fixtures usam logo público como asset de teste; Storage/Cloudflare reais dependem do diagnóstico externo.
 Preflight de políticas reais encontrou a antiga política permissiva Autenticados gerenciam modulos. RED CI41942502812:240pass/1fail reproduz acesso indevido; removida essa política ao instalar a permissão documental restrita.
+
+Migração automacao_documental aplicada com sucesso no Supabase externo em05/11UTC, inicialmente desabilitada. Histórico não foi reenfileirado. A instalação ativa apenas agendamento e infraestrutura; falta diagnóstico de secrets para ativar processamento.
+GREEN CI41943548322:241pass/0fail, build/tipos,16perfis+3casos Chromium e Deno tanto no consumidor quanto no receptor formularios. Lockfile Deno gerado pelo runtime, persistido e etapa final usa --frozen.

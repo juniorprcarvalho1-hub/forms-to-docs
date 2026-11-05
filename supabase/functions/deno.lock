@@ -168,8 +168,10 @@
   },
   "workspace": {
     "dependencies": [
+      "npm:@supabase/supabase-js@2.112.3",
       "npm:linkedom@0.18.12",
-      "npm:pdf-lib@1.17.1"
+      "npm:pdf-lib@1.17.1",
+      "npm:zod@3.25.76"
     ]
   }
 }

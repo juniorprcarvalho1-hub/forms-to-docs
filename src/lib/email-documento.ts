@@ -9,6 +9,7 @@ export function validarReferenciaEmail(input:unknown):ReferenciaEmail{
 }
 export async function enviarDocumentoAutorizado<T>(input:unknown,deps:{carregar:(tipo:ReferenciaEmail["tipoDocumento"],id:string)=>Promise<{origem:string}|null>;enviar:()=>Promise<T>}):Promise<T>{
  const ref=validarReferenciaEmail(input);
+ if(ref.tipoDocumento==="declaracoes_resposta")throw new Error("Recarregue a página e solicite o envio no andamento do documento.");
  if(ref.automatico)throw new Error("O envio automático é processado pela fila do servidor. Recarregue a página.");
  let documento:{origem:string}|null;
  try{documento=await deps.carregar(ref.tipoDocumento,ref.registroId);}catch{throw new Error("Não foi possível verificar o documento para envio.");}

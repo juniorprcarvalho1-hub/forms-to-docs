@@ -62,7 +62,7 @@ async function oficiosInterno(request: Request,supabaseAdmin:FormsAdmin,validate
 
         // Cadastros auxiliares: curso e professor escolhidos no formulário
         const cursoForm = texto("curso");
-        const professorForm = texto("professor", "professororientador");
+        const professorForm = texto("professor", "professororientador", "professoraorientadora");
 
         const { data: cursos, error: cursosError } = await supabaseAdmin
           .from("cursos")
@@ -90,7 +90,7 @@ if(professoresError) throw Error('Lookup unavailable');
           professorCad?.nome_oficial?.trim() || professorForm || padrao("padrao_professor");
 
         // Módulo do estágio e modelo aplicável (1 padrão, 2 nutrição, 3 psicologia)
-        const moduloForm = texto("modulo", "moduloestagio", "estagio", "modulos");
+        const moduloForm = texto("modulo", "moduloestagio", "estagio", "modulos", "qualseuestagio");
         const cursoNorm = normalizar(curso || cursoForm);
         const modeloChave = cursoChave === "nutricao" ? "nutricao" : cursoChave === "psicologia" ? "psicologia" : "padrao";
 
@@ -184,7 +184,7 @@ async function declaracoesInterno(request: Request,supabaseAdmin:FormsAdmin,vali
         const texto = (...chaves: string[]) => buscar(chaves);
 
         const nome = buscar(
-          ["nome", "preceptor", "nomedopreceptor", "nomecompleto"],
+          ["nome", "preceptor", "nomedopreceptor", "nomecompleto", "nomecompletodopreceptor"],
           ["aluno", "estudante", "discente", "curso", "hospital", "email"],
         );
         if (!nome) return json({ error: "Campo Nome não recebido" }, 422);
@@ -235,7 +235,7 @@ if(modulosError) throw Error('Lookup unavailable');
           data_fim: texto("datafim", "datadefim", "fim", "periodofim", "termino"),
           carga_horaria:
             String(campoCad?.carga_horaria ?? "") || String(cfg["padrao_carga_horaria"] ?? ""),
-          alunos: texto("alunos", "nomedosalunos", "nomedoaluno", "estudantes", "discentes"),
+          alunos: texto("alunos", "nomedosalunos", "nomedoaluno", "nomesdosalunos", "estudantes", "discentes"),
           email: texto("emaildopreceptor", "email", "enderecodeemail"),
           origem: "google_forms",
         };

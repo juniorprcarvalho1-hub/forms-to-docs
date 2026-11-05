@@ -47,7 +47,7 @@ export async function processarDocumento(job:DocumentoJob,ports:ProcessadorPorts
  }catch(error){
   const codigo=error instanceof ErroAutomacao?error.codigo:
    envioIniciado?"gmail_indisponivel":fase==="storage"?"storage_indisponivel":fase==="imagens"?"imagem_indisponivel":fase==="render"?"renderizador_indisponivel":"processamento_indisponivel";
-  const incerto=error instanceof ErroAutomacao?error.incerto:envioIniciado;
+  const incerto=envioIniciado&&fase==="concluir"?true:error instanceof ErroAutomacao?error.incerto:envioIniciado;
   await ports.falhar(job,codigo,incerto);
   return "pendente";
  }

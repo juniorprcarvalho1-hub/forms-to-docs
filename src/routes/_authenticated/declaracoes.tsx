@@ -1,3 +1,4 @@
+import {obterPdfArquivado} from "@/lib/automacao-arquivo.client";
 import {AndamentoDocumento} from "@/components/AndamentoDocumento";
 import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";
@@ -133,18 +134,13 @@ function DeclaracoesPage() {
   async function comPdf(declaracao: Declaracao, acao: "baixar" | "imprimir") {
     setOcupado(true);
     try {
+      const arquivado=await obterPdfArquivado("declaracoes",declaracao.id);
+      if(arquivado){if(acao==="baixar")baixarBlob(arquivado,"documento.pdf");else imprimirBlob(arquivado);return;}
       const fontes = await buscarFontesDeclaracaoAtuais();
       const html = gerarHtmlComFontes(declaracao, fontes.config, fontes.modelos);
       if (!html) throw new Error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
       const blob = await gerarPdfDeHtml(html);
 
-      const path = await caminhoPrivadoDocumento(`declaracoes/${declaracao.id}.pdf`);
-      try {
-        await uploadArquivo(path, blob, "application/pdf");
-        await supabase.from("declaracoes").update({ pdf_path: path }).eq("id", declaracao.id);
-      } catch {
-        /* arquivamento opcional */
-      }
       if (acao === "baixar")
         baixarBlob(blob, `Declaracao-${declaracao.nome.replace(/[^\w]+/g, "-")}.pdf`);
       else imprimirBlob(blob);
@@ -166,18 +162,10 @@ function DeclaracoesPage() {
       const fontes = await buscarFontesDeclaracaoAtuais();
       const html = gerarHtmlComFontes(declaracao, fontes.config, fontes.modelos);
       if (!html) throw new Error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
-      const blob = await gerarPdfDeHtml(html);
+      const blob = await obterPdfArquivado("declaracoes",declaracao.id) ?? await gerarPdfDeHtml(html);
 
       const arquivo = `Declaracao-${declaracao.nome.replace(/[^\w]+/g, "-")}.pdf`;
       let link: string | undefined;
-      try {
-        const path = await caminhoPrivadoDocumento(`declaracoes/${declaracao.id}.pdf`);
-        await uploadArquivo(path, blob, "application/pdf");
-        await supabase.from("declaracoes").update({ pdf_path: path }).eq("id", declaracao.id);
-        link = await urlAssinada(path);
-      } catch {
-        /* link opcional */
-      }
       baixarBlob(blob, arquivo);
       const { assunto, corpo } = mensagemEmailDeclaracao(declaracao, link);
       const mailto = `mailto:${encodeURIComponent(declaracao.email)}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;

@@ -16,6 +16,19 @@ jobs:
         with:
           bun-version: "1.4.4"
       - run: bun install --frozen-lockfile
+      - name: Preparar teste Chromium
+        working-directory: tests/renderizador
+        run: bun install --frozen-lockfile
       - run: bun test
-      - run: bunx tsc --noEmit
       - run: bun run build
+      - run: bunx tsc --noEmit
+      - name: Verificar impressão em Chromium
+        working-directory: tests/renderizador
+        run: |
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium)"
+          bun verificar.ts
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Verificar consumidor Deno
+        run: deno check --frozen --config supabase/functions/deno.json supabase/functions/documentos-worker.ts supabase/functions/formularios.ts

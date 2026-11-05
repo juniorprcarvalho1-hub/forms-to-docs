@@ -15,6 +15,58 @@ test("declaração preserva todos os alunos e distingue nome do preceptor",async
  expect(f.saved.p_dados.nome).toBe("Preceptor Exemplo");expect(f.saved.p_dados.alunos).toBe("Aluno Um; Aluno Dois");expect(f.saved.p_dados.modelo_chave).toBe("psicologia");
 });
 test("resposta identifica supervisor, estagiário e período",async()=>{
- const f=fixture();await handleRespostas(f.request({"Nome do supervisor":"Supervisor Exemplo","Nome do estagiário":"Aluno Exemplo",Curso:"Enfermagem",Período:"7º","Tipo de avaliação":"Final"}),f.db,"token");
- expect(f.saved.p_dados).toMatchObject({supervisor:"Supervisor Exemplo",estagiario:"Aluno Exemplo",periodo:"7",tipo_avaliacao:"AVALIAÇÃO FINAL"});
+ const f=fixture();await handleRespostas(f.request({"Nome do supervisor":"Supervisor Exemplo","Nome do estagiário":"Aluno Exemplo",Curso:"Enfermagem",Período:"9º","Tipo de avaliação":"Final"}),f.db,"token");
+ expect(f.saved.p_dados).toMatchObject({supervisor:"Supervisor Exemplo",estagiario:"Aluno Exemplo",periodo:"9",tipo_avaliacao:"AVALIAÇÃO FINAL"});
+});
+
+for (const [name, handler] of [["oficios",handleOficios],["declaracoes",handleDeclaracoes],["avaliacao",handleRespostas]] as const) {
+ for (const course of ["", "Odontologia", "Enfermagem / Fisioterapia"]) {
+  test(name+" rejeita curso ausente, desconhecido ou ambíguo: "+course,async()=>{
+   const f=fixture();const r=await handler(f.request({"Aluno(a)":"Aluno Exemplo","Nome do preceptor":"Preceptor Exemplo","Nome do supervisor":"Supervisor Exemplo","Nome do estagiário":"Aluno Exemplo",Curso:course,Período:"9"}),f.db,"token");
+   expect(r.status).toBe(422);expect(f.saved).toBeUndefined();
+  });
+ }
+}
+test("nota de avaliação não vira período",async()=>{
+ const f=fixture();const r=await handleRespostas(f.request({"Nome do supervisor":"Supervisor Exemplo","Nome do estagiário":"Aluno Exemplo",Curso:"Enfermagem",Nota:"9"}),f.db,"token");
+ expect(r.status).toBe(422);expect(f.saved).toBeUndefined();
+});
+test("período incompatível com curso não grava avaliação",async()=>{
+ const f=fixture();const r=await handleRespostas(f.request({"Nome do supervisor":"Supervisor Exemplo","Nome do estagiário":"Aluno Exemplo",Curso:"Enfermagem",Período:"7"}),f.db,"token");
+ expect(r.status).toBe(422);expect(f.saved).toBeUndefined();
+});
+test("períodos contraditórios não escolhem a primeira resposta",async()=>{
+ const f=fixture();const r=await handleRespostas(f.request({"Nome do supervisor":"Supervisor Exemplo","Nome do estagiário":"Aluno Exemplo",Curso:"Enfermagem",Período:"9",Semestre:"10"}),f.db,"token");
+ expect(r.status).toBe(422);expect(f.saved).toBeUndefined();
+});
+test("nome de outra pessoa não substitui supervisor",async()=>{
+ const f=fixture();const r=await handleRespostas(f.request({"Nome do orientador":"Professor Exemplo","Nome do estagiário":"Aluno Exemplo",Curso:"Enfermagem",Período:"9"}),f.db,"token");
+ expect(r.status).toBe(422);expect(f.saved).toBeUndefined();
+});
+test("ofício padrão fixa 420 horas mesmo com valor conflitante",async()=>{
+ const f=fixture();const r=await handleOficios(f.request({"Aluno(a)":"Aluno Exemplo",Curso:"Enfermagem","Carga horária":"999 horas"}),f.db,"token");
+ expect(r.status).toBe(200);expect(f.saved.p_dados.carga_horaria).toBe("420 horas");
+});
+test("módulo sem carga horária não herda 420 horas",async()=>{
+ const f=fixture();const r=await handleOficios(f.request({"Aluno(a)":"Aluno Exemplo",Curso:"Nutrição",Módulo:"Não cadastrado"}),f.db,"token");
+ expect(r.status).toBe(422);expect(f.saved).toBeUndefined();
+});
+test("preceptoria não aceita data final anterior à inicial",async()=>{
+ const f=fixture();const r=await handleDeclaracoes(f.request({"Nome do preceptor":"Preceptor Exemplo",Curso:"Enfermagem","Data de início":"20/10/2026","Data de fim":"10/10/2026"}),f.db,"token");
+ expect(r.status).toBe(422);expect(f.saved).toBeUndefined();
+});
+for(const [curso,periodos] of [["Enfermagem",["9","10"]],["Fisioterapia",["9","10"]],["Nutrição",["7","8"]],["Psicologia",["9","10"]]] as const){
+ for(const periodo of periodos)test("avaliação aceita perfil "+curso+" "+periodo,async()=>{
+  const f=fixture();const r=await handleRespostas(f.request({"Nome do supervisor":"Supervisor Exemplo","Nome do estagiário":"Aluno Exemplo",Curso:curso,Período:periodo}),f.db,"token");
+  expect(r.status).toBe(200);expect(f.saved.p_dados.periodo).toBe(periodo);
+ });
+}
+
+test("ofício aceita títulos exatos do formulário original",async()=>{
+ const f=fixture();const r=await handleOficios(f.request({"Aluno(a)":"Aluno Exemplo",Curso:"Enfermagem","MATRÍCULA":"2026001","Professor(a) orientador(a)":"Docente Técnico","Qual seu estagio?":"Enfermagem Basico 1","CPF":"00000000000"}),f.db,"token");
+ expect(r.status).toBe(200);expect(f.saved.p_dados.professor_orientador).toBe("Docente Técnico");expect(f.saved.p_dados.modulo).toBe("Enfermagem Basico 1");
+});
+test("preceptoria aceita títulos exatos do formulário original",async()=>{
+ const f=fixture();const r=await handleDeclaracoes(f.request({"Nome completo do preceptor":"Preceptor Exemplo",Curso:"Enfermagem","Registro profissional":"0000","Campo de estágio":"Campo Técnico","Data de início":"02/10/2026","Data de fim":"30/10/2026","Nome(s) do(s) aluno(s)":"Aluno Um; Aluno Dois","E-mail do preceptor":"preceptor@example.com"}),f.db,"token");
+ expect(r.status).toBe(200);expect(f.saved.p_dados.nome).toBe("Preceptor Exemplo");expect(f.saved.p_dados.alunos).toBe("Aluno Um; Aluno Dois");
 });

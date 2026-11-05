@@ -1,8 +1,9 @@
+import {obterPdfArquivado} from "@/lib/automacao-arquivo";
+import {AndamentoDocumento} from "@/components/AndamentoDocumento";
 import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Download, Eye, Mail, Pencil, Printer, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,9 +32,7 @@ import { RichEditor } from "@/components/RichEditor";
 import { EscalaA4 } from "@/components/PaginaA4";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  mensagemEmailResposta,
   montarDeclaracaoRespostaHtml,
-  respostasParaEnvioAutomatico,
   NOMES_CURSO,
   ORDEM_MODELOS_RESPOSTA,
   ROTULOS_DECLARACAO_RESPOSTA,
@@ -41,7 +40,6 @@ import {
   type ModeloDeclaracaoResposta,
   type Orientador,
 } from "@/lib/declaracoes-resposta";
-import { enviarEmailComPdf } from "@/lib/email.functions";
 import { baixarBlob, gerarPdfDeHtml, imprimirBlob } from "@/lib/pdf";
 import { uploadArquivo } from "@/lib/storage";
 
@@ -66,15 +64,6 @@ export const Route = createFileRoute("/_authenticated/declaracoes-resposta")({
   component: DeclaracoesRespostaPage,
 });
 
-async function blobParaBase64(blob: Blob) {
-  const buffer = new Uint8Array(await blob.arrayBuffer());
-  let binario = "";
-  for (let i = 0; i < buffer.length; i += 8192) {
-    binario += String.fromCharCode(...buffer.subarray(i, i + 8192));
-  }
-  return btoa(binario);
-}
-
 async function buscarModelosResposta() {
   const { data, error } = await supabase.from("modelos_declaracao_resposta").select("*");
   if (error) throw error;
@@ -85,7 +74,6 @@ async function buscarModelosResposta() {
 
 function DeclaracoesRespostaPage() {
   const queryClient = useQueryClient();
-  const enviarEmail = useServerFn(enviarEmailComPdf);
   const [busca, setBusca] = useState("");
   const [aberto, setAberto] = useState<DeclaracaoResposta | null>(null);
   const [htmlAberto, setHtmlAberto] = useState("");
@@ -93,7 +81,6 @@ function DeclaracoesRespostaPage() {
   const [conteudo, setConteudo] = useState("");
   const [excluindo, setExcluindo] = useState<DeclaracaoResposta | null>(null);
   const [ocupado, setOcupado] = useState(false);
-  const processados = useRef(new Set<string>());
 
   const { data: orientadores = [] } = useQuery({
     queryKey: ["orientadores"],
@@ -139,15 +126,10 @@ function DeclaracoesRespostaPage() {
   async function comPdf(declaracao: DeclaracaoResposta, acao: "baixar" | "imprimir") {
     setOcupado(true);
     try {
+      const arquivado=await obterPdfArquivado("declaracoes_resposta",declaracao.id);
+      if(arquivado){if(acao==="baixar")baixarBlob(arquivado,"documento.pdf");else imprimirBlob(arquivado);return;}
       const html = await montarHtmlAtual(declaracao);
       const blob = await gerarPdfDeHtml(html);
-      const path = await caminhoPrivadoDocumento(`declaracoes-resposta/${declaracao.id}.pdf`);
-      try {
-        await uploadArquivo(path, blob, "application/pdf");
-        await supabase.from("declaracoes_resposta").update({ pdf_path: path }).eq("id", declaracao.id);
-      } catch {
-        /* arquivamento opcional */
-      }
       if (acao === "baixar")
         baixarBlob(blob, `Declaracao-${declaracao.supervisor.replace(/[^\w]+/g, "-")}.pdf`);
       else imprimirBlob(blob);
@@ -158,68 +140,16 @@ function DeclaracoesRespostaPage() {
     }
   }
 
-  async function enviarAoOrientador(declaracao: DeclaracaoResposta, automatico = false) {
-    const destino = emailDoOrientador(declaracao);
-    if (!destino) {
-      if (!automatico) {
-        toast.error(
-          `Cadastre o e-mail do professor orientador de ${NOMES_CURSO[declaracao.modelo_chave] ?? declaracao.curso} em Configurações.`,
-        );
-      }
-      return;
-    }
-    if (!automatico) setOcupado(true);
+  async function enviarAoOrientador(declaracao: DeclaracaoResposta) {
+    setOcupado(true);
     try {
-      const html = await montarHtmlAtual(declaracao);
-      const blob = await gerarPdfDeHtml(html);
-      const nomeArquivo = `Declaracao-${declaracao.supervisor.replace(/[^\w]+/g, "-")}.pdf`;
-
-      try {
-        const path = await caminhoPrivadoDocumento(`declaracoes-resposta/${declaracao.id}.pdf`);
-        await uploadArquivo(path, blob, "application/pdf");
-        await supabase.from("declaracoes_resposta").update({ pdf_path: path }).eq("id", declaracao.id);
-      } catch {
-        /* arquivamento opcional */
-      }
-
-      const { assunto, corpo } = mensagemEmailResposta(declaracao);
-      await enviarEmail({
-        data: {
-          tipoDocumento: "declaracoes_resposta",
-          registroId: declaracao.id,
-          automatico,
-          to: destino,
-          assunto,
-          corpo,
-          nomeArquivo,
-          pdfBase64: await blobParaBase64(blob),
-        },
-      });
-
-      await supabase
-        .from("declaracoes_resposta")
-        .update({ email_enviado_em: new Date().toISOString(), email_destino: destino })
-        .eq("id", declaracao.id);
-      await queryClient.invalidateQueries({ queryKey: ["declaracoes_resposta"] });
-      toast.success(`Declaração enviada para ${destino}.`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha ao enviar o e-mail.");
-    } finally {
-      if (!automatico) setOcupado(false);
-    }
+      const {error}=await (supabase as unknown as import("@supabase/supabase-js").SupabaseClient<any>).rpc("automacao_pedir_envio",{p_documento:declaracao.id});
+      if(error)throw new Error("Não foi possível agendar. Confira o andamento do documento.");
+      await queryClient.invalidateQueries({queryKey:["automacao"]});
+      toast.success("Envio solicitado. Acompanhe a confirmação do servidor.");
+    } catch(error) {toast.error(error instanceof Error?error.message:"Falha ao solicitar envio.");}
+    finally {setOcupado(false);}
   }
-
-  // Envio automático das declarações novas para o orientador do curso.
-  useEffect(() => {
-    if (declaracoes.length === 0 || orientadores.length === 0) return;
-    const pendentes = respostasParaEnvioAutomatico(declaracoes, processados.current).filter(emailDoOrientador);
-    if (pendentes.length === 0) return;
-    pendentes.forEach((d) => processados.current.add(d.id));
-    void (async () => {
-      for (const pendente of pendentes) await enviarAoOrientador(pendente, true);
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [declaracoes, orientadores]);
 
   async function abrirEditor(declaracao: DeclaracaoResposta) {
     setOcupado(true);
@@ -311,7 +241,7 @@ function DeclaracoesRespostaPage() {
           <TableBody>
             {filtrados.map((d) => (
               <TableRow key={d.id}>
-                <TableCell className="font-medium">{d.supervisor}</TableCell>
+                <TableCell className="font-medium">{d.supervisor}<AndamentoDocumento tipo="declaracoes_resposta" id={d.id}/></TableCell>
                 <TableCell className="hidden md:table-cell">{d.estagiario}</TableCell>
                 <TableCell className="hidden lg:table-cell">
                   {NOMES_CURSO[d.modelo_chave] ?? d.curso}

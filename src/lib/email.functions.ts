@@ -49,6 +49,11 @@ export const enviarEmailComPdf = createServerFn({ method: "POST" })
           return result.data;
         },
         enviar: async () => {
+        if(data.tipoDocumento==="declaracoes_resposta"){
+          const {error}=await (context.supabase as unknown as SupabaseClient<any>).rpc("automacao_pedir_envio",{p_documento:data.registroId});
+          if(error)throw new Error("Não foi possível agendar o envio. Confira o andamento do documento.");
+          return {enviado:false as const,agendado:true as const};
+        }
         const lovableKey = process.env["LOVABLE_API_KEY"];
         const gmailKey = process.env["GOOGLE_MAIL_API_KEY"];
         if (!lovableKey || !gmailKey) {
@@ -93,9 +98,7 @@ export const enviarEmailComPdf = createServerFn({ method: "POST" })
         });
 
         if (!resposta.ok) {
-          const detalhe = await resposta.text();
-          console.error(`Falha ao enviar e-mail [${resposta.status}]: ${detalhe}`);
-          throw new Error(`Falha ao enviar o e-mail [${resposta.status}]: ${detalhe}`);
+          throw new Error("Não foi possível enviar o e-mail. Confira a conexão do Gmail.");
         }
 
         return { enviado: true as const };

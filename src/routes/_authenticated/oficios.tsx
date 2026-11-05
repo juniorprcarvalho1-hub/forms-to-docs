@@ -1,3 +1,5 @@
+import {obterPdfArquivado} from "@/lib/automacao-arquivo";
+import {AndamentoDocumento} from "@/components/AndamentoDocumento";
 import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -117,15 +119,10 @@ function OficiosPage() {
   async function comPdf(oficio: Oficio, acao: "baixar" | "imprimir") {
     setOcupado(true);
     try {
+      const arquivado=await obterPdfArquivado("oficios",oficio.id);
+      if(arquivado){if(acao==="baixar")baixarBlob(arquivado,"documento.pdf");else imprimirBlob(arquivado);return;}
       const fontes = await buscarFontesOficioAtuais();
       const blob = await gerarPdfDeHtml(montarDocumentoHtml(oficio, fontes.config, fontes.modelos));
-      const path = await caminhoPrivadoDocumento(`documentos/${oficio.ano}/${oficio.numero_formatado.replace(/[^\w]+/g, "-")}.pdf`);
-      try {
-        await uploadArquivo(path, blob, "application/pdf");
-        await supabase.from("oficios").update({ pdf_path: path }).eq("id", oficio.id);
-      } catch {
-        /* arquivamento opcional */
-      }
       if (acao === "baixar") baixarBlob(blob, `${oficio.numero_formatado}.pdf`);
       else imprimirBlob(blob);
     } catch (err) {
@@ -227,7 +224,7 @@ function OficiosPage() {
             {filtrados.map((o) => (
               <TableRow key={o.id}>
                 <TableCell className="font-medium">{o.numero_formatado}</TableCell>
-                <TableCell>{o.nome}</TableCell>
+                <TableCell>{o.nome}<AndamentoDocumento tipo="oficios" id={o.id}/></TableCell>
                 <TableCell className="hidden md:table-cell">{o.curso}</TableCell>
                 <TableCell className="hidden max-w-xs truncate lg:table-cell">
                   {o.matricula}

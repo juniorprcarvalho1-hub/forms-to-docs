@@ -23,7 +23,7 @@ São três modelos de Ofícios (Enfermagem/Fisioterapia, Nutrição e Psicologia
 | Psicologia | 9º | [psicologia-9.gs](./avaliacao/psicologia-9.gs) |
 | Psicologia | 10º | [psicologia-10.gs](./avaliacao/psicologia-10.gs) |
 
-Os arquivos da pasta avaliacao são alternativas ao script genérico de Avaliação. Use apenas um script em cada formulário. Eles enviam curso/período como padrão quando o formulário não contém essas perguntas. Uma resposta existente tem prioridade: não renomeie nem exclua as perguntas originais.
+Os arquivos da pasta avaliacao são alternativas ao script genérico de Avaliação. Use apenas um script em cada formulário. Eles enviam curso/período como padrão quando o formulário não contém essas perguntas. Se o formulário tiver curso/período, a resposta precisa corresponder ao perfil do script. Contradições ficam bloqueadas para correção; não renomeie nem exclua as perguntas originais.
 
 ## Instalação em cada Google Formulário
 
@@ -39,7 +39,7 @@ O acesso de servidor aos documentos deve estar vinculado à conta institucional 
 
 ## Envio e recuperação
 
-O envio vai diretamente para o Supabase forms-to-docs, função formularios. O servidor identifica o modelo pela resposta do curso, preserva os campos originais e registra o documento no destino correto. O PDF é gerado no sistema com o modelo original; o e-mail de Preceptoria é destinado ao preceptor, e o de Avaliação ao orientador do curso.
+O envio vai diretamente para o Supabase forms-to-docs, função formularios. O servidor identifica o modelo pela resposta do curso, preserva os campos originais e registra o documento no destino correto. O PDF é gerado pelo consumidor do servidor com o modelo original, mesmo com a página fechada; o e-mail de Preceptoria é destinado ao preceptor, e o de Avaliação ao orientador do curso.
 
 O identificador combina formulário, resposta e destino, mantendo o mesmo valor no reenvio. Respostas com múltipla seleção são preservadas. A fila guarda somente referências às respostas, sem copiar nomes ou respostas completas nas propriedades do script.
 
@@ -57,3 +57,7 @@ A fila tem limite de duzentas referências. Falhas de rede,429 e5xx são recuper
 A migração preserva os modelos, configurações, orientadores e documentos históricos do projeto original. Referências antigas de imagens são atualizadas para os recursos do projeto atual, com acesso autenticado às imagens privadas. Registros históricos são identificados como migrados e não disparam reenvio automático de e-mails. Novas avaliações mantêm o envio automático ao orientador quando o fluxo correspondente está aberto, como no projeto original.
 
 Não existe integração de Pacientes neste pacote.
+
+## Andamento da automação
+
+Consulte [AUTOMACAO_DOCUMENTAL.md](../docs/AUTOMACAO_DOCUMENTAL.md) para ativar Cloudflare, acompanhar PDF/e-mail e retomar falhas. A instalação do Apps Script registra respostas mesmo enquanto a geração de PDF aguarda configuração. O envio de Preceptoria continua manual; o envio automático ao orientador se aplica às Avaliações.

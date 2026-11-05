@@ -20,7 +20,7 @@ function instalarIntegracao() {
   });
   ScriptApp.newTrigger("enviarFACESF").forForm(form).onFormSubmit().create();
   ScriptApp.newTrigger("processarPendentesFACESF").timeBased().everyMinutes(5).create();
-  Logger.log("Integração instalada. Envie uma resposta fictícia e confira no sistema.");
+  Logger.log("Integração instalada. Novas respostas serão enviadas ao sistema.");
 }
 
 function enviarFACESF(e) {
@@ -81,7 +81,7 @@ function testarConfiguracao() {
   if(!props.getProperty("FACESF_FORM_ID") || !props.getProperty("FACESF_TOKEN"))throw new Error("Execute instalarIntegracao após configurar o token.");
   const r=UrlFetchApp.fetch(FACESF_BASE+"/health",{headers:{apikey:FACESF_PUBLIC_KEY},muteHttpExceptions:true});
   if(r.getResponseCode()!==200)throw new Error("Serviço indisponível. HTTP "+r.getResponseCode());
-  Logger.log("Serviço acessível. Confirme o token enviando uma resposta fictícia.");
+  Logger.log("Serviço acessível. O token será validado no recebimento de uma resposta.");
 }
 
 function comLockFACESF_(fn) {
@@ -116,6 +116,7 @@ function payloadFACESF_(response,props) {
   });
   const email=response.getRespondentEmail();
   if(email && !seen.email && !seen.enderecodeemail)payload["Endereço de e-mail"]=email;
+  validarPerfilFACESF_(payload,props);
   const curso=props.getProperty("FACESF_CURSO") || FACESF_CURSO_PADRAO;
   const hasCourse=Object.keys(payload).some(function(k){return /curso|especialidade/i.test(k) && String(payload[k]).trim();});
   if(curso && !hasCourse)payload.Curso=curso;
@@ -160,4 +161,35 @@ function processarItemFACESF_(key) {
     props.setProperty(key,JSON.stringify(item));
   });
   return ok;
+}
+
+function validarPerfilFACESF_(payload, props) {
+  const cursoConfigurado = props.getProperty("FACESF_CURSO") || FACESF_CURSO_PADRAO;
+  const periodoConfigurado = props.getProperty("FACESF_PERIODO") || FACESF_PERIODO_PADRAO;
+  function negar() {
+    const error = new Error("Curso ou período contraditório. Confira a configuração e as respostas do formulário.");
+    error.facesfStatus = 422;
+    throw error;
+  }
+  function curso(v) {
+    const s = String(v).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+    const tipos = ["enfermagem","fisioterapia","nutricao","psicologia"].filter(function(c) {
+      const aliases = {enfermagem:["enfermagem","enferm","enf"],fisioterapia:["fisioterapia","fisio"],nutricao:["nutricao","nutri"],psicologia:["psicologia","psico"]};
+      return aliases[c].some(function(a) { return new RegExp("(?:^|[^a-z])"+a+"(?=$|[^a-z])").test(s); });
+    });
+    return tipos.length===1 ? tipos[0] : "";
+  }
+  const cursos = Object.keys(payload).filter(function(k) {
+    return /curso|especialidade/i.test(k) && String(payload[k]).trim();
+  }).map(function(k) { return curso(payload[k]); });
+  if(cursoConfigurado && (!curso(cursoConfigurado) || cursos.some(function(c) {return !c || c!==curso(cursoConfigurado);}))) negar();
+  if(FACESF_DESTINO!=="declaracoes-resposta") return;
+  const periodos = Object.keys(payload).filter(function(k) {
+    return /periodo|semestre|fase|estagiosupervisionado/.test(k.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"")) && String(payload[k]).trim();
+  }).map(function(k) {
+    const m=String(payload[k]).trim().match(/^(\d{1,2})\s*(?:º|°|o|ª)?\s*(?:per[ií]odo|semestre)?\.?$/i);
+    return m?String(Number(m[1])):"";
+  });
+  if(periodos.some(function(p) {return !p;}) || new Set(periodos).size>1) negar();
+  if(periodoConfigurado && periodos.some(function(p) {return p!==String(Number(periodoConfigurado));})) negar();
 }

@@ -1,4 +1,4 @@
-import {obterPdfArquivado} from "@/lib/automacao-arquivo.client";
+import {obterPdfArquivado} from "@/lib/automacao-arquivo";
 import {AndamentoDocumento} from "@/components/AndamentoDocumento";
 import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";

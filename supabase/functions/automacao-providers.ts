@@ -24,7 +24,7 @@ export async function renderizarCloudflare(html:string,env:{accountId:string|und
 export async function enviarPeloBridge(ticket:string,request:typeof fetch=fetch):Promise<{id:string}>{
  if(!/^[a-f0-9]{64}$/.test(ticket))throw new ErroAutomacao("ticket_invalido");
  let response:Response;
- try{response=await request("https://sintegradocursosfacesf.com.br/api/internal/documentos-email",{method:"POST",redirect:"error",signal:AbortSignal.timeout(75000),headers:{"content-type":"application/json"},body:JSON.stringify({ticket})});}catch{throw new ErroAutomacao("gmail_indisponivel",true);}
+ try{response=await request("https://forms-to-docs.lovable.app/api/internal/documentos-email",{method:"POST",redirect:"error",signal:AbortSignal.timeout(75000),headers:{"content-type":"application/json"},body:JSON.stringify({ticket})});}catch{throw new ErroAutomacao("gmail_indisponivel",true);}
  let body:unknown;
  try{body=await response.json();}catch{throw new ErroAutomacao("gmail_indisponivel",true);}
  const p=body&&typeof body==="object"?body as Record<string,unknown>:{};

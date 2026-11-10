@@ -281,7 +281,7 @@ async function respostasInterno(request: Request,supabaseAdmin:FormsAdmin,valida
         const supervisorFinal = supervisor;
 
         const estagiario = buscar(
-          ["nomedoestagiario", "nomedoestagiarioa", "nomecompletodoestagiario", "nomecompletodoestagiarioa", "estagiario", "estagiarioa", "aluno", "alunoa", "nomedoaluno", "nomedoalunoa", "discente"],
+          ["nomedoestagiario", "nomedoestagiarioa", "nomedoaestagiario", "nomedoaestagiarioa", "nomecompletodoestagiario", "nomecompletodoestagiarioa", "estagiario", "estagiarioa", "aluno", "alunoa", "nomedoaluno", "nomedoalunoa", "discente"],
           ["supervisor"],
         );
 

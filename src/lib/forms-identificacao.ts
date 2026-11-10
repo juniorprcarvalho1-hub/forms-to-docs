@@ -16,8 +16,9 @@ export function buscarCampoFormulario(payload:Record<string,unknown>,aliases:str
  return unicos[0]??"";
 }
 export function resolverPeriodoFormulario(payload:Record<string,unknown>,curso:CursoFormulario):string{
- const values=Object.entries(payload).filter(([k])=>/periodo|semestre|fase|estagiosupervisionado/.test(normalizarCampo(k))).map(([,v])=>String(v??"").trim()).filter(Boolean);
- const numeros=values.map(v=>v.match(/^(\d{1,2})\s*(?:º|°|o|ª)?\s*(?:per[ií]odo|semestre)?\.?$/i)?.[1]??"");
+ const chaves = ["periodo", "semestre", "fase", "estagiosupervisionado", "periododoestagio", "periododoestagiario", "periodoatual", "semestreatual", "estagiosupervisionadoperiodo"];
+ const values=Object.entries(payload).filter(([k])=>chaves.includes(normalizarCampo(k))).map(([,v])=>String(v??"").trim()).filter(Boolean);
+ const numeros=values.map(v=>v.normalize("NFKC").match(/^(\d{1,2})\s*(?:°|o|a)?\s*(?:per[ií]odo|semestre)?[.;]?$/i)?.[1]??"");
  if(!numeros.length||numeros.some(n=>!n)||new Set(numeros).size!==1)throw new ValidacaoFormularioError("Informe um único período válido no campo de período do formulário.");
  const permitido=curso==="nutricao"?["7","8"]:["9","10"];
  if(!permitido.includes(numeros[0]!))throw new ValidacaoFormularioError("O período informado não corresponde aos períodos deste curso.");

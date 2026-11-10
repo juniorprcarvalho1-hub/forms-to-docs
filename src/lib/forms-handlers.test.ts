@@ -75,9 +75,10 @@ test("avaliação de Fisioterapia aceita os nomes com (a) no formulário",async(
  const f=fixture();
  const resposta=await handleRespostas(f.request({
   "NOME DO SUPERVISOR(A) DE CAMPO:":"Supervisor Exemplo",
-  "NOME DO ESTAGIÁRIO(A):":"Estagiário Exemplo",
-  Curso:"Fisioterapia",
-  Período:"10",
+  "NOME DO(A) ESTAGIÁRIO (A):":"Estagiário Exemplo",
+  "CURSO:":"Fisioterapia;",
+  "ESTÁGIO SUPERVISIONADO:":"10ᵒ;",
+  "Descreva o desempenho durante o período":"Bom",
  }),f.db,"token");
  expect(resposta.status).toBe(200);
  expect(f.saved.p_dados).toMatchObject({

@@ -122,10 +122,7 @@ function payloadFACESF_(response,props) {
   if(curso && !hasCourse)payload.Curso=curso;
   if(FACESF_DESTINO==="declaracoes-resposta"){
     const periodo=(props.getProperty("FACESF_PERIODO") || FACESF_PERIODO_PADRAO).trim();
-    const hasPeriod=Object.keys(payload).some(function(k){
-      const key=k.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
-      return /estagiosupervisionado|periodo|semestre|fase/.test(key) && /^\d{1,2}\s*(º|°|o|ª)?\s*(periodo|período|semestre)?\.?$/i.test(String(payload[k]).trim());
-    });
+    const hasPeriod = Object.keys(payload).some(k => campoPeriodoFACESF_(k) && String(payload[k]).trim());
     if(periodo && !hasPeriod)payload["Período"]=periodo;
   }
   return payload;
@@ -163,6 +160,15 @@ function processarItemFACESF_(key) {
   return ok;
 }
 
+function campoPeriodoFACESF_(titulo) {
+  const chave = titulo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return ["periodo", "semestre", "fase", "estagiosupervisionado", "periododoestagio", "periododoestagiario", "periodoatual", "semestreatual", "estagiosupervisionadoperiodo"].includes(chave);
+}
+function lerPeriodoFACESF_(valor) {
+  const match = String(valor).normalize("NFKC").trim().match(/^(\d{1,2})\s*(?:°|o|a)?\s*(?:per[ií]odo|semestre)?[.;]?$/i);
+  return match ? String(Number(match[1])) : "";
+}
+
 function validarPerfilFACESF_(payload, props) {
   const cursoConfigurado = props.getProperty("FACESF_CURSO") || FACESF_CURSO_PADRAO;
   const periodoConfigurado = props.getProperty("FACESF_PERIODO") || FACESF_PERIODO_PADRAO;
@@ -184,12 +190,9 @@ function validarPerfilFACESF_(payload, props) {
   }).map(function(k) { return curso(payload[k]); });
   if(cursoConfigurado && (!curso(cursoConfigurado) || cursos.some(function(c) {return !c || c!==curso(cursoConfigurado);}))) negar();
   if(FACESF_DESTINO!=="declaracoes-resposta") return;
-  const periodos = Object.keys(payload).filter(function(k) {
-    return /periodo|semestre|fase|estagiosupervisionado/.test(k.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"")) && String(payload[k]).trim();
-  }).map(function(k) {
-    const m=String(payload[k]).trim().match(/^(\d{1,2})\s*(?:º|°|o|ª)?\s*(?:per[ií]odo|semestre)?\.?$/i);
-    return m?String(Number(m[1])):"";
-  });
+  const periodos = Object.keys(payload)
+    .filter(k => campoPeriodoFACESF_(k) && String(payload[k]).trim())
+    .map(k => lerPeriodoFACESF_(payload[k]));
   if(periodos.some(function(p) {return !p;}) || new Set(periodos).size>1) negar();
   if(periodoConfigurado && periodos.some(function(p) {return p!==String(Number(periodoConfigurado));})) negar();
 }

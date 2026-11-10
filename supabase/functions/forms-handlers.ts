@@ -285,7 +285,7 @@ async function respostasInterno(request: Request,supabaseAdmin:FormsAdmin,valida
           ["supervisor"],
         );
 
-        const cursoForm = texto("curso", "cursodoestagiario", "areadeestagio", "area");
+        const cursoForm = texto("curso", "cursodoestagiario") || texto("areadeestagio", "area");
         const { data: cursos, error: cursosError } = await supabaseAdmin
           .from("cursos")
           .select("nome_formulario, nome_oficial");

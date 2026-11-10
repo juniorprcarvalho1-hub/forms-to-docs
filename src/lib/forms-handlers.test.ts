@@ -77,6 +77,7 @@ test("avaliação de Fisioterapia aceita os nomes com (a) no formulário",async(
   "NOME DO SUPERVISOR(A) DE CAMPO:":"Supervisor Exemplo",
   "NOME DO(A) ESTAGIÁRIO (A):":"Estagiário Exemplo",
   "CURSO:":"Fisioterapia;",
+  "ÁREA DE ESTÁGIO:":["Atenção Básica;", "Ambulatorial;"],
   "ESTÁGIO SUPERVISIONADO:":"10ᵒ;",
   "Descreva o desempenho durante o período":"Bom",
  }),f.db,"token");

@@ -12,6 +12,7 @@ export function controleServidor(client: SupabaseClient<Database>) {
     listar: (dados: { pagina: number; busca: string }) => executar<ListaUsuarios>("listar", dados),
     cadastrar: (dados: unknown) => executar<{ userId: string }>("cadastrar", dados),
     salvarPlano: (dados: unknown) => executar<{ ok: boolean }>("plano", dados),
+    redefinirSenha: (dados: unknown) => executar<{ ok: boolean }>("redefinir-senha", dados),
     suspender: (dados: unknown) => executar<{ ok: boolean; aviso: string | null }>("suspender", dados),
   };
 }

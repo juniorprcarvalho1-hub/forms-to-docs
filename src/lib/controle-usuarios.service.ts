@@ -2,6 +2,7 @@ import {
   cadastroUsuarioSchema,
   alteracaoPlanoSchema,
   suspensaoUsuarioSchema,
+  redefinicaoSenhaSchema,
   donoConfirmado,
   DONO_EMAIL,
   type Identidade,
@@ -16,6 +17,7 @@ export type ControleDependencias = {
   remover: (userId: string) => Promise<void>;
   salvarPlano: (input: PlanoInput) => Promise<void>;
   suspender: (input: { userId: string; suspenso: boolean }) => Promise<void>;
+  redefinirSenha: (input: { userId: string; senha: string }) => Promise<void>;
   bloquearLogin: (userId: string, suspenso: boolean) => Promise<void>;
 };
 export function criarServicoControle(dep: ControleDependencias) {
@@ -64,6 +66,13 @@ export function criarServicoControle(dep: ControleDependencias) {
       const d = alteracaoPlanoSchema.parse(input);
       outro(d.userId, owner);
       await dep.salvarPlano(d);
+      return { ok: true };
+    },
+    async redefinirSenha(input: unknown) {
+      const owner = await dono();
+      const dados = redefinicaoSenhaSchema.parse(input);
+      outro(dados.userId, owner);
+      await dep.redefinirSenha(dados);
       return { ok: true };
     },
     async suspender(input: unknown) {

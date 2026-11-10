@@ -17,6 +17,7 @@ import {
   calcularVencimento,
   cadastroUsuarioSchema,
   alteracaoPlanoSchema,
+  redefinicaoSenhaSchema,
   situacaoAssinatura,
   type Plano,
   type UsuarioGerenciado,
@@ -29,6 +30,7 @@ type Api = {
     data: { nome: string; email: string; senha: string; plano: Plano; vencimento: string };
   }) => Promise<unknown>;
   plano: (d: { data: { userId: string; plano: Plano; vencimento: string } }) => Promise<unknown>;
+  redefinirSenha: (d: { data: { userId: string; senha: string } }) => Promise<unknown>;
   suspender: (d: {
     data: { userId: string; suspenso: boolean };
   }) => Promise<{ ok: boolean; aviso: string | null }>;
@@ -54,6 +56,8 @@ export function UsuariosPanel({ api }: { api: Api }) {
   const [filtro, setFiltro] = useState("");
   const [aberto, setAberto] = useState(false);
   const [editando, setEditando] = useState<UsuarioGerenciado | null>(null);
+  const [contaSenha, setContaSenha] = useState<UsuarioGerenciado | null>(null);
+  const [confirmacao, setConfirmacao] = useState("");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -89,6 +93,45 @@ export function UsuariosPanel({ api }: { api: Api }) {
     setErro("");
     setSenha("");
     setAberto(true);
+  }
+  function abrirTrocaSenha(usuario: UsuarioGerenciado) {
+    setSenha("");
+    setConfirmacao("");
+    setErro("");
+    setContaSenha(usuario);
+  }
+  function fecharTrocaSenha() {
+    if (salvando) return;
+    setContaSenha(null);
+    setSenha("");
+    setConfirmacao("");
+    setErro("");
+  }
+  async function salvarSenha(e: React.FormEvent) {
+    e.preventDefault();
+    if (!contaSenha || salvando) return;
+    setErro("");
+    const resultado = redefinicaoSenhaSchema.safeParse({ userId: contaSenha.userId, senha });
+    if (!resultado.success) {
+      setErro(resultado.error.issues[0]?.message ?? "Confira a nova senha.");
+      return;
+    }
+    if (senha !== confirmacao) {
+      setErro("As senhas devem ser iguais.");
+      return;
+    }
+    setSalvando(true);
+    try {
+      await api.redefinirSenha({ data: resultado.data });
+      setContaSenha(null);
+      setSenha("");
+      setConfirmacao("");
+      toast.success("Senha do usuário alterada.");
+    } catch (e) {
+      setErro(mensagem(e));
+    } finally {
+      setSalvando(false);
+    }
   }
   function fechar(open: boolean) {
     if (salvando) return;
@@ -210,7 +253,7 @@ export function UsuariosPanel({ api }: { api: Api }) {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px] text-left text-sm">
+              <table className="w-full min-w-[790px] text-left text-sm">
                 <caption className="sr-only">
                   Usuários, planos individuais e situação de acesso
                 </caption>
@@ -272,6 +315,15 @@ export function UsuariosPanel({ api }: { api: Api }) {
                             </Button>
                             <Button
                               size="sm"
+                              variant="outline"
+                              onClick={() => abrirTrocaSenha(u)}
+                              disabled={alterando !== null}
+                              aria-label={"Alterar senha de " + u.email}
+                            >
+                              Alterar senha
+                            </Button>
+                            <Button
+                              size="sm"
                               variant={u.suspenso ? "outline" : "destructive"}
                               onClick={() => void mudarSuspensao(u)}
                               disabled={alterando !== null || !u.plano}
@@ -323,6 +375,50 @@ export function UsuariosPanel({ api }: { api: Api }) {
           </div>
         </>
       )}
+      <Dialog open={contaSenha !== null} onOpenChange={(open) => { if (!open) fecharTrocaSenha(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar senha do usuário</DialogTitle>
+            <DialogDescription>{contaSenha?.email}</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={salvarSenha} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="usuario-nova-senha">Nova senha</Label>
+              <Input
+                id="usuario-nova-senha"
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                disabled={salvando}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="usuario-confirmar-senha">Confirme a nova senha</Label>
+              <Input
+                id="usuario-confirmar-senha"
+                type="password"
+                autoComplete="new-password"
+                value={confirmacao}
+                onChange={(e) => setConfirmacao(e.target.value)}
+                disabled={salvando}
+                required
+              />
+            </div>
+            {erro && <p role="alert" className="text-sm text-destructive">{erro}</p>}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={fecharTrocaSenha} disabled={salvando}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={salvando}>
+                {salvando ? "Salvando…" : "Salvar nova senha"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
       <Dialog open={aberto} onOpenChange={fechar}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>

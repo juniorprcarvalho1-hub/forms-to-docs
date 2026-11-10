@@ -5,6 +5,7 @@ import {
   cadastroUsuarioSchema,
   alteracaoPlanoSchema,
   suspensaoUsuarioSchema,
+  redefinicaoSenhaSchema,
 } from "./controle-usuarios";
 const listaSchema = z
   .object({
@@ -32,6 +33,13 @@ export const atualizarPlanoUsuario = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { controleServidor } = await import("./controle-usuarios.server");
     return controleServidor(context.supabase).salvarPlano(data);
+  });
+export const redefinirSenhaUsuario = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => redefinicaoSenhaSchema.parse(d))
+  .handler(async ({ context, data }) => {
+    const { controleServidor } = await import("./controle-usuarios.server");
+    return controleServidor(context.supabase).redefinirSenha(data);
   });
 export const alterarSuspensaoUsuario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

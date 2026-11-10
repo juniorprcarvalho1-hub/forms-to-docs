@@ -27,6 +27,9 @@ function fixture(identity: any = owner) {
     suspender: async () => {
       calls.push("suspender");
     },
+    redefinirSenha: async () => {
+      calls.push("senha");
+    },
     bloquearLogin: async () => {
       calls.push("login");
     },
@@ -48,6 +51,7 @@ describe("operações exclusivas do proprietário", () => {
       () => f.service.cadastrar(cadastro),
       () => f.service.salvarPlano({ userId: other, plano: "anual", vencimento: "2027-10-22" }),
       () => f.service.suspender({ userId: other, suspenso: true }),
+      () => f.service.redefinirSenha({ userId: other, senha: cadastro.senha }),
     ])
       await expect(fn()).rejects.toThrow("proprietário");
     expect(f.calls).toEqual([]);
@@ -77,6 +81,14 @@ describe("operações exclusivas do proprietário", () => {
       f.service.salvarPlano({ userId: owner.id, plano: "mensal", vencimento: "2026-11-22" }),
     ).rejects.toThrow();
     expect(f.calls).toEqual([]);
+  });
+  test("só redefine a senha de outra conta com uma senha válida", async () => {
+    const f = fixture();
+    await expect(f.service.redefinirSenha({ userId: owner.id, senha: cadastro.senha })).rejects.toThrow("proprietário");
+    await expect(f.service.redefinirSenha({ userId: other, senha: "curta" })).rejects.toThrow();
+    expect(f.calls).toEqual([]);
+    expect(await f.service.redefinirSenha({ userId: other, senha: cadastro.senha })).toEqual({ ok: true });
+    expect(f.calls).toEqual(["senha"]);
   });
   test("suspende primeiro os dados e depois o login", async () => {
     const f = fixture();

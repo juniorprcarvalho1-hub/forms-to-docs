@@ -4,7 +4,7 @@ import { criarServicoControle } from "../../src/lib/controle-usuarios.service.ts
 import { donoConfirmado, type ListaUsuarios } from "../../src/lib/controle-usuarios.ts";
 
 const entrada = z.object({
-  acao: z.enum(["listar", "cadastrar", "plano", "suspender"]),
+  acao: z.enum(["listar", "cadastrar", "plano", "suspender", "redefinir-senha"]),
   dados: z.unknown(),
 }).strict();
 const lista = z.object({
@@ -76,6 +76,10 @@ Deno.serve(async (request: Request) => {
         const { error } = await client.rpc("suspender_usuario_controle", { p_user_id: dados.userId, p_suspenso: dados.suspenso });
         if (error) throw new Error("Não foi possível alterar a suspensão.");
       },
+      redefinirSenha: async ({ userId, senha }) => {
+        const { error } = await admin.auth.admin.updateUserById(userId, { password: senha });
+        if (error) throw new Error("Não foi possível redefinir a senha da conta.");
+      },
       bloquearLogin: async (userId, suspenso) => {
         const { error } = await admin.auth.admin.updateUserById(userId, { ban_duration: suspenso ? "876000h" : "none" });
         if (error) throw new Error("Não foi possível atualizar o login.");
@@ -85,6 +89,7 @@ Deno.serve(async (request: Request) => {
       case "listar": return responder(200, await servico.listar(lista.parse(pedido.dados)));
       case "cadastrar": return responder(200, await servico.cadastrar(pedido.dados));
       case "plano": return responder(200, await servico.salvarPlano(pedido.dados));
+      case "redefinir-senha": return responder(200, await servico.redefinirSenha(pedido.dados));
       case "suspender": return responder(200, await servico.suspender(pedido.dados));
     }
   } catch (error) {

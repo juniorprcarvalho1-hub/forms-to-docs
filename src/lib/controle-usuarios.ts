@@ -62,6 +62,9 @@ export const cadastroUsuarioSchema = z
     vencimento: vencimentoSchema,
   })
   .strict();
+export const redefinicaoSenhaSchema = z
+  .object({ userId: z.string().uuid(), senha: cadastroUsuarioSchema.shape.senha })
+  .strict();
 export const alteracaoPlanoSchema = z
   .object({ userId: z.string().uuid(), plano: planoSchema, vencimento: vencimentoSchema })
   .strict();

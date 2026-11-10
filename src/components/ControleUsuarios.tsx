@@ -4,6 +4,7 @@ import {
   cadastrarUsuario,
   atualizarPlanoUsuario,
   alterarSuspensaoUsuario,
+  redefinirSenhaUsuario,
 } from "@/lib/controle-usuarios.functions";
 import { UsuariosPanel } from "./UsuariosPanel";
 
@@ -11,6 +12,7 @@ export function ControleUsuarios() {
   const listar = useServerFn(listarUsuarios),
     cadastrar = useServerFn(cadastrarUsuario),
     plano = useServerFn(atualizarPlanoUsuario),
-    suspender = useServerFn(alterarSuspensaoUsuario);
-  return <UsuariosPanel api={{ listar, cadastrar, plano, suspender }} />;
+    suspender = useServerFn(alterarSuspensaoUsuario),
+    redefinirSenha = useServerFn(redefinirSenhaUsuario);
+  return <UsuariosPanel api={{ listar, cadastrar, plano, suspender, redefinirSenha }} />;
 }

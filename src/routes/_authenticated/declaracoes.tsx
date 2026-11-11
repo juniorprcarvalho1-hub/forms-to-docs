@@ -159,6 +159,16 @@ function DeclaracoesPage() {
     }
     setOcupado(true);
     try {
+      const { data: andamento, error } = await supabase.rpc("automacao_status" as never, {
+        p_tipo: "declaracoes",
+        p_documento: declaracao.id,
+      } as never);
+      if (error) throw new Error("Não foi possível consultar o envio desta declaração.");
+      if ((andamento as { emailAutomatico?: boolean } | null)?.emailAutomatico) {
+        toast.info("O sistema envia esta declaração automaticamente. Confira o andamento na lista.");
+        return;
+      }
+
       const fontes = await buscarFontesDeclaracaoAtuais();
       const html = gerarHtmlComFontes(declaracao, fontes.config, fontes.modelos);
       if (!html) throw new Error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");

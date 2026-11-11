@@ -13,7 +13,7 @@ export function AndamentoDocumento({tipo,id}:{tipo:"oficios"|"declaracoes"|"decl
  async function acao(etapa?:"pdf"|"email",enviado?:boolean){
   setBusy(true);
   try{
-   const{error}=etapa?await db.rpc("automacao_retomar",{p_tipo:tipo,p_documento:id,p_etapa:etapa}):await db.rpc("automacao_confirmar_envio",{p_documento:id,p_enviado:enviado});
+   const{error}=etapa?await db.rpc("automacao_retomar",{p_tipo:tipo,p_documento:id,p_etapa:etapa}):await db.rpc("automacao_confirmar_envio",{p_tipo:tipo,p_documento:id,p_enviado:enviado});
    if(error)throw new Error("A ação não foi concluída. Atualize o andamento e tente novamente.");
    setConfirmacao(null);await cache.invalidateQueries({queryKey:["automacao"]});await cache.invalidateQueries({queryKey:[tipo]});toast.success(etapa?"Nova tentativa solicitada.":"Confirmação registrada.");
   }catch(error){toast.error(error instanceof Error?error.message:"Falha ao atualizar.");}finally{setBusy(false);}

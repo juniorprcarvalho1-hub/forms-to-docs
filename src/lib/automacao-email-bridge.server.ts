@@ -1,11 +1,14 @@
 import {validarPdfA4} from "./pdf-validacao.ts";
 import {bytesBase64} from "./automacao-bytes.ts";
 import {ErroAutomacao} from "./automacao-erros.ts";
-export type EnvelopeEmail={job_id:string;to:string;message_id:string;assunto:string;corpo:string;pdf_url:string;pdf_sha256:string};
-export type EmailBridgePorts={configurado:boolean;consumir:(ticket:string)=>Promise<EnvelopeEmail|null>;lerPdf:(envelope:EnvelopeEmail)=>Promise<Uint8Array>;autorizar:(ticket:string)=>Promise<boolean>;enviarMime:(raw:string)=>Promise<{id:string}>};
+import {EMAIL_CLINICA_FACESF,NOME_CLINICA_FACESF} from "./email-preceptoria.ts";
+export type EnvelopeEmail={tipo?:"declaracoes"|"declaracoes_resposta";corpo_html?:string;job_id:string;to:string;message_id:string;assunto:string;corpo:string;pdf_url:string;pdf_sha256:string};
+export type EmailBridgePorts={configurado:boolean;consumir:(ticket:string)=>Promise<EnvelopeEmail|null>;lerPdf:(envelope:EnvelopeEmail)=>Promise<Uint8Array>;autorizar:(ticket:string)=>Promise<boolean>;enviarMime:(raw:string,remetente?:string)=>Promise<{id:string}>};
 const json=(body:unknown,status=200)=>Response.json(body,{status,headers:{"cache-control":"no-store"}});
 function validarEnvelope(e:EnvelopeEmail|null):e is EnvelopeEmail{
- if(!e||typeof e.job_id!=="string"||!/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(e.job_id)||
+ if(!e||(e.tipo!==undefined&&e.tipo!=="declaracoes"&&e.tipo!=="declaracoes_resposta")||
+  (e.tipo==="declaracoes"&&(typeof e.corpo_html!=="string"||!e.corpo_html.trim()||e.corpo_html.length>30000))||
+  typeof e.job_id!=="string"||!/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(e.job_id)||
   typeof e.to!=="string"||e.to.length>254||!/^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/.test(e.to)||
   e.message_id!=="<facesf."+e.job_id+"@sintegradocursosfacesf.com.br>"||
   typeof e.assunto!=="string"||!e.assunto.trim()||e.assunto.length>1000||
@@ -21,13 +24,24 @@ function assuntoMime(text:string){
 }
 function mimeMensagem(e:EnvelopeEmail,bytes:Uint8Array):string{
  const boundary="facesf_"+crypto.randomUUID().replaceAll("-","");
+ const alternative=boundary+"_alt";
+ const preceptoria=e.tipo==="declaracoes";
+ const texto=(tipo:"plain"|"html",conteudo:string)=>[
+  'Content-Type: text/'+tipo+'; charset="UTF-8"',
+  "Content-Transfer-Encoding: base64","",base64Utf8(conteudo).replace(/(.{76})/g,"$1\r\n"),"",
+ ];
+ const corpo=preceptoria?[
+  'Content-Type: multipart/alternative; boundary="'+alternative+'"',"",
+  "--"+alternative,...texto("plain",e.corpo),
+  "--"+alternative,...texto("html",e.corpo_html!),"--"+alternative+"--","",
+ ]:texto("plain",e.corpo);
  const mime=[
+  ...(preceptoria?["From: "+assuntoMime(NOME_CLINICA_FACESF)+" <"+EMAIL_CLINICA_FACESF+">"]:[]),
   "To: "+e.to,"Message-ID: "+e.message_id,"Subject: "+assuntoMime(e.assunto),"MIME-Version: 1.0",
-  'Content-Type: multipart/mixed; boundary="'+boundary+'"',"","--"+boundary,
-  'Content-Type: text/plain; charset="UTF-8"',"Content-Transfer-Encoding: base64","",base64Utf8(e.corpo),"",
+  'Content-Type: multipart/mixed; boundary="'+boundary+'"',"","--"+boundary,...corpo,
   "--"+boundary,"Content-Type: application/pdf","Content-Transfer-Encoding: base64",
-  'Content-Disposition: attachment; filename="declaracao-avaliacao.pdf"',"",bytesBase64(bytes).replace(/(.{76})/g,"$1\r\n"),"",
-  "--"+boundary+"--","",
+  'Content-Disposition: attachment; filename="'+(preceptoria?"declaracao-preceptoria.pdf":"declaracao-avaliacao.pdf")+'"',
+  "",bytesBase64(bytes).replace(/(.{76})/g,"$1\r\n"),"","--"+boundary+"--","",
  ].join("\r\n");
  return base64Utf8(mime).replaceAll("+","-").replaceAll("/","_").replace(/=+$/,"");
 }
@@ -54,7 +68,7 @@ export async function handleEmailBridge(request:Request,ports:EmailBridgePorts):
   if(hash!==envelope.pdf_sha256)throw new ErroAutomacao("pdf_invalido");
   const raw=mimeMensagem(envelope,bytes);
   if(!await ports.autorizar(ticket))return json({codigo:"ticket_invalido",incerto:false},401);
-  sending=true;const receipt=await ports.enviarMime(raw);
+  sending=true;const receipt=await ports.enviarMime(raw,envelope.tipo==="declaracoes"?EMAIL_CLINICA_FACESF:undefined);
   if(!receipt||typeof receipt.id!=="string"||!/^[A-Za-z0-9_-]{1,256}$/.test(receipt.id))throw new ErroAutomacao("gmail_indisponivel",true);
   return json({id:receipt.id});
  }catch(error){

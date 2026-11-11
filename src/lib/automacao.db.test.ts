@@ -16,7 +16,7 @@ beforeAll(async()=>{
  create table public.configuracoes(id boolean primary key,formato_numeracao text default 'Ofício {{seq}}/{{ano}}',digitos int default 3,webhook_token text default 'never-copy-token',cidade text default 'Cidade');
  insert into configuracoes(id) values(true);
  create table public.oficios(id uuid primary key default gen_random_uuid(),numero int not null,ano int not null,numero_formatado text not null,data date not null,nome text,curso text default 'Enfermagem',modelo_chave text default 'padrao',conteudo_html text,pdf_path text,created_by uuid,origem text,created_at timestamptz default now(),updated_at timestamptz default now(),unique(numero,ano));
- create table public.declaracoes(id uuid primary key default gen_random_uuid(),nome text,curso text default 'Enfermagem',modelo_chave text default 'enfermagem',conteudo_html text,pdf_path text,email_enviado_em timestamptz,created_by uuid,origem text,created_at timestamptz default now(),updated_at timestamptz default now());
+ create table public.declaracoes(id uuid primary key default gen_random_uuid(),nome text,email text,curso text default 'Enfermagem',modelo_chave text default 'enfermagem',conteudo_html text,pdf_path text,email_enviado_em timestamptz,created_by uuid,origem text,created_at timestamptz default now(),updated_at timestamptz default now());
  create table public.declaracoes_resposta(id uuid primary key default gen_random_uuid(),supervisor text,estagiario text,curso text default 'Enfermagem',modelo_chave text default 'enfermagem',periodo text default '9',data_emissao date default current_date,conteudo_html text,pdf_path text,email_enviado_em timestamptz,email_destino text default '',created_by uuid,origem text,created_at timestamptz default now(),updated_at timestamptz default now());
  create table modelos_oficio(chave text primary key,modelo_html text);
  create table modelos_declaracao(chave text primary key,modelo_html text);
@@ -40,6 +40,7 @@ beforeAll(async()=>{
  await db.query("select public.definir_responsavel_forms('clinic@example.com')");
  const migration=join(dir,"20261104003505_automacao_documental.sql");
  if(existsSync(migration))await db.exec(readFileSync(migration,"utf8"));
+ await db.exec(readFileSync(join(dir,"20261111163718_email_automatico_preceptoria.sql"),"utf8"));
 },30000);
 afterAll(async()=>{await db?.close()});
 beforeEach(async()=>{
@@ -193,4 +194,34 @@ test("política antiga de módulos não deixa outra conta alterar a configuraç�
  await db.exec("set role authenticated");await db.query("select set_config('request.jwt.claim.sub',$1,false)",[other]);
  expect((await db.query("update modulos_estagio set nome='Alterado por terceiro' returning id")).rows.length).toBe(0);
  await db.exec("reset role");
+});
+
+test("Preceptoria envia só depois do PDF e usa exclusivamente o endereço informado",async()=>{
+ const doc=await save("declaracoes",{nome:"Preceptora Teste",email:"preceptora@example.com"});
+ expect((await jobs()).map(j=>j.etapa)).toEqual(["pdf"]);
+ const pdf=await claim();
+ expect(await finish(pdf)).toBe(true);
+ const email=await claim();
+ expect(email).toMatchObject({tipo:"declaracoes",etapa:"email"});
+ const args=[email.id,email.lease_token];
+ const destino=(await db.query<any>("select public.automacao_email_iniciar($1,$2) as r",args)).rows[0].r;
+ expect(destino.to).toBe("preceptora@example.com");
+ const ticket=(await db.query<any>("select public.automacao_ticket_email($1,$2) as r",args)).rows[0].r;
+ const envelope=(await db.query<any>("select public.automacao_consumir_ticket_email($1,false) as r",[ticket])).rows[0].r;
+ expect(envelope.email_destino).toBe(destino.to);
+ const autorizacao=(await db.query<any>("select public.automacao_consumir_ticket_email($1,true) as r",[ticket])).rows[0].r;
+ expect(autorizacao.autorizado).toBe(true);
+ const recibo=(await db.query<any>("select public.automacao_email_concluir($1,$2,'gmail_id') as r",args)).rows[0].r;
+ expect(recibo).toBe(true);
+ expect((await db.query<any>("select email_enviado_em is not null as enviado from declaracoes where id=$1",[doc.id])).rows[0].enviado).toBe(true);
+ expect(await claim()).toBeNull();
+});
+test("Preceptoria sem e-mail mantém PDF e bloqueia só o envio",async()=>{
+ await save("declaracoes",{nome:"Preceptora Teste",email:""});
+ const pdf=await claim();
+ expect(await finish(pdf)).toBe(true);
+ const email=await claim();
+ const result=(await db.query<any>("select public.automacao_email_iniciar($1,$2) as r",[email.id,email.lease_token])).rows[0].r;
+ expect(result).toBeNull();
+ expect((await jobs()).find(j=>j.etapa==="email")).toMatchObject({estado:"bloqueado_configuracao",erro_codigo:"preceptor_ausente"});
 });

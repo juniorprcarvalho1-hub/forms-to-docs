@@ -3,6 +3,7 @@ import {handleWorkerRequest} from "./automacao-worker-http.ts";
 import {processarDocumento,type DocumentoJob} from "../../src/lib/automacao-processador.ts";
 import {incorporarImagensAutomacao,bytesBase64} from "../../src/lib/automacao-html.ts";
 import {validarPdfA4} from "../../src/lib/pdf-validacao.ts";
+import {mensagemEmailPreceptoria} from "../../src/lib/email-preceptoria.ts";
 import {mensagemEmailResposta,type DeclaracaoResposta} from "../../src/lib/declaracoes-resposta.ts";
 import {ErroAutomacao} from "../../src/lib/automacao-erros.ts";
 import {renderizarCloudflare,enviarPeloBridge,lerBytesLimitados} from "./automacao-providers.ts";
@@ -62,8 +63,10 @@ Deno.serve(req=>handleWorkerRequest(req,{
   const expected=j.usuario_id+"/automacao/"+j.documento_id+"/v"+j.versao+".pdf";
   if(j.pdf_path!==expected||!j.pdf_sha256)throw new ErroAutomacao("pdf_invalido");
   const {data,error}=await db.storage.from("oficios").createSignedUrl(expected,60);if(error||!data)throw new ErroAutomacao("storage_indisponivel");
-  const mensagem=mensagemEmailResposta(j.snapshot.documento as DeclaracaoResposta);
-  return{job_id:j.id,to:j.email_destino,message_id:"<facesf."+j.id+"@sintegradocursosfacesf.com.br>",...mensagem,pdf_url:data.signedUrl,pdf_sha256:j.pdf_sha256};
+  const mensagem=j.tipo==="declaracoes"
+   ? mensagemEmailPreceptoria(j.snapshot.documento)
+   : mensagemEmailResposta(j.snapshot.documento as DeclaracaoResposta);
+  return{tipo:j.tipo,job_id:j.id,to:j.email_destino,message_id:"<facesf."+j.id+"@sintegradocursosfacesf.com.br>",...mensagem,pdf_url:data.signedUrl,pdf_sha256:j.pdf_sha256};
  },
  autorizarEmail:async ticket=>!!(await rpc("automacao_consumir_ticket_email",{p_ticket:ticket,p_enviar:true}))?.autorizado,
 }));

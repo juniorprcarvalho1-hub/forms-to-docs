@@ -236,7 +236,7 @@ if(modulosError) throw Error('Lookup unavailable');
           carga_horaria:
             String(campoCad?.carga_horaria ?? "") || String(cfg["padrao_carga_horaria"] ?? ""),
           alunos: texto("alunos", "nomedosalunos", "nomedoaluno", "nomesdosalunos", "estudantes", "discentes"),
-          email: texto("emaildopreceptor", "email", "enderecodeemail"),
+          email: texto("emaildopreceptor", "emaildopreceptora", "enderecodeemaildopreceptor", "enderecodeemaildopreceptora") || texto("email"),
           origem: "google_forms",
         };
 

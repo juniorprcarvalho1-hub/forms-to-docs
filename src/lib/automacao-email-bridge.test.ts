@@ -18,3 +18,22 @@ test("permissão revogada durante download impede envio",async()=>{const f=await
 test("conta Gmail desconectada não consome ticket",async()=>{const f=await fixture();f.ports.configurado=false;const r=await handleEmailBridge(f.request(),f.ports);expect(r.status).toBe(503);expect(await r.json()).toMatchObject({codigo:"gmail_ausente",incerto:false});expect(f.calls).toEqual([]);});
 test("timeout depois de autorização retorna envio incerto sem repetir",async()=>{const f=await fixture();let attempts=0;f.ports.enviarMime=async()=>{attempts++;throw Error("timeout");};const r=await handleEmailBridge(f.request(),f.ports);expect(r.status).toBe(503);expect(await r.json()).toMatchObject({incerto:true});expect(attempts).toBe(1);});
 test("injeção de cabeçalho no envelope é recusada",async()=>{const f=await fixture();f.envelope.to="valid@example.com\r\nBcc: attacker@example.com";const r=await handleEmailBridge(f.request(),f.ports);expect(r.status).toBe(401);expect(f.calls).not.toContain("gmail");});
+
+test("Preceptoria usa o Gmail institucional, corpo formatado e nome do anexo", async () => {
+ const f=await fixture();
+ Object.assign(f.envelope,{
+  tipo:"declaracoes", assunto:"DECLARAÇÃO DE PRECEPTORIA.",
+  corpo:"Prezado(a) Maria,",
+  corpo_html:"<p>Prezado(a) <strong>Maria</strong>,</p>",
+ });
+ let remetente: string | undefined;
+ const enviar=f.ports.enviarMime;
+ f.ports.enviarMime=async(raw:string,de?:string)=>{remetente=de;return enviar(raw);};
+ const resposta=await handleEmailBridge(f.request(),f.ports);
+ expect(resposta.status).toBe(200);
+ expect(remetente).toBe("clinicasaudeintegrada.facesf@gmail.com");
+ expect(f.mime).toContain("<clinicasaudeintegrada.facesf@gmail.com>");
+ expect(f.mime).toContain("Content-Type: multipart/alternative");
+ expect(f.mime).toContain('filename="declaracao-preceptoria.pdf"');
+ expect(f.mime.replace(/\r\n/g,"")).toContain(Buffer.from(f.envelope.corpo_html!,"utf8").toString("base64"));
+});

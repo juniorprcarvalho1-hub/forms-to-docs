@@ -41,3 +41,7 @@ A instituição pode editar a configuração documental. Cadastro de usuários, 
 O CI executa testes Bun/PGlite, build, TypeScript, impressão real em Chromium e verificação Deno do consumidor.
 Os testes de impressão cobrem A4, imagem ausente/incompleta e recorte em CSS, além dos onze modelos originais nos dezesseis perfis de curso/período. Os fixtures contêm apenas nomes técnicos fictícios; o layout usa o logo público institucional. Essa verificação não substitui o teste do Storage e Cloudflare reais.
 Nenhum e-mail real é enviado pelos testes. A confirmação de publicação, migração e diagnóstico de produção deve ser registrada no ledger do plano; uma compilação verde não comprova credenciais externas.
+
+### Envio de Preceptoria
+
+Novas declarações do Google Forms são enviadas após a geração do PDF. O e-mail usa o remetente clinicasaudeintegrada.facesf@gmail.com e o endereço informado no campo de e-mail do preceptor. O semestre é calculado pela data de início do estágio ou pela data de emissão quando o início está ausente. O Gmail institucional precisa estar conectado na Lovable. Registros anteriores à ativação seguem disponíveis para o envio manual.

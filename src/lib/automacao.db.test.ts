@@ -41,6 +41,7 @@ beforeAll(async()=>{
  const migration=join(dir,"20261104003505_automacao_documental.sql");
  if(existsSync(migration))await db.exec(readFileSync(migration,"utf8"));
  await db.exec(readFileSync(join(dir,"20261111163718_email_automatico_preceptoria.sql"),"utf8"));
+ await db.exec(readFileSync(join(dir,"20261111201744_configuracoes_master.sql"),"utf8"));
 },30000);
 afterAll(async()=>{await db?.close()});
 beforeEach(async()=>{
@@ -181,12 +182,14 @@ test("limite global evita exceder dois processamentos simultâneos",async()=>{
  await save();await save();await save();expect(await claim()).not.toBeNull();expect(await claim()).not.toBeNull();expect(await claim()).toBeNull();
 });
 
-test("instituição altera modelo mas não token nem privilégios de outro usuário",async()=>{
+test("a instituição pode ler modelos, mas só o dono pode alterar as configurações",async()=>{
  await db.exec("set role authenticated");
- const result=await db.query("update modelos_oficio set modelo_html='<p>Modelo institucional</p>' where chave='padrao' returning chave");expect(result.rows.length).toBe(1);
- await expect(db.query("update configuracoes set webhook_token='troca-nao-permitida' where id")).rejects.toThrow("CONFIGURACAO_PROTEGIDA");
- await db.query("select set_config('request.jwt.claim.sub',$1,false)",[other]);
- expect((await db.query("update modelos_oficio set modelo_html='<p>Intruso</p>' where chave='padrao' returning chave")).rows.length).toBe(0);
+ expect((await db.query("select chave from modelos_oficio where chave='padrao'")).rows).toHaveLength(1);
+ expect((await db.query("update modelos_oficio set modelo_html='<p>Modelo institucional</p>' where chave='padrao' returning chave")).rows).toHaveLength(0);
+ expect((await db.query("update configuracoes set cidade='Outra cidade' where id returning id")).rows).toHaveLength(0);
+ await db.query("select set_config('request.jwt.claim.sub',$1,false)",[owner]);
+ expect((await db.query("update modelos_oficio set modelo_html=modelo_html where chave='padrao' returning chave")).rows).toHaveLength(1);
+ expect((await db.query("update configuracoes set cidade=cidade where id returning id")).rows).toHaveLength(1);
  await db.exec("reset role");
 });
 

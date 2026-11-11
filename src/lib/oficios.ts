@@ -186,10 +186,23 @@ export function montarDocumentoHtml(
   modelos?: ModeloOficio[],
 ) {
   if (oficio.conteudo_html && oficio.conteudo_html.trim()) return oficio.conteudo_html;
+  const corpo = corpoModeloDoOficio(oficio, config, modelos).replace(
+    /<p\b[^>]*>\s*Atenciosamente,?\s*<\/p>/i,
+    (saudacao) => '<div style="padding-top: 6mm;">' + saudacao + "</div>",
+  );
+  const rodape = config.rodape_html?.trim().replace(
+    /\bstyle=(["'])(.*?)\1/gi,
+    (_atributo, aspas: string, estilo: string) => {
+      const centralizado = estilo
+        .replace(/\btext-align:\s*(?:left|right|justify|start|end)\b/gi, "text-align: center")
+        .replace(/\bmargin:\s*0\s+0\s+0\s+40px\b/gi, "margin: 0");
+      return "style=" + aspas + centralizado + aspas;
+    },
+  );
   const partes = [
     config.cabecalho_html?.trim(),
-    corpoModeloDoOficio(oficio, config, modelos),
-    config.rodape_html?.trim(),
+    corpo,
+    rodape ? '<div style="padding-top: 6mm; text-align: center;">' + rodape + "</div>" : "",
   ].filter(Boolean) as string[];
   return renderizarModelo(partes.join(""), oficio, config);
 }

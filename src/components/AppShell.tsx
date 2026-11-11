@@ -44,7 +44,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     refetchInterval: 30_000,
   });
   const itens = [
-    ...links.filter(l=>l.to!=="/configuracoes"||acesso.data?.configurarDocumentos),
+    ...links.filter(l=>l.to!=="/configuracoes"||acesso.data?.dono),
     ...(acesso.data?.dono
       ? [{ to: "/controle", label: "Painel de Controle", icon: ShieldCheck } as const]
       : []),

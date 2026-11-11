@@ -1,7 +1,7 @@
 import {expect,test} from "bun:test";
 import {montarHtmlAutomacao,incorporarImagensAutomacao} from "./automacao-html";
 const cfg={cidade:"Cidade",cabecalho_html:"<header>Cabeçalho</header>",rodape_html:"<footer>Rodapé</footer>"};
-test("ofício reutiliza modelo original sem inventar conteúdo",()=>{const html=montarHtmlAutomacao("oficios",{documento:{nome:"Pessoa & Teste",curso:"Enfermagem",modelo_chave:"padrao",data:"2026-01-02",numero_formatado:"001/2026"},config:cfg,modelos:[{chave:"padrao",modelo_html:"<p>{{nome}} {{numero}}</p>"}]});expect(html).toBe("<header>Cabeçalho</header><p>Pessoa &amp; Teste 001/2026</p><footer>Rodapé</footer>");});
+test("ofício reutiliza modelo original sem inventar conteúdo",()=>{const html=montarHtmlAutomacao("oficios",{documento:{nome:"Pessoa & Teste",curso:"Enfermagem",modelo_chave:"padrao",data:"2026-01-02",numero_formatado:"001/2026"},config:cfg,modelos:[{chave:"padrao",modelo_html:"<p>{{nome}} {{numero}}</p>"}]});expect(html).toBe("<header>Cabeçalho</header><p>Pessoa &amp; Teste 001/2026</p><div style=\"padding-top: 2mm; text-align: center;\"><footer>Rodapé</footer></div>");});
 test("edição manual prevalece sem mudar modelo",()=>{expect(montarHtmlAutomacao("oficios",{documento:{conteudo_html:"<p>Edição manual</p>"},config:cfg,modelos:[]})).toBe("<p>Edição manual</p>");});
 test("modelo específico ausente não usa outro curso",()=>{expect(()=>montarHtmlAutomacao("declaracoes_resposta",{documento:{supervisor:"Supervisor",curso:"Nutrição",modelo_chave:"nutricao",periodo:"8",data_emissao:"2026-01-02"},config:cfg,modelos:[{chave:"enfermagem",modelo_html:"<p>Outro</p>"}]})).toThrow();});
 for(const [curso,key,periodos] of [["Enfermagem","enfermagem",["9","10"]],["Fisioterapia","fisioterapia",["9","10"]],["Nutrição","nutricao",["7","8"]],["Psicologia","psicologia",["9","10"]]] as const)for(const periodo of periodos)test("HTML avaliação "+key+" "+periodo,()=>{expect(montarHtmlAutomacao("declaracoes_resposta",{documento:{supervisor:"Supervisor",estagiario:"Aluno",curso,modelo_chave:key,periodo,data_emissao:"2026-01-02"},config:cfg,modelos:[{chave:key,modelo_html:"<p>{{curso}} - {{periodo}} - {{supervisor}}</p>"}]})).toBe("<p>"+curso+" - "+periodo+" - Supervisor</p>");});
@@ -10,3 +10,13 @@ test("falha da imagem obrigatória não é ignorada",async()=>{await expect(inco
 
 test("curso editado não usa modelo de outra graduação",()=>{expect(()=>montarHtmlAutomacao("declaracoes_resposta",{documento:{supervisor:"Supervisor",curso:"Nutrição",modelo_chave:"enfermagem",periodo:"8",data_emissao:"2026-01-02"},config:{},modelos:[{chave:"enfermagem",modelo_html:"<p>{{curso}}</p>"}]})).toThrow();});
 test("imagens GIF também são incorporadas com tipo correto",async()=>{const html=await incorporarImagensAutomacao('<img src="https://auxsyadqijcjngmujagx.supabase.co/storage/v1/object/public/oficios/conteudo/logo.gif">',"https://auxsyadqijcjngmujagx.supabase.co",async()=>({bytes:new Uint8Array(Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7","base64")),mime:"image/gif"}));expect(html).toContain("data:image/gif;base64,");});
+
+test("ofício baixa o fecho e centraliza as linhas do rodapé", () => {
+ const html = montarHtmlAutomacao("oficios", {
+  documento: { nome:"Teste", curso:"Enfermagem", modelo_chave:"padrao", data:"2026-01-02" },
+  config: { ...cfg, rodape_html:'<blockquote style="margin: 0 0 0 40px;"><div style="text-align: right;">Rodapé</div></blockquote>' },
+  modelos: [{ chave:"padrao", modelo_html:'<p>Corpo</p><p style="text-align:center">Atenciosamente,</p><p>Coordenadora</p>' }],
+ });
+ expect(html).toContain('<div style="padding-top: 2mm;"><p style="text-align:center">Atenciosamente,</p></div><p>Coordenadora</p>');
+ expect(html).toContain('<div style="padding-top: 2mm; text-align: center;"><blockquote style="margin: 0;"><div style="text-align: center;">Rodapé</div>');
+});

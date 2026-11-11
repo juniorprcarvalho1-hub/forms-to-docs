@@ -1,7 +1,8 @@
 type DadosPreceptoria = { nome: string; data_inicio?: string; data_emissao?: string };
-const escapar = (texto: string) => texto.replace(/[&<>"']/g, (caractere) => ({
+const entidades: Record<string, string> = {
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-})[caractere] ?? caractere);
+};
+const escapar = (texto: string) => texto.replace(/[&<>"']/g, (caractere) => entidades[caractere] ?? caractere);
 
 export const EMAIL_CLINICA_FACESF = "clinicasaudeintegrada.facesf@gmail.com";
 export const NOME_CLINICA_FACESF = "Clínica Saúde Integrada CELC";

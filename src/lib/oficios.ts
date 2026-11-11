@@ -186,9 +186,10 @@ export function montarDocumentoHtml(
   modelos?: ModeloOficio[],
 ) {
   if (oficio.conteudo_html && oficio.conteudo_html.trim()) return oficio.conteudo_html;
+  const espaco = oficio.modelo_chave === "nutricao" || oficio.modelo_chave === "psicologia" ? "6mm" : "2mm";
   const corpo = corpoModeloDoOficio(oficio, config, modelos).replace(
     /<p\b[^>]*>\s*Atenciosamente,?\s*<\/p>/i,
-    (saudacao) => '<div style="padding-top: 6mm;">' + saudacao + "</div>",
+    (saudacao) => '<div style="padding-top: ' + espaco + ';">' + saudacao + "</div>",
   );
   const rodape = config.rodape_html?.trim().replace(
     /\bstyle=(["'])(.*?)\1/gi,
@@ -202,7 +203,7 @@ export function montarDocumentoHtml(
   const partes = [
     config.cabecalho_html?.trim(),
     corpo,
-    rodape ? '<div style="padding-top: 6mm; text-align: center;">' + rodape + "</div>" : "",
+    rodape ? '<div style="padding-top: ' + espaco + '; text-align: center;">' + rodape + "</div>" : "",
   ].filter(Boolean) as string[];
   return renderizarModelo(partes.join(""), oficio, config);
 }

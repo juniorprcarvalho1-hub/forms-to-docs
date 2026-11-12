@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { verificarAcesso } from "@/lib/acesso.functions";
 import { ImportadorDados } from "@/components/ImportadorDados";
 import { importarRegistros } from "@/lib/importacao-dados";
 
@@ -9,7 +11,11 @@ export const Route = createFileRoute("/_authenticated/importacoes")({
 });
 
 function ImportacoesPage() {
+  const acessoFn = useServerFn(verificarAcesso);
+  const acesso = useQuery({ queryKey: ["acesso"], queryFn: () => acessoFn() });
   const queryClient = useQueryClient();
+  if (acesso.isPending) return <p role="status">Verificando permissões…</p>;
+  if (!acesso.data?.dono) return <p role="alert">Importar dados está disponível somente para a conta master.</p>;
   return (
     <div className="mx-auto max-w-6xl space-y-7">
       <header>

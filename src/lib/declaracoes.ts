@@ -160,25 +160,34 @@ export function montarDeclaracaoHtml(
   const info = mapaDoCurso(chave || declaracao.curso || "");
   if (!info) throw new Error(pendenciaDeclaracao(declaracao) ?? "Curso inválido.");
 
+  const doCurso = modelos.find((m) => m.chave === chave)?.modelo_html;
+  const modelo = (doCurso ?? config.modelo_declaracao_html ?? "").trim();
+  const modeloNovo = modelo.includes("preceptoria-a4");
+  const dataCurta = (data: string) =>
+    String(data ?? "").replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$3/$2/$1");
+  const emissao = formatarData(declaracao.data_emissao);
+  const conselho = new RegExp("^" + info.conselho + "(?:\\b|(?=\\d))", "i");
+  const registro = declaracao.coren ?? "";
   const mapa: Record<string, string> = {
     nome: declaracao.nome,
-    conselho: info.conselho,
-    coren: declaracao.coren,
+    conselho: modeloNovo && conselho.test(registro.trim()) ? "" : info.conselho,
+    coren: registro,
     hospital: declaracao.hospital,
     curso: info.curso,
     departamento: info.departamento,
     nucleo: info.nucleo,
     portaria: info.portaria,
-    data_inicio: declaracao.data_inicio,
-    data_fim: declaracao.data_fim,
-    carga_horaria: declaracao.carga_horaria ?? "",
+    data_inicio: modeloNovo ? dataCurta(declaracao.data_inicio) : declaracao.data_inicio,
+    data_fim: modeloNovo ? dataCurta(declaracao.data_fim) : declaracao.data_fim,
+    carga_horaria: modeloNovo
+      ? (declaracao.carga_horaria ?? "").trim().replace(/\s*(?:horas?|h)\.?$/i, "")
+      : (declaracao.carga_horaria ?? ""),
     alunos: declaracao.alunos ?? "",
-    data_emissao: formatarData(declaracao.data_emissao),
+    data_emissao: modeloNovo
+      ? emissao.replace(/ de ([a-zç]+)/i, (_, mes: string) => " de " + mes[0]!.toUpperCase() + mes.slice(1))
+      : emissao,
     cidade: config.cidade ?? "",
   };
-
-  const doCurso = modelos.find((m) => m.chave === chave)?.modelo_html;
-  const modelo = (doCurso ?? config.modelo_declaracao_html ?? "").trim();
 
   return preencherModeloSeguro(modelo, mapa);
 }

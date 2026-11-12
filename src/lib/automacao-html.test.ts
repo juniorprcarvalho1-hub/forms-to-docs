@@ -18,5 +18,5 @@ test("ofício baixa o fecho e centraliza as linhas do rodapé", () => {
   modelos: [{ chave:"padrao", modelo_html:'<p>Corpo</p><p style="text-align:center">Atenciosamente,</p><p>Coordenadora</p>' }],
  });
  expect(html).toContain('<div style="padding-top: 2mm;"><p style="text-align:center">Atenciosamente,</p></div><p>Coordenadora</p>');
- expect(html).toContain('<div style="padding-top: 2mm; text-align: center;"><blockquote style="margin: 0;"><div style="text-align: center;">Rodapé</div>');
+ expect(html).toContain('<div data-rodape-oficio="" style="padding-top: 2mm; text-align: center;"><blockquote style="margin: 0;"><div style="text-align: center;">Rodapé</div>');
 });

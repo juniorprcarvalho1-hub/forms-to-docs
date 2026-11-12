@@ -3,19 +3,23 @@ import { verificarAcesso } from "@/lib/acesso.functions";
 import { IntegracoesLegadas } from "@/components/IntegracoesLegadas";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { Copy } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronDown, FileText, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichEditor } from "@/components/RichEditor";
+import { EscalaA4 } from "@/components/PaginaA4";
+import { prepararImagensInstitucionais } from "@/lib/storage";
+import { preencherModeloSeguro } from "@/lib/modelo-seguro";
 import { CadastrosAuxiliares } from "@/components/CadastrosAuxiliares";
 import { OrientadoresCurso } from "@/components/OrientadoresCurso";
 import {
   ORDEM_MODELOS_RESPOSTA,
   ROTULOS_DECLARACAO_RESPOSTA,
+  TAGS_DECLARACAO_RESPOSTA,
   type ModeloDeclaracaoResposta,
 } from "@/lib/declaracoes-resposta";
 
@@ -23,15 +27,14 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   formatarNumero,
   TAGS_MODELO,
-  textoParaHtml,
-  type Configuracoes,
-  type ModeloOficio,
-} from "@/lib/oficios";
+   type Configuracoes,
+ } from "@/lib/oficios";
 import {
+  mapaDoCurso,
   ORDEM_MODELOS_DECLARACAO,
   ROTULOS_DECLARACAO,
-  type ModeloDeclaracao,
-} from "@/lib/declaracoes";
+  TAGS_DECLARACAO,
+ } from "@/lib/declaracoes";
 import { uploadArquivo, urlAssinada } from "@/lib/storage";
 import {
   buscarConfiguracoesAtuais,
@@ -56,18 +59,17 @@ function ConfiguracoesPage() {
   const acesso = useQuery({ queryKey: ["acesso"], queryFn: () => acessoFn() });
   if (acesso.isPending) return <p role="status">Verificando permissões…</p>;
   if (!acesso.data?.dono) return <p role="alert">Configurações disponíveis somente para a conta master.</p>;
-  return (
-    <>
-      <IntegracoesLegadas />
-      <ConfiguracoesEditor />
-    </>
-  );
+  return <ConfiguracoesEditor />;
 }
 
 function ConfiguracoesEditor() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<Configuracoes | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [aba, setAba] = useState<"modelos" | "ajustes">("modelos");
+  const [documento, setDocumento] = useState<"oficios" | "preceptoria" | "respostas">("oficios");
+  const [parte, setParte] = useState<"corpo" | "cabecalho" | "rodape">("corpo");
+  const [previa, setPrevia] = useState(false);
   const [modeloAtivo, setModeloAtivo] = useState("padrao");
   const [corposModelo, setCorposModelo] = useState<Record<string, string>>({});
   const [declaracaoAtiva, setDeclaracaoAtiva] = useState("enfermagem");
@@ -118,10 +120,7 @@ function ConfiguracoesEditor() {
 
   useEffect(() => {
     if (data && !form) {
-      setForm({
-        ...data,
-        modelo_html: (data.modelo_html ?? "").trim() || textoParaHtml(data.modelo ?? ""),
-      });
+      setForm(data);
     }
   }, [data, form]);
 
@@ -129,6 +128,8 @@ function ConfiguracoesEditor() {
     if (!form) return;
     setSalvando(true);
     try {
+      const rascunhos = [...Object.values(corposModelo), ...Object.values(corposDeclaracao), ...Object.values(corposResposta)];
+      if (rascunhos.some((html) => !html.trim())) throw new Error("Preencha o corpo dos modelos antes de salvar.");
       for (const modelo of modelos.data ?? []) {
         const html = corposModelo[modelo.chave];
         if (html === undefined || html === modelo.modelo_html) continue;
@@ -142,32 +143,36 @@ function ConfiguracoesEditor() {
         if (confirmado.modelo_html !== html)
           throw new Error(`O modelo ${modelo.nome} não foi confirmado pelo banco.`);
       }
-      const modeloDeclaracaoEditado = corposDeclaracao[declaracaoAtiva];
-      if (modeloDeclaracaoEditado !== undefined) {
-        const { data: confirmados, error } = await supabase
+      for (const modelo of modelosDeclaracao.data ?? []) {
+        const html = corposDeclaracao[modelo.chave];
+        if (html === undefined || html === modelo.modelo_html) continue;
+        const { data: confirmado, error } = await supabase
           .from("modelos_declaracao")
-          .update({ modelo_html: modeloDeclaracaoEditado })
-          .in("chave", ORDEM_MODELOS_DECLARACAO)
-          .select("chave, modelo_html");
-        if (error) throw error;
-        if (
-          (confirmados ?? []).length !== ORDEM_MODELOS_DECLARACAO.length ||
-          (confirmados ?? []).some((modelo) => modelo.modelo_html !== modeloDeclaracaoEditado)
-        ) {
-          throw new Error("O modelo da declaração não foi confirmado para todos os cursos.");
+          .update({ modelo_html: html })
+          .eq("id", modelo.id)
+          .select("modelo_html")
+          .single();
+        if (error || confirmado?.modelo_html !== html) {
+          throw error ?? new Error("O modelo de Preceptoria não foi confirmado.");
         }
       }
 
-      const modeloRespostaEditado = corposResposta[respostaAtiva];
-      if (modeloRespostaEditado !== undefined) {
-        const { error } = await supabase
+      for (const modelo of modelosResposta.data ?? []) {
+        const html = corposResposta[modelo.chave];
+        if (html === undefined || html === modelo.modelo_html) continue;
+        const { data: confirmado, error } = await supabase
           .from("modelos_declaracao_resposta")
-          .update({ modelo_html: modeloRespostaEditado })
-          .eq("chave", respostaAtiva);
-        if (error) throw error;
+          .update({ modelo_html: html })
+          .eq("id", modelo.id)
+          .select("modelo_html")
+          .single();
+        if (error || confirmado?.modelo_html !== html) {
+          throw error ?? new Error("O modelo de resposta não foi confirmado.");
+        }
       }
 
-      const { error } = await supabase
+      if (JSON.stringify(form) !== JSON.stringify(data)) {
+      const { data: confirmado, error } = await supabase
         .from("configuracoes")
         .update({
           modelo: form.modelo,
@@ -194,8 +199,11 @@ function ConfiguracoesEditor() {
           padrao_cargo_coordenador: form.padrao_cargo_coordenador,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", true);
-      if (error) throw error;
+        .eq("id", true)
+        .select("id")
+        .single();
+      if (error || !confirmado) throw error ?? new Error("As configurações não foram confirmadas.");
+      }
 
       const [configAtual, oficiosAtuais, declaracoesAtuais] = await Promise.all([
         buscarConfiguracoesAtuais(),
@@ -232,164 +240,127 @@ function ConfiguracoesEditor() {
 
   if (!form) return <p className="text-sm text-muted-foreground">Carregando…</p>;
 
-  const endpoint = `${window.location.origin}/api/public/webhooks/oficios`;
+
+  const grupos = [
+    { id: "oficios", label: "Ofícios" },
+    { id: "preceptoria", label: "Preceptoria" },
+    { id: "respostas", label: "Declarações de resposta" },
+  ] as const;
+  const lista = documento === "oficios" ? modelos.data :
+    documento === "preceptoria" ? modelosDeclaracao.data : modelosResposta.data;
+  const ativo = documento === "oficios" ? modeloAtivo :
+    documento === "preceptoria" ? declaracaoAtiva : respostaAtiva;
+  const atual = documento === "oficios" ? modeloSelecionado :
+    documento === "preceptoria" ? declaracaoSelecionada : respostaSelecionada;
+  const corpo = documento === "oficios" ? corposModelo[ativo] :
+    documento === "preceptoria" ? corposDeclaracao[ativo] : corposResposta[ativo];
+  const secao = documento === "oficios" && parte !== "corpo"
+    ? (parte === "cabecalho" ? "cabecalho_html" : "rodape_html")
+    : null;
+  const valor = secao ? form[secao] : (corpo ?? atual?.modelo_html ?? "");
+  const campos = documento === "oficios" ? TAGS_MODELO :
+    documento === "preceptoria" ? TAGS_DECLARACAO : TAGS_DECLARACAO_RESPOSTA;
+  const rotulos = documento === "preceptoria" ? ROTULOS_DECLARACAO :
+    documento === "respostas" ? ROTULOS_DECLARACAO_RESPOSTA : undefined;
+  const alteracoes = JSON.stringify(form) !== JSON.stringify(data) ||
+    [corposModelo, corposDeclaracao, corposResposta].some((grupo) => Object.keys(grupo).length > 0);
+
+  function alterarHtml(html: string) {
+    if (html === valor) return;
+    if (secao) setForm((f) => f ? { ...f, [secao]: html } : f);
+    else if (documento === "oficios") setCorposModelo((c) => ({ ...c, [ativo]: html }));
+    else if (documento === "preceptoria") setCorposDeclaracao((c) => ({ ...c, [ativo]: html }));
+    else setCorposResposta((c) => ({ ...c, [ativo]: html }));
+  }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-normal">Configurações</h1>
-        <p className="text-sm text-muted-foreground">
-          Modelo do documento, identidade visual, numeração e integração.
-        </p>
-      </div>
-
-      <section className="surface-card space-y-4 p-6">
-        <h2 className="text-sm font-medium">Modelo do ofício (edição livre)</h2>
-        <p className="text-xs break-words text-muted-foreground">
-          Formate como no Word: fontes, tamanhos, cores, alinhamento, listas e imagens PNG em
-          qualquer ponto. Os campos automáticos são preenchidos pelos dados do formulário.
-        </p>
-
-        <div className="space-y-2">
-          <Label>Cabeçalho (repetido no topo do documento)</Label>
-          <RichEditor
-            value={form.cabecalho_html}
-            minHeight={140}
-            placeholder="Insira aqui o logotipo e os dados da instituição…"
-            onChange={(html) => setForm((f) => (f ? { ...f, cabecalho_html: html } : f))}
-          />
+    <div className="mx-auto max-w-6xl space-y-5"
+      onKeyDown={(e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+          e.preventDefault();
+          if (alteracoes && !salvando) void salvar();
+        }
+      }}>
+      <header className="sticky top-0 z-10 flex flex-wrap items-end justify-between gap-4 border-b bg-background/95 py-4 backdrop-blur">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Edite os modelos e gerencie os dados usados nos documentos.</p>
         </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground" role="status">
+            {alteracoes ? "Alterações não salvas" : "Tudo salvo"}
+          </span>
+          <Button onClick={salvar} disabled={salvando || !alteracoes}>
+            {salvando ? "Salvando…" : "Salvar alterações"}
+          </Button>
+        </div>
+      </header>
 
-        <div className="space-y-2">
-          <Label>Corpo do ofício</Label>
-          <p className="text-xs text-muted-foreground">
-            Três modelos com a mesma estrutura. O sistema escolhe sozinho conforme o curso e o
-            módulo respondidos no formulário.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {(modelos.data ?? []).map((m) => (
-              <Button
-                key={m.chave}
-                type="button"
-                size="sm"
-                variant={m.chave === modeloAtivo ? "default" : "outline"}
-                onClick={() => setModeloAtivo(m.chave)}
-              >
-                {m.nome}
+      <nav className="flex gap-2" aria-label="Configurações">
+        <Button type="button" variant={aba === "modelos" ? "default" : "outline"} aria-pressed={aba === "modelos"} onClick={() => setAba("modelos")}>
+          <FileText className="size-4" /> Modelos
+        </Button>
+        <Button type="button" variant={aba === "ajustes" ? "default" : "outline"} aria-pressed={aba === "ajustes"} onClick={() => setAba("ajustes")}>
+          <Settings2 className="size-4" /> Ajustes
+        </Button>
+      </nav>
+
+      {aba === "modelos" ? (
+        <section className="surface-card space-y-4 p-3 sm:p-5" aria-label="Editor de modelos">
+          <div className="flex flex-wrap gap-2" aria-label="Tipo de documento">
+            {grupos.map((g) => (
+              <Button key={g.id} type="button" size="sm"
+                variant={documento === g.id ? "default" : "outline"} aria-pressed={documento === g.id}
+                onClick={() => { setDocumento(g.id); setPrevia(false); }}>
+                {g.label}
               </Button>
             ))}
           </div>
-          {modeloSelecionado && (
-            <>
-              <p className="text-xs text-muted-foreground">
-                Cursos atendidos: {modeloSelecionado.cursos}
-              </p>
-              <RichEditor
-                key={modeloSelecionado.id}
-                value={corposModelo[modeloSelecionado.chave] ?? modeloSelecionado.modelo_html}
-                minHeight={360}
-                placeholder="Texto do ofício…"
-                onChange={(html) =>
-                  setCorposModelo((c) => ({ ...c, [modeloSelecionado.chave]: html }))
-                }
-              />
-            </>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-44 flex-1 space-y-1.5">
+              <Label htmlFor="modelo-documento">Modelo</Label>
+              <select id="modelo-documento" value={ativo}
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (documento === "oficios") setModeloAtivo(v);
+                  else if (documento === "preceptoria") setDeclaracaoAtiva(v);
+                  else setRespostaAtiva(v);
+                }}>
+                {(lista ?? []).map((m) => <option key={m.chave} value={m.chave}>{m.nome}</option>)}
+              </select>
+            </div>
+            {documento === "oficios" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="parte-oficio">Parte do ofício</Label>
+                <select id="parte-oficio" value={parte}
+                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                  onChange={(e) => setParte(e.target.value as typeof parte)}>
+                  <option value="corpo">Corpo</option>
+                  <option value="cabecalho">Cabeçalho comum</option>
+                  <option value="rodape">Rodapé comum</option>
+                </select>
+              </div>
+            )}
+            <Button variant="outline" type="button" aria-pressed={previa} onClick={() => setPrevia((v) => !v)}>
+              {previa ? "Voltar à edição" : "Prévia A4"}
+            </Button>
+          </div>
+          {!atual && !secao ? (
+            <p className="py-8 text-sm text-muted-foreground">Nenhum modelo disponível para edição.</p>
+          ) : previa ? (
+            <PreviaDocumento html={documento === "oficios"
+              ? [form.cabecalho_html, corpo ?? atual?.modelo_html, form.rodape_html].filter(Boolean).join("")
+              : valor} rotulos={rotulos} curso={ativo} />
+          ) : (
+            <RichEditor key={documento + "-" + ativo + "-" + (secao ?? "corpo")} value={valor}
+              minHeight={1123} campos={campos} rotulos={rotulos} disabled={salvando}
+              placeholder="Modelo do documento" onChange={alterarHtml} />
           )}
-        </div>
-
-        <div className="space-y-2">
-          <Label>Rodapé</Label>
-          <RichEditor
-            value={form.rodape_html}
-            minHeight={140}
-            placeholder="Assinatura, endereço, contatos…"
-            onChange={(html) => setForm((f) => (f ? { ...f, rodape_html: html } : f))}
-          />
-        </div>
-      </section>
-
-      <section className="surface-card space-y-4 p-6">
-        <h2 className="text-sm font-medium">Modelos de declaração de preceptoria</h2>
-        <p className="text-xs text-muted-foreground">
-          O layout salvo é aplicado a todos os cursos. Curso, conselho, núcleo e portaria são
-          preenchidos automaticamente conforme a resposta do formulário.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {(modelosDeclaracao.data ?? []).map((m) => (
-            <Button
-              key={m.chave}
-              type="button"
-              size="sm"
-              variant={m.chave === declaracaoAtiva ? "default" : "outline"}
-              onClick={() => setDeclaracaoAtiva(m.chave)}
-            >
-              {m.nome}
-            </Button>
-          ))}
-        </div>
-        {declaracaoSelecionada && (
-          <>
-            <p className="text-xs text-muted-foreground">
-              Curso atendido: {declaracaoSelecionada.cursos}
-            </p>
-            <RichEditor
-              key={declaracaoSelecionada.id}
-              rotulos={ROTULOS_DECLARACAO}
-              value={
-                corposDeclaracao[declaracaoSelecionada.chave] ?? declaracaoSelecionada.modelo_html
-              }
-              minHeight={360}
-              placeholder="Texto da declaração…"
-              onChange={(html) =>
-                setCorposDeclaracao((c) => ({ ...c, [declaracaoSelecionada.chave]: html }))
-              }
-            />
-          </>
-        )}
-      </section>
-
-      <section className="surface-card space-y-4 p-6">
-        <h2 className="text-sm font-medium">Modelos da declaração de resposta</h2>
-        <p className="text-xs text-muted-foreground">
-          Declaração de que o supervisor de campo preencheu a avaliação do estagiário. Um modelo por
-          curso; o sistema escolhe conforme o curso informado no formulário.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {(modelosResposta.data ?? []).map((m) => (
-            <Button
-              key={m.chave}
-              type="button"
-              size="sm"
-              variant={m.chave === respostaAtiva ? "default" : "outline"}
-              onClick={() => setRespostaAtiva(m.chave)}
-            >
-              {m.nome}
-            </Button>
-          ))}
-        </div>
-        {respostaSelecionada && (
-          <>
-            <p className="text-xs text-muted-foreground">
-              Curso atendido: {respostaSelecionada.cursos}
-            </p>
-            <RichEditor
-              key={respostaSelecionada.id}
-              rotulos={ROTULOS_DECLARACAO_RESPOSTA}
-              value={corposResposta[respostaSelecionada.chave] ?? respostaSelecionada.modelo_html}
-              minHeight={360}
-              placeholder="Texto da declaração…"
-              onChange={(html) =>
-                setCorposResposta((c) => ({ ...c, [respostaSelecionada.chave]: html }))
-              }
-            />
-          </>
-        )}
-      </section>
-
-      <OrientadoresCurso />
-
-      <section className="surface-card grid gap-4 p-6 sm:grid-cols-2">
-        <h2 className="text-sm font-medium sm:col-span-2">Numeração</h2>
+        </section>
+      ) : (
+        <section className="space-y-3" aria-label="Ajustes do sistema">
+      <GrupoAjustes titulo="Numeração dos ofícios"><div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="formato">Formato</Label>
           <Input
@@ -416,10 +387,9 @@ function ConfiguracoesEditor() {
             {formatarNumero(form.formato_numeracao, 1, new Date().getFullYear(), form.digitos)}
           </span>
         </p>
-      </section>
+      </div></GrupoAjustes>
 
-      <section className="surface-card grid gap-6 p-6 sm:grid-cols-2">
-        <h2 className="text-sm font-medium sm:col-span-2">Identidade visual</h2>
+      <GrupoAjustes titulo="Logotipo e assinatura padrão"><div className="grid gap-6 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Logotipo</Label>
           {form.logo_url && (
@@ -444,16 +414,14 @@ function ConfiguracoesEditor() {
             }
           />
         </div>
-      </section>
+      </div></GrupoAjustes>
 
-      <CadastrosAuxiliares />
+      <GrupoAjustes titulo="Cursos, módulos e orientadores">
+        <CadastrosAuxiliares />
+        <OrientadoresCurso />
+      </GrupoAjustes>
 
-      <section className="surface-card grid gap-4 p-6 sm:grid-cols-2">
-        <h2 className="text-sm font-medium sm:col-span-2">Dados padrão do ofício de estágio</h2>
-        <p className="text-xs text-muted-foreground sm:col-span-2">
-          Usados quando o Google Forms não envia o campo (o formulário atual envia Aluno, CPF, Curso
-          e Matrícula).
-        </p>
+      <GrupoAjustes titulo="Dados padrão dos ofícios"><div className="grid gap-4 sm:grid-cols-2">
         <CampoTexto
           label="Cidade"
           valor={form.cidade}
@@ -509,72 +477,62 @@ function ConfiguracoesEditor() {
           valor={form.padrao_cargo_coordenador}
           onChange={(v) => setForm({ ...form, padrao_cargo_coordenador: v })}
         />
-      </section>
+      </div></GrupoAjustes>
 
-      <section className="surface-card space-y-4 p-6">
-        <h2 className="text-sm font-medium">Integração com o Google Forms</h2>
-        <CampoTexto
-          label="Link do formulário"
-          valor={form.form_url}
-          onChange={(v) => setForm({ ...form, form_url: v })}
-        />
-        {form.form_url && (
-          <iframe
-            src={form.form_url.replace("/viewform", "/viewform?embedded=true")}
-            title="Formulário de solicitação de estágio"
-            className="h-[520px] w-full rounded-lg border"
-          />
-        )}
-      </section>
+          <GrupoAjustes titulo="Google Forms e integração">
+            <div className="grid gap-4">
+              <CampoTexto label="Formulário de ofícios" valor={form.form_url}
+                onChange={(v) => setForm({ ...form, form_url: v })} />
+              <CampoTexto label="Formulário de preceptoria" valor={form.form_declaracao_url ?? ""}
+                onChange={(v) => setForm({ ...form, form_declaracao_url: v })} />
+              <CampoTexto label="Formulário de avaliação" valor={form.form_resposta_url ?? ""}
+                onChange={(v) => setForm({ ...form, form_resposta_url: v })} />
+              <IntegracoesLegadas />
+            </div>
+          </GrupoAjustes>
+        </section>
+      )}
+    </div>
+  );
+}
 
-      <section className="surface-card space-y-4 p-6">
-        <h2 className="text-sm font-medium">Formulário da declaração de preceptoria</h2>
-        <p className="text-xs text-muted-foreground">
-          Perguntas do formulário: Nome completo do preceptor, Curso, Registro profissional, Campo
-          de estágio, Data de início, Data de fim, Nome(s) do(s) aluno(s) e E-mail do preceptor. A
-          carga horária e o nome oficial do campo de estágio são preenchidos automaticamente pelo
-          cadastro do sistema.
-        </p>
-        <CampoTexto
-          label="Link do formulário"
-          valor={form.form_declaracao_url ?? ""}
-          onChange={(v) => setForm({ ...form, form_declaracao_url: v })}
-        />
-        {form.form_declaracao_url && (
-          <iframe
-            src={form.form_declaracao_url.replace("/viewform", "/viewform?embedded=true")}
-            title="Formulário de declaração de preceptoria"
-            className="h-[520px] w-full rounded-lg border"
-          />
-        )}
-      </section>
+function GrupoAjustes({ titulo, children }: { titulo: string; children: ReactNode }) {
+  return (
+    <details className="surface-card group">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm font-semibold focus-visible:outline-offset-2">
+        {titulo}
+        <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="space-y-4 border-t p-4">{children}</div>
+    </details>
+  );
+}
 
-      <section className="surface-card space-y-4 p-6">
-        <h2 className="text-sm font-medium">Formulário da declaração de resposta</h2>
-        <p className="text-xs text-muted-foreground">
-          Perguntas do formulário: Nome completo do supervisor, Curso, Tipo de avaliação (parcial ou
-          final), Nome do estagiário, Período e E-mail do supervisor. O documento é gerado e enviado
-          automaticamente ao professor orientador do curso.
-        </p>
-        <CampoTexto
-          label="Link do formulário"
-          valor={form.form_resposta_url ?? ""}
-          onChange={(v) => setForm({ ...form, form_resposta_url: v })}
-        />
-        {form.form_resposta_url && (
-          <iframe
-            src={form.form_resposta_url.replace("/viewform", "/viewform?embedded=true")}
-            title="Formulário da declaração de resposta"
-            className="h-[520px] w-full rounded-lg border"
-          />
-        )}
-      </section>
-
-      <div className="flex justify-end">
-        <Button onClick={salvar} disabled={salvando}>
-          {salvando ? "Salvando…" : "Salvar alterações"}
-        </Button>
-      </div>
+function PreviaDocumento({ html, rotulos, curso }: { html: string; rotulos?: Record<string, string> | undefined; curso: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const info = mapaDoCurso(curso === "padrao" ? "enfermagem" : curso);
+  const exemplo: Record<string, string> = {
+    nome: "Nome de exemplo", coren: "000.000", conselho: info?.conselho ?? "Conselho",
+    curso: info?.curso ?? "Curso do formulário", cidade: "Belém do São Francisco",
+    departamento: info?.departamento ?? "DEPARTAMENTO DO CURSO", alunos: "Estudante Exemplo",
+    nucleo: info?.nucleo ?? "", portaria: info?.portaria ?? "",
+    data_inicio: "10/03/2026", data_fim: "16/06/2026", carga_horaria: "356",
+    data_emissao: "30 de Junho de 2026", numero: "001/2026",
+  };
+  for (const match of html.matchAll(/\{\{([^}]+)\}\}/g)) {
+    const chave = match[1]!;
+    exemplo[chave] ??= rotulos?.[chave] ?? chave.replaceAll("_", " ");
+  }
+  useEffect(() => {
+    if (ref.current) void prepararImagensInstitucionais(ref.current).catch(() => {});
+  }, [html, curso]);
+  return (
+    <div className="rounded-md bg-muted/40 p-3">
+      <p className="mb-3 text-xs text-muted-foreground">Prévia com dados de exemplo</p>
+      <EscalaA4>
+        <div ref={ref} className="pagina-a4 prose-oficio shadow-sm"
+          dangerouslySetInnerHTML={{ __html: preencherModeloSeguro(html, exemplo) }} />
+      </EscalaA4>
     </div>
   );
 }
@@ -596,23 +554,3 @@ function CampoTexto({
   );
 }
 
-function CampoCopiavel({ label, valor }: { label: string; valor: string }) {
-  return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      <div className="flex gap-2">
-        <Input readOnly value={valor} className="font-mono text-xs" />
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => {
-            navigator.clipboard.writeText(valor);
-            toast.success("Copiado.");
-          }}
-        >
-          <Copy className="size-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}

@@ -227,15 +227,15 @@ if(modulosError) throw Error('Lookup unavailable');
           nome,
           curso,
           modelo_chave: modeloChave,
-          coren: texto("registroprofissional", "registro", "coren", "crefito", "crn", "crp"),
+          coren: texto("registroprofissional", "registro", "coren", "crefito", "crn", "crp", "numerodoregistronoconselho", "numeroderegistronoconselho"),
           hospital: campoCad
             ? String(campoCad.nome_oficial || campoCad.nome_formulario)
             : campoForm,
-          data_inicio: texto("datainicio", "datadeinicio", "inicio", "periodoinicio"),
-          data_fim: texto("datafim", "datadefim", "fim", "periodofim", "termino"),
+          data_inicio: texto("datainicio", "datadeinicio", "inicio", "periodoinicio", "datadeiniciodoestagio", "datainiciodoestagio"),
+          data_fim: texto("datafim", "datadefim", "fim", "periodofim", "termino", "datadetermino", "datadeterminodoestagio", "datadefimdoestagio", "datafinaldoestagio"),
           carga_horaria:
-            String(campoCad?.carga_horaria ?? "") || String(cfg["padrao_carga_horaria"] ?? ""),
-          alunos: texto("alunos", "nomedosalunos", "nomedoaluno", "nomesdosalunos", "estudantes", "discentes"),
+            texto("cargahoraria", "cargahorariadoestagio", "cargahorariatotal", "totaldehoras") || String(campoCad?.carga_horaria ?? "") || String(cfg["padrao_carga_horaria"] ?? ""),
+          alunos: texto("alunos", "nomedosalunos", "nomedoaluno", "nomedoaalunoa", "nomedaaluna", "nomesdosalunos", "estudantes", "discentes"),
           email: texto("emaildopreceptor", "emaildopreceptora", "emaildoapreceptor", "emaildoapreceptora", "enderecodeemaildopreceptor", "enderecodeemaildopreceptora") || texto("email"),
           origem: "google_forms",
         };

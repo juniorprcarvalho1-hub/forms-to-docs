@@ -89,3 +89,31 @@ test("avaliação de Fisioterapia aceita os nomes com (a) no formulário",async(
   periodo:"10",
  });
 });
+
+test("ofício monta o destinatário com concedente, município e UF sem mudar a cidade de emissão",async()=>{
+ const f=fixture();
+ const r=await handleOficios(f.request({"Aluno(a)":"Aluno Exemplo",Curso:"Fisioterapia","Instituição/órgão concedente do estágio":"Hospital Municipal","Município do estágio":"Paulo Afonso","UF do estágio":"Bahia"}),f.db,"token");
+ expect(r.status).toBe(200);
+ expect(f.saved.p_dados).toMatchObject({instituicao:"Hospital Municipal",destinatario:"Ao Hospital Municipal – Paulo Afonso – BA"});
+ expect(f.saved.p_dados).not.toHaveProperty("cidade");
+});
+test("ofício aceita município e UF na mesma resposta",async()=>{
+ const f=fixture();
+ const r=await handleOficios(f.request({"Aluno(a)":"Aluno Exemplo",Curso:"Enfermagem","Concedente do estágio":"Secretaria Municipal de Saúde","Município e UF do estágio":"Delmiro Gouveia/AL"}),f.db,"token");
+ expect(r.status).toBe(200);
+ expect(f.saved.p_dados.destinatario).toBe("À Secretaria Municipal de Saúde – Delmiro Gouveia – AL");
+});
+for (const local of [{"Município do estágio":"Recife"},{"Município e UF do estágio":"Recife/PE","UF do estágio":"BA"},{"Município do estágio":"Recife","UF do estágio":"XX"}]) {
+ test("ofício rejeita local incompleto, inválido ou contraditório: "+JSON.stringify(local),async()=>{
+  const f=fixture();
+  const r=await handleOficios(f.request({"Aluno(a)":"Aluno Exemplo",Curso:"Enfermagem","Concedente do estágio":"Hospital Municipal",...local}),f.db,"token");
+  expect(r.status).toBe(422);
+  expect(f.saved).toBeUndefined();
+ });
+}
+test("ofício mantém o destinatário explícito de formulários antigos",async()=>{
+ const f=fixture();
+ const r=await handleOficios(f.request({"Aluno(a)":"Aluno Exemplo",Curso:"Enfermagem",Instituição:"FACESF",Destinatário:"Aos responsáveis"}),f.db,"token");
+ expect(r.status).toBe(200);
+ expect(f.saved.p_dados.destinatario).toBe("Aos responsáveis");
+});

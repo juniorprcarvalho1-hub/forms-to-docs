@@ -16,6 +16,63 @@ async function saveDocument(admin:FormsAdmin,request:Request,token:string,destin
  const {data:saved,error}=await admin.rpc("registrar_documento_forms",{p_token:token,p_destino:destination,p_chave:request.headers.get("x-facesf-id"),p_hash:request.headers.get("x-facesf-source-hash"),p_dados:data});
  return error?formsFailure(error):json(saved);
 }
+
+const UFS: Record<string, string> = {
+  acre: "AC", alagoas: "AL", amapa: "AP", amazonas: "AM", bahia: "BA",
+  ceara: "CE", distritofederal: "DF", espiritosanto: "ES", goias: "GO",
+  maranhao: "MA", matogrosso: "MT", matogrossodosul: "MS", minasgerais: "MG",
+  para: "PA", paraiba: "PB", parana: "PR", pernambuco: "PE", piaui: "PI",
+  riodejaneiro: "RJ", riograndedonorte: "RN", riograndedosul: "RS",
+  rondonia: "RO", roraima: "RR", santacatarina: "SC", saopaulo: "SP",
+  sergipe: "SE", tocantins: "TO",
+};
+function ufDoOficio(valor: string): string {
+  const chave = normalizar(valor);
+  const sigla = chave.toUpperCase();
+  const uf = Object.hasOwn(UFS, chave) ? UFS[chave] : (Object.values(UFS).includes(sigla) ? sigla : "");
+  if (!uf) throw new ValidacaoFormularioError("Informe uma UF brasileira válida para o município do estágio.");
+  return uf;
+}
+
+function destinatarioDoEstagio(respostas: Record<string, unknown>, instituicaoLegada: string) {
+  const campo = (...nomes: string[]) => buscarCampoFormulario(respostas, nomes);
+  const concedente = campo(
+    "Concedente", "Concedente do estágio", "Concedente de estágio", "Parte concedente",
+    "Instituição concedente", "Instituição concedente do estágio", "Órgão concedente",
+    "Instituição/órgão concedente", "Instituição/órgão concedente do estágio",
+    "Nome da instituição/órgão concedente", "Nome da concedente do estágio",
+    "Quem será o concedente de estágio", "Quem será a concedente do estágio",
+  );
+  const local = campo(
+    "Município do estágio", "Cidade do estágio", "Município e UF do estágio",
+    "Cidade e UF do estágio", "Município e estado do estágio", "Cidade e estado do estágio",
+    "Município onde será realizado o estágio", "Cidade onde será realizado o estágio",
+    "Município/UF", "Cidade/UF",
+  );
+  const estado = campo("UF do estágio", "Estado do estágio", "UF do município do estágio", "UF", "Estado");
+  if (!concedente && !local && !estado) return null;
+
+  const instituicao = concedente || instituicaoLegada;
+  const municipioInformado = local || campo("Município", "Cidade");
+  if (!instituicao || !municipioInformado) {
+    throw new ValidacaoFormularioError("Informe a instituição ou órgão concedente e o município do estágio.");
+  }
+  const combinado = municipioInformado.match(/^(.+?)\s*(?:\/|,|[–—]|\s+-|-(?=\s*[a-z]{2}$))\s*([^/,–—]+)$/iu);
+  const municipio = combinado?.[1]?.trim() ?? municipioInformado;
+  const ufCombinada = combinado?.[2] ? ufDoOficio(combinado[2]) : "";
+  const ufSeparada = estado ? ufDoOficio(estado) : "";
+  if (ufCombinada && ufSeparada && ufCombinada !== ufSeparada) {
+    throw new ValidacaoFormularioError("As respostas indicam estados diferentes para o local do estágio.");
+  }
+  const uf = ufSeparada || ufCombinada;
+  if (!uf) throw new ValidacaoFormularioError("Informe a UF do estágio ou preencha o município no formato Município/UF.");
+
+  const nome = normalizar(instituicao.split(/\s+/)[0] ?? "");
+  const artigo = ["secretaria", "prefeitura", "clinica", "unidade", "escola", "universidade", "faculdade", "fundacao", "associacao", "empresa", "autarquia"].includes(nome) ? "À "
+    : ["hospital", "instituto", "centro", "orgao", "municipio", "consorcio", "ministerio", "laboratorio"].includes(nome) ? "Ao " : "";
+  return { instituicao, destinatario: artigo + instituicao + " – " + municipio + " – " + uf };
+}
+
 async function oficiosInterno(request: Request,supabaseAdmin:FormsAdmin,validatedToken:string):Promise<Response>{
 
         
@@ -59,6 +116,8 @@ async function oficiosInterno(request: Request,supabaseAdmin:FormsAdmin,validate
 
         const nome = texto("aluno", "alunoa", "nome");
         if (!nome) return json({ error: "Campo Aluno(a) não recebido" }, 422);
+
+        const localEstagio = destinatarioDoEstagio(bruto, texto("instituicao"));
 
         // Cadastros auxiliares: curso e professor escolhidos no formulário
         const cursoForm = texto("curso");
@@ -125,11 +184,11 @@ if(modulosError) throw Error('Lookup unavailable');
           cpf: texto("cpf"),
           curso,
           matricula: texto("matricula"),
-          instituicao: texto("instituicao"),
+          instituicao: localEstagio?.instituicao ?? texto("instituicao"),
           cargo: texto("cargo"),
           assunto: texto("assunto") || "Estágio Curricular Obrigatório",
           corpo: texto("corpo"),
-          destinatario: texto("destinatario") || padrao("padrao_destinatario"),
+          destinatario: localEstagio?.destinatario ?? (texto("destinatario") || padrao("padrao_destinatario")),
           area_estagio:
             texto("areaestagio", "area") ||
             areaModulo.trim() ||

@@ -61,3 +61,9 @@ Não existe integração de Pacientes neste pacote.
 ## Andamento da automação
 
 Consulte [AUTOMACAO_DOCUMENTAL.md](../docs/AUTOMACAO_DOCUMENTAL.md) para ativar Cloudflare, acompanhar PDF/e-mail e retomar falhas. A instalação do Apps Script registra respostas mesmo enquanto a geração de PDF aguarda configuração. O envio de Preceptoria continua manual; o envio automático ao orientador se aplica às Avaliações.
+
+## Destinatário de Ofícios pelo local do estágio
+
+No formulário de Ofícios, crie perguntas obrigatórias de resposta curta com os títulos **Instituição/órgão concedente do estágio**, **Município do estágio** e **UF do estágio**. Para usar apenas duas perguntas, substitua as duas últimas por **Município e UF do estágio**, no formato `Município/UF` (exemplo: `Paulo Afonso/BA`). A UF pode ser selecionada em uma lista de siglas ou informada pelo nome do estado.
+
+O Apps Script de Ofícios já envia os títulos e valores. O Supabase preenche `{{destinatario}}` com a concedente, o município e a sigla da UF. A cidade de emissão continua definida em Configurações. Formulários antigos sem os campos do local mantêm seu destinatário explícito ou padrão. Quando os novos campos são usados, dados incompletos ou contraditórios precisam ser corrigidos antes da emissão.

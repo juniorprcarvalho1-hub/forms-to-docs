@@ -184,7 +184,7 @@ async function declaracoesInterno(request: Request,supabaseAdmin:FormsAdmin,vali
         const texto = (...chaves: string[]) => buscar(chaves);
 
         const nome = buscar(
-          ["nome", "preceptor", "nomedopreceptor", "nomecompleto", "nomecompletodopreceptor"],
+          ["nome", "preceptor", "nomedopreceptor", "nomedopreceptora", "nomedoapreceptora", "nomecompleto", "nomecompletodopreceptor", "nomecompletodopreceptora", "nomecompletodoapreceptora"],
           ["aluno", "estudante", "discente", "curso", "hospital", "email"],
         );
         if (!nome) return json({ error: "Campo Nome não recebido" }, 422);

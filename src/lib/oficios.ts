@@ -203,7 +203,7 @@ export function montarDocumentoHtml(
   const partes = [
     config.cabecalho_html?.trim(),
     corpo,
-    rodape ? '<div style="padding-top: ' + espaco + '; text-align: center;">' + rodape + "</div>" : "",
+    rodape ? '<div data-rodape-oficio="" style="padding-top: ' + espaco + '; text-align: center;">' + rodape + "</div>" : "",
   ].filter(Boolean) as string[];
   return renderizarModelo(partes.join(""), oficio, config);
 }

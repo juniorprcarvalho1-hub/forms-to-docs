@@ -1,6 +1,7 @@
 import { prepararImagensInstitucionais } from "./storage";
 import { jsPDF } from "jspdf";
 import { normalizarCoresParaPdf } from "./pdf-cores";
+import { prepararRodapeParaPdf } from "./pdf-rodape";
 
 const LARGURA_A4 = 210;
 const ALTURA_A4 = 297;
@@ -75,6 +76,7 @@ export async function gerarPdfDeHtml(html: string): Promise<Blob> {
       if (imagem.naturalWidth === 0) imagem.remove();
     });
 
+    prepararRodapeParaPdf(pagina);
     normalizarCoresParaPdf(pagina);
     const canvas = await html2canvas(pagina, {
       scale: 2,

@@ -3,6 +3,8 @@ import {readFile,mkdir,writeFile} from "node:fs/promises";
 import puppeteer from "puppeteer-core";
 import {paginaHtmlRenderizacao,incorporarImagensAutomacao,montarHtmlAutomacao} from "../../src/lib/automacao-html.ts";
 import {validarPdfA4} from "../../src/lib/pdf-validacao.ts";
+import { normalizarCoresParaPdf } from "../../src/lib/pdf-cores.ts";
+
 const browser=await puppeteer.launch({headless:true,executablePath:process.env["CHROME_BIN"]||"/usr/bin/google-chrome",args:["--no-sandbox","--disable-dev-shm-usage","--host-resolver-rules=MAP * ~NOTFOUND"]});
 const out=new URL("./artifacts/",import.meta.url);await mkdir(out,{recursive:true});
 async function imprimir(html:string,name:string){
@@ -17,6 +19,21 @@ async function imprimir(html:string,name:string){
  await page.close();return pdf;
 }
 try{
+ const paginaPdf = await browser.newPage();
+ await paginaPdf.setContent('<main style="background: white"><p style="color: oklch(55% .2 30); border: 1px solid oklch(.905 .006 255); background: linear-gradient(oklch(.9 .03 45), #fff)">Ofício</p></main>');
+ await paginaPdf.addScriptTag({path:new URL("../../node_modules/html2canvas/dist/html2canvas.min.js",import.meta.url).pathname});
+ const desenhar = () => paginaPdf.evaluate(async () => {
+   const gerar = Reflect.get(window, "html2canvas");
+   const canvas: HTMLCanvasElement = await gerar(document.querySelector("main"), { logging: false });
+   return canvas.width;
+ });
+ await assert.rejects(desenhar(), /unsupported color function "oklch"/);
+ const documento = await paginaPdf.$("main");
+ assert.ok(documento);
+ await paginaPdf.evaluate(normalizarCoresParaPdf, documento);
+ assert.ok(await desenhar() > 0);
+ await paginaPdf.close();
+
  const image=await readFile(new URL("../../public/brand/facesf.png",import.meta.url));
  const html=await incorporarImagensAutomacao('<img src="/brand/facesf.png" style="width:110px"><h1>Verificação técnica</h1><p>PDF A4 com imagem institucional carregada.</p>',"https://auxsyadqijcjngmujagx.supabase.co",async()=>({bytes:new Uint8Array(image),mime:"image/png"}));
  await validarPdfA4(await imprimir(html,"a4-valido"));console.log("PASS: imagem completa e uma página A4");

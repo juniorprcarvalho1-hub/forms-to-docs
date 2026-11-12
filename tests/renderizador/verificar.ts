@@ -3,6 +3,7 @@ import {readFile,mkdir,writeFile} from "node:fs/promises";
 import puppeteer from "puppeteer-core";
 import {paginaHtmlRenderizacao,incorporarImagensAutomacao,montarHtmlAutomacao} from "../../src/lib/automacao-html.ts";
 import {validarPdfA4} from "../../src/lib/pdf-validacao.ts";
+import { prepararRodapeParaPdf } from "../../src/lib/pdf-rodape.ts";
 import { normalizarCoresParaPdf } from "../../src/lib/pdf-cores.ts";
 
 const browser=await puppeteer.launch({headless:true,executablePath:process.env["CHROME_BIN"]||"/usr/bin/google-chrome",args:["--no-sandbox","--disable-dev-shm-usage","--host-resolver-rules=MAP * ~NOTFOUND"]});
@@ -32,6 +33,31 @@ try{
  assert.ok(documento);
  await paginaPdf.evaluate(normalizarCoresParaPdf, documento);
  assert.ok(await desenhar() > 0);
+ await paginaPdf.setContent(`<main style="width:794px;background:#fff;color:#8c1b1b">
+   <footer data-rodape-oficio style="text-align:center">
+     <p style="margin:0;font:10px/8px Calibri,Arial,sans-serif;background:white">Credenciada pela Portaria de 09/07/2007</p>
+     <p style="margin:0;font:10px/8px Calibri,Arial,sans-serif;background:white;color:black">Rua Cel. Trapiá</p>
+     <p style="margin:0;background:#ffebc5">Fundo intencional</p>
+   </footer>
+ </main>`);
+ await paginaPdf.addScriptTag({path:new URL("../../node_modules/html2canvas/dist/html2canvas.min.js",import.meta.url).pathname});
+ const contarPixelsVermelhos = () => paginaPdf.evaluate(async () => {
+   const gerar = Reflect.get(window, "html2canvas");
+   const canvas: HTMLCanvasElement = await gerar(document.querySelector("main"), { logging: false, scale: 2 });
+   const pixels = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data;
+   let vermelhos = 0;
+   for (let i = 0; i < pixels.length; i += 4) {
+     if (pixels[i]! < 210 && pixels[i + 1]! < 130 && pixels[i]! > pixels[i + 1]! + 40) vermelhos++;
+   }
+   return vermelhos;
+ });
+ const cortado = await contarPixelsVermelhos();
+ const paginaOficio = await paginaPdf.$("main");
+ assert.ok(paginaOficio);
+ await paginaPdf.evaluate(prepararRodapeParaPdf, paginaOficio);
+ const completo = await contarPixelsVermelhos();
+ assert.ok(completo > cortado, `O texto do rodapé deve ganhar os pixels recortados: ${cortado} -> ${completo}`);
+ assert.equal(await paginaPdf.$eval("footer p:last-child", (p) => getComputedStyle(p).backgroundColor), "rgb(255, 235, 197)");
  await paginaPdf.close();
 
  const image=await readFile(new URL("../../public/brand/facesf.png",import.meta.url));

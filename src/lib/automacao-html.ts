@@ -1,3 +1,4 @@
+import {ajustarPontuacaoPdf} from "./pdf-pontuacao.ts";
 import {bytesBase64} from "./automacao-bytes.ts";
 import {parseHTML} from "linkedom";
 import {PDFDocument} from "pdf-lib";
@@ -7,7 +8,7 @@ import {montarDeclaracaoRespostaHtml,type DeclaracaoResposta,type ModeloDeclarac
 import {identificarImagemInstitucional,type ReferenciaImagem} from "./imagens-institucionais.ts";
 import {resolverCursoFormulario} from "./forms-identificacao.ts";
 import {ErroAutomacao} from "./automacao-erros.ts";
-type HtmlDocumento={body:{innerHTML:string};querySelector:(selector:string)=>unknown;querySelectorAll:(selector:string)=>Iterable<{attributes:Iterable<{name:string}>;getAttribute:(name:string)=>string|null;setAttribute:(name:string,value:string)=>void;removeAttribute:(name:string)=>void;}>};
+type HtmlDocumento={body:Parameters<typeof ajustarPontuacaoPdf>[0]&{innerHTML:string};querySelector:(selector:string)=>unknown;querySelectorAll:(selector:string)=>Iterable<{attributes:Iterable<{name:string}>;getAttribute:(name:string)=>string|null;setAttribute:(name:string,value:string)=>void;removeAttribute:(name:string)=>void;}>};
 export type TipoDocumento="oficios"|"declaracoes"|"declaracoes_resposta";
 export type SnapshotDocumento={documento:Record<string,unknown>;config:Record<string,unknown>;modelos:Array<Record<string,unknown>>};
 export function montarHtmlAutomacao(tipo:TipoDocumento,snapshot:SnapshotDocumento):string{
@@ -82,6 +83,7 @@ export function paginaHtmlRenderizacao(html:string,nonce:string):{html:string;se
  if(document.querySelector("script,iframe,object,embed,base,link,meta,svg,form"))throw new ErroAutomacao("imagem_invalida");
  for(const node of document.querySelectorAll("*"))for(const a of [...node.attributes])if(/^on/i.test(a.name)||a.name==="srcdoc")throw new ErroAutomacao("imagem_invalida");
  for(const img of document.querySelectorAll("img"))if(!/^data:image\/(?:png|jpeg|gif);base64,[A-Za-z0-9+/=]+$/.test(img.getAttribute("src")??""))throw new ErroAutomacao("imagem_invalida");
+ ajustarPontuacaoPdf(document.body);
  const seletor="#facesf-ready-"+nonce;
  const script="(async function(nonce){\n function invalido(){document.body.innerHTML='<div style=\"height:400mm;break-after:page\">Documento inválido: composição ou imagem incompleta.</div><p>Não arquivar.</p>';}\n function validar(){\n  const root=document.getElementById(\"facesf-document\");if(!root)throw Error();\n  const box=root.getBoundingClientRect();\n  if(!root.textContent.trim()||box.width<700||root.scrollHeight>1123||root.scrollWidth>795)throw Error();\n  for(const node of root.querySelectorAll(\"*\")){\n   const r=node.getBoundingClientRect();\n   if(r.width===0&&r.height===0)continue;\n   if(r.left<box.left-1||r.right>box.right+1||r.top<box.top-1||r.bottom>box.top+1123||\n      (node.clientHeight>0&&node.scrollHeight>node.clientHeight+1)||(node.clientWidth>0&&node.scrollWidth>node.clientWidth+1))throw Error();\n  }\n }\n try{\n  await document.fonts.ready;\n  await Promise.all(Array.from(document.images).map(async img=>{await img.decode();if(!img.naturalWidth)throw Error();}));\n  validar();\n }catch{invalido();}\n window.addEventListener(\"beforeprint\",()=>{try{validar();}catch{invalido();}});\n const ready=document.createElement(\"span\");ready.id=\"facesf-ready-\"+nonce;ready.style.display=\"none\";document.body.appendChild(ready);\n})";
  const executable=script+"("+JSON.stringify(nonce)+");";

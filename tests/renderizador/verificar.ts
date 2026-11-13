@@ -6,6 +6,8 @@ import {validarPdfA4} from "../../src/lib/pdf-validacao.ts";
 import { prepararRodapeParaPdf } from "../../src/lib/pdf-rodape.ts";
 import { normalizarCoresParaPdf } from "../../src/lib/pdf-cores.ts";
 
+import { prepararAlinhamentoPdf } from "../../src/lib/pdf-alinhamento.ts";
+
 const browser=await puppeteer.launch({headless:true,executablePath:process.env["CHROME_BIN"]||"/usr/bin/google-chrome",args:["--no-sandbox","--disable-dev-shm-usage","--host-resolver-rules=MAP * ~NOTFOUND"]});
 const out=new URL("./artifacts/",import.meta.url);await mkdir(out,{recursive:true});
 async function imprimir(html:string,name:string){
@@ -58,6 +60,12 @@ try{
  const completo = await contarPixelsVermelhos();
  assert.ok(completo > cortado, `O texto do rodapé deve ganhar os pixels recortados: ${cortado} -> ${completo}`);
  assert.equal(await paginaPdf.$eval("footer p:last-child", (p) => getComputedStyle(p).backgroundColor), "rgb(255, 235, 197)");
+ await paginaPdf.setContent('<main style="text-align:justify;width:340px"><p id="corpo">Texto do estágio, com espaçamento natural entre palavras.</p><p id="fecho" style="text-align:center">Atenciosamente,</p></main>');
+ const paginaJustificada = await paginaPdf.$("main");
+ assert.ok(paginaJustificada);
+ await paginaPdf.evaluate(prepararAlinhamentoPdf, paginaJustificada);
+ assert.equal(await paginaPdf.$eval("#corpo", (p) => getComputedStyle(p).textAlign), "start");
+ assert.equal(await paginaPdf.$eval("#fecho", (p) => getComputedStyle(p).textAlign), "center");
  await paginaPdf.close();
 
  const image=await readFile(new URL("../../public/brand/facesf.png",import.meta.url));

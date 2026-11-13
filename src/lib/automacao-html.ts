@@ -8,7 +8,7 @@ import {montarDeclaracaoRespostaHtml,type DeclaracaoResposta,type ModeloDeclarac
 import {identificarImagemInstitucional,type ReferenciaImagem} from "./imagens-institucionais.ts";
 import {resolverCursoFormulario} from "./forms-identificacao.ts";
 import {ErroAutomacao} from "./automacao-erros.ts";
-type HtmlDocumento={body:HTMLElement;querySelector:(selector:string)=>unknown;querySelectorAll:(selector:string)=>Iterable<{attributes:Iterable<{name:string}>;getAttribute:(name:string)=>string|null;setAttribute:(name:string,value:string)=>void;removeAttribute:(name:string)=>void;}>};
+type HtmlDocumento={body:Parameters<typeof ajustarPontuacaoPdf>[0]&{innerHTML:string};querySelector:(selector:string)=>unknown;querySelectorAll:(selector:string)=>Iterable<{attributes:Iterable<{name:string}>;getAttribute:(name:string)=>string|null;setAttribute:(name:string,value:string)=>void;removeAttribute:(name:string)=>void;}>};
 export type TipoDocumento="oficios"|"declaracoes"|"declaracoes_resposta";
 export type SnapshotDocumento={documento:Record<string,unknown>;config:Record<string,unknown>;modelos:Array<Record<string,unknown>>};
 export function montarHtmlAutomacao(tipo:TipoDocumento,snapshot:SnapshotDocumento):string{

@@ -1,5 +1,6 @@
 import { prepararImagensInstitucionais } from "./storage";
 import { jsPDF } from "jspdf";
+import { prepararAlinhamentoPdf } from "./pdf-alinhamento";
 import { ajustarPontuacaoPdf } from "./pdf-pontuacao";
 import { normalizarCoresParaPdf } from "./pdf-cores";
 import { prepararRodapeParaPdf } from "./pdf-rodape";
@@ -78,6 +79,7 @@ export async function gerarPdfDeHtml(html: string): Promise<Blob> {
     });
 
     ajustarPontuacaoPdf(pagina);
+    prepararAlinhamentoPdf(pagina);
     prepararRodapeParaPdf(pagina);
     normalizarCoresParaPdf(pagina);
     const canvas = await html2canvas(pagina, {

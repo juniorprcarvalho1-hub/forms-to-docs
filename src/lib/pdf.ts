@@ -1,9 +1,7 @@
 import { prepararImagensInstitucionais } from "./storage";
 import { jsPDF } from "jspdf";
-import { prepararAlinhamentoPdf } from "./pdf-alinhamento";
 import { ajustarPontuacaoPdf } from "./pdf-pontuacao";
-import { normalizarCoresParaPdf } from "./pdf-cores";
-import { prepararRodapeParaPdf } from "./pdf-rodape";
+import { capturarPaginaPdf } from "./pdf-captura";
 
 const LARGURA_A4 = 210;
 const ALTURA_A4 = 297;
@@ -27,7 +25,7 @@ function documentoEmPagina(html: string) {
     throw new Error("Não foi possível preparar a página do PDF.");
   }
   documento.open();
-  documento.write(`<!doctype html><html><head><style>
+  documento.write(`<!doctype html><html><head><meta charset="utf-8"><style>
     * { box-sizing: border-box; }
     html, body { margin: 0; width: 794px; background: #fff; }
     .pagina-a4 { width: 794px; min-height: 1123px; padding: 38px 48px; overflow: visible;
@@ -51,44 +49,14 @@ function documentoEmPagina(html: string) {
   return { quadro, pagina };
 }
 
-function aguardarImagem(imagem: HTMLImageElement): Promise<void> {
-  if (imagem.complete) return Promise.resolve();
-
-  return new Promise((resolve) => {
-    const concluir = () => {
-      window.clearTimeout(limite);
-      resolve();
-    };
-    const limite = window.setTimeout(concluir, 5000);
-    imagem.addEventListener("load", concluir, { once: true });
-    imagem.addEventListener("error", concluir, { once: true });
-  });
-}
-
 export async function gerarPdfDeHtml(html: string): Promise<Blob> {
-  const { default: html2canvas } = await import("html2canvas");
   const { quadro, pagina } = documentoEmPagina(html);
 
   try {
     await quadro.contentDocument?.fonts.ready;
     await prepararImagensInstitucionais(pagina);
-    const imagens = Array.from(pagina.querySelectorAll("img"));
-    await Promise.all(imagens.map(aguardarImagem));
-    imagens.forEach((imagem) => {
-      if (imagem.naturalWidth === 0) imagem.remove();
-    });
-
     ajustarPontuacaoPdf(pagina);
-    prepararAlinhamentoPdf(pagina);
-    prepararRodapeParaPdf(pagina);
-    normalizarCoresParaPdf(pagina);
-    const canvas = await html2canvas(pagina, {
-      scale: 2,
-      useCORS: true,
-      imageTimeout: 5000,
-      backgroundColor: "#ffffff",
-      logging: false,
-    });
+    const canvas = await capturarPaginaPdf(pagina);
 
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const larguraUtil = LARGURA_A4 - MARGEM * 2;

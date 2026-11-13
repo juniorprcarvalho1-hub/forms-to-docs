@@ -8,6 +8,8 @@ import { normalizarCoresParaPdf } from "../../src/lib/pdf-cores.ts";
 
 import { prepararAlinhamentoPdf } from "../../src/lib/pdf-alinhamento.ts";
 
+import { capturarPaginaPdf } from "../../src/lib/pdf-captura.ts";
+
 const browser=await puppeteer.launch({headless:true,executablePath:process.env["CHROME_BIN"]||"/usr/bin/google-chrome",args:["--no-sandbox","--disable-dev-shm-usage","--host-resolver-rules=MAP * ~NOTFOUND"]});
 const out=new URL("./artifacts/",import.meta.url);await mkdir(out,{recursive:true});
 async function imprimir(html:string,name:string){
@@ -66,6 +68,20 @@ try{
  await paginaPdf.evaluate(prepararAlinhamentoPdf, paginaJustificada);
  assert.equal(await paginaPdf.$eval("#corpo", (p) => getComputedStyle(p).textAlign), "start");
  assert.equal(await paginaPdf.$eval("#fecho", (p) => getComputedStyle(p).textAlign), "center");
+ await paginaPdf.setContent('<style>p {font: 26px "Times New Roman";margin:0;text-align:center}</style><main style="width:340px;height:64px;background:white"><p>Atenciosamente,</p></main>');
+ await paginaPdf.evaluate(() => document.fonts.ready.then(() => true));
+ const paginaNativa = await paginaPdf.$("main");
+ assert.ok(paginaNativa);
+ const canvasNativo = await paginaPdf.evaluateHandle(capturarPaginaPdf, paginaNativa);
+ const pixels = await canvasNativo.evaluate(canvas => {
+   const dados=canvas.getContext("2d")!.getImageData(0,0,canvas.width,canvas.height).data;
+   let escuros=0;
+   let inicio=canvas.width, fim=0;
+   for(let i=0;i<dados.length;i+=4) if(dados[i]!<80){escuros++;const x=i/4%canvas.width;inicio=Math.min(inicio,x);fim=Math.max(fim,x);}
+   return {escuros, inicio, fim, largura:canvas.width};
+ });
+ assert.ok(pixels.escuros>100, "A captura nativa deve conter o texto");
+ assert.ok(Math.abs(pixels.inicio+pixels.fim-pixels.largura)<10, "O fecho deve permanecer centralizado");
  await paginaPdf.close();
 
  const image=await readFile(new URL("../../public/brand/facesf.png",import.meta.url));

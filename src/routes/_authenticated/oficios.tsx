@@ -1,3 +1,4 @@
+import { salvarConteudoDocumental } from "@/lib/salvar-conteudo-documental";
 import {obterPdfArquivado} from "@/lib/automacao-arquivo";
 import {AndamentoDocumento} from "@/components/AndamentoDocumento";
 import {caminhoPrivadoDocumento} from "@/lib/documento-path";
@@ -159,20 +160,27 @@ function OficiosPage() {
   }
 
   async function salvarEdicao() {
-    if (!editando) return;
+    if (!editando || ocupado) return;
     setOcupado(true);
-    const { error } = await supabase
-      .from("oficios")
-      .update({ conteudo_html: conteudo })
-      .eq("id", editando.id);
-    setOcupado(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const salvo = await salvarConteudoDocumental("oficios", editando, conteudo);
+      await queryClient.cancelQueries({ queryKey: ["oficios"] });
+      queryClient.setQueryData<Oficio[]>(["oficios"], (lista) =>
+        lista?.map((item) => item.id === salvo.id ? salvo : item),
+      );
+      if (aberto?.id === salvo.id) {
+        setAberto(salvo);
+        setHtmlAberto(salvo.conteudo_html ?? "");
+      }
+      setEditando(null);
+      toast.success("Documento salvo.");
+      void queryClient.invalidateQueries({ queryKey: ["oficios"] });
+      void queryClient.invalidateQueries({ queryKey: ["automacao"] });
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar.");
+    } finally {
+      setOcupado(false);
     }
-    toast.success("Ofício atualizado.");
-    setEditando(null);
-    queryClient.invalidateQueries({ queryKey: ["oficios"] });
   }
 
   async function excluir() {
@@ -319,7 +327,7 @@ function OficiosPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!editando} onOpenChange={(v) => !v && setEditando(null)}>
+      <Dialog open={!!editando} onOpenChange={(v) => !v && !ocupado && setEditando(null)}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar {editando?.numero_formatado}</DialogTitle>
@@ -328,7 +336,7 @@ function OficiosPage() {
             Edição livre do documento: formate o texto, ajuste alinhamentos e insira imagens PNG em
             qualquer ponto — inclusive no cabeçalho.
           </p>
-          <RichEditor value={conteudo} onChange={setConteudo} minHeight={420} />
+          <RichEditor disabled={ocupado} value={conteudo} onChange={setConteudo} minHeight={420} />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setEditando(null)}>
               Cancelar

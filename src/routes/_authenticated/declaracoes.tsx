@@ -1,3 +1,4 @@
+import { salvarConteudoDocumental } from "@/lib/salvar-conteudo-documental";
 import {obterPdfArquivado} from "@/lib/automacao-arquivo";
 import {AndamentoDocumento} from "@/components/AndamentoDocumento";
 import {caminhoPrivadoDocumento} from "@/lib/documento-path";
@@ -225,20 +226,27 @@ function DeclaracoesPage() {
 
 
   async function salvarEdicao() {
-    if (!editando) return;
+    if (!editando || ocupado) return;
     setOcupado(true);
-    const { error } = await supabase
-      .from("declaracoes")
-      .update({ conteudo_html: conteudo })
-      .eq("id", editando.id);
-    setOcupado(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const salvo = await salvarConteudoDocumental("declaracoes", editando, conteudo);
+      await queryClient.cancelQueries({ queryKey: ["declaracoes"] });
+      queryClient.setQueryData<Declaracao[]>(["declaracoes"], (lista) =>
+        lista?.map((item) => item.id === salvo.id ? salvo : item),
+      );
+      if (aberto?.id === salvo.id) {
+        setAberto(salvo);
+        setHtmlAberto(salvo.conteudo_html ?? "");
+      }
+      setEditando(null);
+      toast.success("Documento salvo.");
+      void queryClient.invalidateQueries({ queryKey: ["declaracoes"] });
+      void queryClient.invalidateQueries({ queryKey: ["automacao"] });
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar.");
+    } finally {
+      setOcupado(false);
     }
-    toast.success("Declaração atualizada.");
-    setEditando(null);
-    queryClient.invalidateQueries({ queryKey: ["declaracoes"] });
   }
 
   async function excluir() {
@@ -403,12 +411,12 @@ function DeclaracoesPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!editando} onOpenChange={(v) => !v && setEditando(null)}>
+      <Dialog open={!!editando} onOpenChange={(v) => !v && !ocupado && setEditando(null)}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar declaração de {editando?.nome}</DialogTitle>
           </DialogHeader>
-          <RichEditor
+          <RichEditor disabled={ocupado}
             value={conteudo}
             onChange={setConteudo}
             minHeight={420}

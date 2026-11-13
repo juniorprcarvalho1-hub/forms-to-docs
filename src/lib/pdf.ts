@@ -1,5 +1,6 @@
 import { prepararImagensInstitucionais } from "./storage";
 import { jsPDF } from "jspdf";
+import { ajustarPontuacaoPdf } from "./pdf-pontuacao";
 import { normalizarCoresParaPdf } from "./pdf-cores";
 import { prepararRodapeParaPdf } from "./pdf-rodape";
 
@@ -76,6 +77,7 @@ export async function gerarPdfDeHtml(html: string): Promise<Blob> {
       if (imagem.naturalWidth === 0) imagem.remove();
     });
 
+    ajustarPontuacaoPdf(pagina);
     prepararRodapeParaPdf(pagina);
     normalizarCoresParaPdf(pagina);
     const canvas = await html2canvas(pagina, {

@@ -106,7 +106,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 flex-col overflow-y-auto border-r bg-sidebar p-3 md:flex">
           {nav}
           <div className="mt-auto flex flex-col items-center gap-3 pt-6 opacity-80">
-            <img src={clinica.url} alt="Clínica Escola de Saúde Integrada" className="w-36" />
+            <img src={clinica.url} alt="Clínica Escola de Saúde Integrada" className="w-36 mix-blend-multiply brightness-105" />
             <img src={nupep.url} alt="NuPEP" className="w-28" />
           </div>
         </aside>

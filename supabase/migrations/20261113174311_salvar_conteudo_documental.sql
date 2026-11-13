@@ -1,6 +1,6 @@
--- Permite editar somente o texto dos documentos no acervo compartilhado.
+-- Confirma a gravação do conteúdo sob as políticas de escrita existentes.
 create function public.salvar_conteudo_documental(p_tipo text,p_id uuid,p_original text,p_html text)
-returns jsonb language plpgsql security definer set search_path='' as $$
+returns jsonb language plpgsql security invoker set search_path='' as $$
 declare salvo jsonb;
 begin
  if not coalesce(private.controle_conta_ativa(auth.uid()),false) then raise exception 'ACESSO_DOCUMENTAL_NEGADO'; end if;

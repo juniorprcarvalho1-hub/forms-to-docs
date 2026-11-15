@@ -1,4 +1,3 @@
-import {validarPdfA4} from "./pdf-validacao.ts";
 import {bytesBase64} from "./automacao-bytes.ts";
 import {ErroAutomacao} from "./automacao-erros.ts";
 import {EMAIL_CLINICA_FACESF,NOME_CLINICA_FACESF} from "./email-preceptoria.ts";
@@ -63,7 +62,9 @@ export async function handleEmailBridge(request:Request,ports:EmailBridgePorts):
   const envelope=await ports.consumir(ticket);
   if(!validarEnvelope(envelope))return json({codigo:"ticket_invalido",incerto:false},401);
   let bytes:Uint8Array;try{bytes=await ports.lerPdf(envelope);}catch{throw new ErroAutomacao("storage_indisponivel");}
-  await validarPdfA4(bytes);
+  // O worker valida o A4 antes de arquivar e novamente antes de emitir a autorização.
+  // O hash abaixo vincula o anexo ao mesmo arquivo validado pelo worker.
+  if(bytes.length<8||bytes.length>8000000||new TextDecoder().decode(bytes.subarray(0,5))!=="%PDF-")throw new ErroAutomacao("pdf_invalido");
   const hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new Uint8Array(bytes).buffer)),b=>b.toString(16).padStart(2,"0")).join("");
   if(hash!==envelope.pdf_sha256)throw new ErroAutomacao("pdf_invalido");
   const raw=mimeMensagem(envelope,bytes);

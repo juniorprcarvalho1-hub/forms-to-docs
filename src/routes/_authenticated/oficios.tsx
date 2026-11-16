@@ -1,14 +1,15 @@
+import { BarraSemestre, useSemestreDocumentos, baixarDocumentosEmLote } from "@/components/BarraSemestre";
+import { listarPaginas } from "@/lib/semestre-documentos";
 import { salvarConteudoDocumental } from "@/lib/salvar-conteudo-documental";
 import {obterPdfArquivado} from "@/lib/automacao-arquivo";
 import {AndamentoDocumento} from "@/components/AndamentoDocumento";
 import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { Download, Eye, Pencil, Printer, Search, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Download, Eye, Pencil, Printer, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -95,40 +96,59 @@ function OficiosPage() {
 
   const { data: oficios = [], isLoading } = useQuery({
     queryKey: ["oficios"],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: ({ signal }) => listarPaginas<Oficio>((inicio, fim) => supabase
         .from("oficios")
         .select("*")
         .order("ano", { ascending: false })
-        .order("numero", { ascending: false });
-      if (error) throw error;
-      return data as unknown as Oficio[];
-    },
+        .order("numero", { ascending: false })
+        .order("id")
+        .range(inicio, fim)
+        .abortSignal(signal)),
   });
 
-  const filtrados = useMemo(() => {
+  const recorte = useSemestreDocumentos(oficios, (item) => item.data);
+  const [progresso, setProgresso] = useState("");
+  const filtrados = (() => {
     const termo = busca.trim().toLowerCase();
-    if (!termo) return oficios;
-    return oficios.filter((o) =>
+    if (!termo) return recorte.itens;
+    return recorte.itens.filter((o) =>
       [o.numero_formatado, o.nome, o.curso, o.matricula, o.cpf, o.destinatario]
         .join(" ")
         .toLowerCase()
         .includes(termo),
     );
-  }, [oficios, busca]);
+  })();
 
-  async function comPdf(oficio: Oficio, acao: "baixar" | "imprimir") {
+  async function obterPdf(item: Oficio): Promise<Blob> {
+    const arquivado = await obterPdfArquivado("oficios", item.id);
+    if (arquivado) return arquivado;
+    const fontes = await buscarFontesOficioAtuais();
+    return gerarPdfDeHtml(montarDocumentoHtml(item, fontes.config, fontes.modelos));
+  }
+
+  async function comPdf(item: Oficio, acao: "baixar" | "imprimir") {
+    if (ocupado) return;
     setOcupado(true);
     try {
-      const arquivado=await obterPdfArquivado("oficios",oficio.id);
-      if(arquivado){if(acao==="baixar")baixarBlob(arquivado,"documento.pdf");else imprimirBlob(arquivado);return;}
-      const fontes = await buscarFontesOficioAtuais();
-      const blob = await gerarPdfDeHtml(montarDocumentoHtml(oficio, fontes.config, fontes.modelos));
-      if (acao === "baixar") baixarBlob(blob, `${oficio.numero_formatado}.pdf`);
-      else imprimirBlob(blob);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha ao gerar o PDF.");
+      const pdf = await obterPdf(item);
+      if (acao === "baixar") baixarBlob(pdf, (item.numero_formatado || "documento").replace(/[\\/:*?"<>|]/g, "-") + ".pdf");
+      else imprimirBlob(pdf);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Falha ao gerar o PDF.");
     } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function baixarLote(itens: Oficio[]) {
+    if (ocupado || !itens.length) return;
+    setOcupado(true);
+    try {
+      await baixarDocumentosEmLote(itens, recorte.semestre, "oficios", obterPdf, (item) => item.numero_formatado, setProgresso);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível baixar o pacote.");
+    } finally {
+      setProgresso("");
       setOcupado(false);
     }
   }
@@ -206,20 +226,24 @@ function OficiosPage() {
         </p>
       </div>
 
-      <div className="surface-card flex items-center gap-2 p-2">
-        <Search className="ml-2 size-4 text-muted-foreground" />
-        <Input
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder="Pesquisar por número, aluno, CPF, curso ou matrícula"
-          className="border-0 shadow-none focus-visible:ring-0"
-        />
-      </div>
+      <BarraSemestre
+        busca={busca} atualizarBusca={setBusca} placeholder="Pesquisar por número, aluno, CPF, curso ou matrícula"
+        atual={recorte.atual} semestre={recorte.semestre} opcoes={recorte.opcoes} trocar={recorte.trocar}
+        total={recorte.itens.length} marcados={recorte.selecionados.length} ocupado={ocupado || isLoading}
+        progresso={progresso} baixarSemestre={() => void baixarLote(recorte.itens)}
+        baixarSelecionados={() => void baixarLote(recorte.selecionados)}
+      />
 
       <div className="surface-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <input type="checkbox" className="size-4 accent-primary" aria-label="Selecionar documentos visíveis"
+                  disabled={ocupado || !filtrados.length}
+                  checked={filtrados.length > 0 && filtrados.every((item) => recorte.marcados.has(item.id))}
+                  onChange={(e) => recorte.alternar(filtrados.map((item) => item.id), e.target.checked)} />
+              </TableHead>
               <TableHead className="w-44">Número</TableHead>
               <TableHead>Aluno(a)</TableHead>
               <TableHead className="hidden md:table-cell">Curso</TableHead>
@@ -231,6 +255,11 @@ function OficiosPage() {
           <TableBody>
             {filtrados.map((o) => (
               <TableRow key={o.id}>
+                <TableCell>
+                  <input type="checkbox" className="size-4 accent-primary" aria-label={"Selecionar " + o.numero_formatado}
+                    checked={recorte.marcados.has(o.id)} disabled={ocupado}
+                    onChange={(e) => recorte.alternar([o.id], e.target.checked)} />
+                </TableCell>
                 <TableCell className="font-medium">{o.numero_formatado}</TableCell>
                 <TableCell>{o.nome}<AndamentoDocumento tipo="oficios" id={o.id}/></TableCell>
                 <TableCell className="hidden md:table-cell">{o.curso}</TableCell>
@@ -279,7 +308,7 @@ function OficiosPage() {
             ))}
             {!isLoading && filtrados.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
                   Nenhum ofício encontrado.
                 </TableCell>
               </TableRow>

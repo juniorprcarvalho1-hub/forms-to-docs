@@ -245,6 +245,7 @@ function DeclaracoesRespostaPage() {
         busca={busca} atualizarBusca={setBusca} placeholder="Pesquisar por supervisor, estagiário, curso ou avaliação"
         atual={recorte.atual} semestre={recorte.semestre} opcoes={recorte.opcoes} trocar={recorte.trocar}
         total={recorte.itens.length} marcados={recorte.selecionados.length} ocupado={ocupado || isLoading}
+        selecionando={recorte.selecionando} iniciarSelecao={recorte.iniciarSelecao} cancelarSelecao={recorte.cancelarSelecao}
         progresso={progresso} baixarSemestre={() => void baixarLote(recorte.itens)}
         baixarSelecionados={() => void baixarLote(recorte.selecionados)}
       />
@@ -253,12 +254,12 @@ function DeclaracoesRespostaPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-10">
+              {recorte.selecionando && (<TableHead className="w-10">
                 <input type="checkbox" className="size-4 accent-primary" aria-label="Selecionar documentos visíveis"
                   disabled={ocupado || !filtrados.length}
                   checked={filtrados.length > 0 && filtrados.every((item) => recorte.marcados.has(item.id))}
                   onChange={(e) => recorte.alternar(filtrados.map((item) => item.id), e.target.checked)} />
-              </TableHead>
+              </TableHead>)}
               <TableHead>Supervisor(a)</TableHead>
               <TableHead className="hidden md:table-cell">Estagiário(a)</TableHead>
               <TableHead className="hidden lg:table-cell">Curso</TableHead>
@@ -270,11 +271,11 @@ function DeclaracoesRespostaPage() {
           <TableBody>
             {filtrados.map((d) => (
               <TableRow key={d.id}>
-                <TableCell>
+                {recorte.selecionando && (<TableCell>
                   <input type="checkbox" className="size-4 accent-primary" aria-label={"Selecionar " + d.estagiario}
                     checked={recorte.marcados.has(d.id)} disabled={ocupado}
                     onChange={(e) => recorte.alternar([d.id], e.target.checked)} />
-                </TableCell>
+                </TableCell>)}
                 <TableCell className="font-medium">{d.supervisor}<AndamentoDocumento tipo="declaracoes_resposta" id={d.id}/></TableCell>
                 <TableCell className="hidden md:table-cell">{d.estagiario}</TableCell>
                 <TableCell className="hidden lg:table-cell">
@@ -332,7 +333,7 @@ function DeclaracoesRespostaPage() {
             ))}
             {!isLoading && filtrados.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+                <TableCell colSpan={6 + Number(recorte.selecionando)} className="py-12 text-center text-muted-foreground">
                   Nenhuma declaração encontrada.
                 </TableCell>
               </TableRow>

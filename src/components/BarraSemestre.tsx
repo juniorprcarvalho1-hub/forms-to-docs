@@ -11,6 +11,7 @@ export function useSemestreDocumentos<T extends { id: string; created_at: string
 ) {
   const atual = semestreDaData(new Date().toISOString())!;
   const [escolhido, escolher] = useState<string | null>(null);
+  const [selecionando, setSelecionando] = useState(false);
   const [marcados, marcar] = useState<Set<string>>(() => new Set());
   const semestre = escolhido ?? atual;
   const grupos = new Map<string, T[]>([[atual, []]]);
@@ -22,10 +23,12 @@ export function useSemestreDocumentos<T extends { id: string; created_at: string
   }
   const itens = grupos.get(semestre) ?? [];
   return {
-    atual, semestre, itens, marcados,
+    atual, semestre, itens, marcados, selecionando,
+    iniciarSelecao: () => setSelecionando(true),
+    cancelarSelecao: () => { setSelecionando(false); marcar(new Set()); },
     opcoes: [...grupos.keys()].sort((a, b) => a === "sem-data" ? 1 : b === "sem-data" ? -1 : b.localeCompare(a)),
     selecionados: itens.filter((item) => marcados.has(item.id)),
-    trocar: (valor: string) => { escolher(valor === atual ? null : valor); marcar(new Set()); },
+    trocar: (valor: string) => { escolher(valor === atual ? null : valor); setSelecionando(false); marcar(new Set()); },
     alternar: (ids: string[], checked: boolean) => marcar((anteriores) => {
       const novos = new Set(anteriores);
       for (const id of ids) checked ? novos.add(id) : novos.delete(id);
@@ -39,6 +42,7 @@ export function BarraSemestre(props: {
   atual: string; semestre: string; opcoes: string[]; trocar: (valor: string) => void;
   total: number; marcados: number; ocupado: boolean; progresso: string;
   baixarSemestre: () => void; baixarSelecionados: () => void;
+  selecionando: boolean; iniciarSelecao: () => void; cancelarSelecao: () => void;
 }) {
   return (
     <div className="space-y-3">
@@ -55,16 +59,25 @@ export function BarraSemestre(props: {
             {props.opcoes.map((s) => <option key={s} value={s}>{s === "sem-data" ? "Sem data" : s + (s === props.atual ? " (atual)" : "")}</option>)}
           </select>
         </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" disabled={props.ocupado || !props.total} onClick={props.baixarSemestre}>
+            <Download className="size-4" /> Baixar semestre ({props.total})
+          </Button>
+          {props.selecionando ? (
+            <>
+              <Button disabled={props.ocupado || !props.marcados} onClick={props.baixarSelecionados}>
+                Baixar selecionados ({props.marcados})
+              </Button>
+              <Button variant="ghost" disabled={props.ocupado} onClick={props.cancelarSelecao}>Cancelar seleção</Button>
+            </>
+          ) : (
+            <Button variant="outline" disabled={props.ocupado || !props.total} onClick={props.iniciarSelecao}>
+              Baixar selecionados
+            </Button>
+          )}
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" disabled={props.ocupado || !props.total} onClick={props.baixarSemestre}>
-          <Download className="size-4" /> Baixar semestre ({props.total})
-        </Button>
-        <Button variant="outline" disabled={props.ocupado || !props.marcados} onClick={props.baixarSelecionados}>
-          Baixar selecionados ({props.marcados})
-        </Button>
-        <span role="status" className="text-sm text-muted-foreground">{props.progresso}</span>
-      </div>
+      {props.progresso && <p role="status" className="text-sm text-muted-foreground">{props.progresso}</p>}
     </div>
   );
 }

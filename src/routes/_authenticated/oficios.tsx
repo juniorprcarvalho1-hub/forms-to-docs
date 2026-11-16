@@ -230,6 +230,7 @@ function OficiosPage() {
         busca={busca} atualizarBusca={setBusca} placeholder="Pesquisar por número, aluno, CPF, curso ou matrícula"
         atual={recorte.atual} semestre={recorte.semestre} opcoes={recorte.opcoes} trocar={recorte.trocar}
         total={recorte.itens.length} marcados={recorte.selecionados.length} ocupado={ocupado || isLoading}
+        selecionando={recorte.selecionando} iniciarSelecao={recorte.iniciarSelecao} cancelarSelecao={recorte.cancelarSelecao}
         progresso={progresso} baixarSemestre={() => void baixarLote(recorte.itens)}
         baixarSelecionados={() => void baixarLote(recorte.selecionados)}
       />
@@ -238,12 +239,12 @@ function OficiosPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-10">
+              {recorte.selecionando && (<TableHead className="w-10">
                 <input type="checkbox" className="size-4 accent-primary" aria-label="Selecionar documentos visíveis"
                   disabled={ocupado || !filtrados.length}
                   checked={filtrados.length > 0 && filtrados.every((item) => recorte.marcados.has(item.id))}
                   onChange={(e) => recorte.alternar(filtrados.map((item) => item.id), e.target.checked)} />
-              </TableHead>
+              </TableHead>)}
               <TableHead className="w-44">Número</TableHead>
               <TableHead>Aluno(a)</TableHead>
               <TableHead className="hidden md:table-cell">Curso</TableHead>
@@ -255,11 +256,11 @@ function OficiosPage() {
           <TableBody>
             {filtrados.map((o) => (
               <TableRow key={o.id}>
-                <TableCell>
+                {recorte.selecionando && (<TableCell>
                   <input type="checkbox" className="size-4 accent-primary" aria-label={"Selecionar " + o.numero_formatado}
                     checked={recorte.marcados.has(o.id)} disabled={ocupado}
                     onChange={(e) => recorte.alternar([o.id], e.target.checked)} />
-                </TableCell>
+                </TableCell>)}
                 <TableCell className="font-medium">{o.numero_formatado}</TableCell>
                 <TableCell>{o.nome}<AndamentoDocumento tipo="oficios" id={o.id}/></TableCell>
                 <TableCell className="hidden md:table-cell">{o.curso}</TableCell>
@@ -308,7 +309,7 @@ function OficiosPage() {
             ))}
             {!isLoading && filtrados.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+                <TableCell colSpan={6 + Number(recorte.selecionando)} className="py-12 text-center text-muted-foreground">
                   Nenhum ofício encontrado.
                 </TableCell>
               </TableRow>

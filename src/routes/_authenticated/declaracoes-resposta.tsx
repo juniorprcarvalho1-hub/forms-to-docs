@@ -219,8 +219,7 @@ function DeclaracoesRespostaPage() {
       <div>
         <h1 className="text-2xl font-normal">Declarações de Resposta</h1>
         <p className="text-sm text-muted-foreground">
-          {filtrados.length} declaração(ões) de preenchimento da avaliação do estagiário. O envio ao
-          professor orientador do curso é automático.
+          {filtrados.length} declaração(ões) de preenchimento da avaliação do estagiário.
         </p>
       </div>
 

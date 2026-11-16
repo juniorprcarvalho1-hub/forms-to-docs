@@ -1,14 +1,15 @@
+import { BarraSemestre, useSemestreDocumentos, baixarDocumentosEmLote } from "@/components/BarraSemestre";
+import { listarPaginas } from "@/lib/semestre-documentos";
 import { salvarConteudoDocumental } from "@/lib/salvar-conteudo-documental";
 import {obterPdfArquivado} from "@/lib/automacao-arquivo";
 import {AndamentoDocumento} from "@/components/AndamentoDocumento";
 import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { Download, Eye, Mail, Pencil, Printer, Search, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Download, Eye, Mail, Pencil, Printer, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -102,23 +103,24 @@ function DeclaracoesPage() {
 
   const { data: declaracoes = [], isLoading } = useQuery({
     queryKey: ["declaracoes"],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: ({ signal }) => listarPaginas<Declaracao>((inicio, fim) => supabase
         .from("declaracoes")
         .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as unknown as Declaracao[];
-    },
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(inicio, fim)
+        .abortSignal(signal)),
   });
 
-  const filtrados = useMemo(() => {
+  const recorte = useSemestreDocumentos(declaracoes, (item) => item.data_emissao);
+  const [progresso, setProgresso] = useState("");
+  const filtrados = (() => {
     const termo = busca.trim().toLowerCase();
-    if (!termo) return declaracoes;
-    return declaracoes.filter((d) =>
+    if (!termo) return recorte.itens;
+    return recorte.itens.filter((d) =>
       [d.nome, d.coren, d.hospital, d.email].join(" ").toLowerCase().includes(termo),
     );
-  }, [declaracoes, busca]);
+  })();
 
   function gerarHtmlComFontes(
     declaracao: Declaracao,
@@ -132,22 +134,38 @@ function DeclaracoesPage() {
     }
   }
 
-  async function comPdf(declaracao: Declaracao, acao: "baixar" | "imprimir") {
+  async function obterPdf(item: Declaracao): Promise<Blob> {
+    const arquivado = await obterPdfArquivado("declaracoes", item.id);
+    if (arquivado) return arquivado;
+    const fontes = await buscarFontesDeclaracaoAtuais();
+    const html = gerarHtmlComFontes(item, fontes.config, fontes.modelos);
+    if (!html) throw new Error(pendenciaDeclaracao(item) ?? "Não foi possível gerar a declaração.");
+    return gerarPdfDeHtml(html);
+  }
+
+  async function comPdf(item: Declaracao, acao: "baixar" | "imprimir") {
+    if (ocupado) return;
     setOcupado(true);
     try {
-      const arquivado=await obterPdfArquivado("declaracoes",declaracao.id);
-      if(arquivado){if(acao==="baixar")baixarBlob(arquivado,"documento.pdf");else imprimirBlob(arquivado);return;}
-      const fontes = await buscarFontesDeclaracaoAtuais();
-      const html = gerarHtmlComFontes(declaracao, fontes.config, fontes.modelos);
-      if (!html) throw new Error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
-      const blob = await gerarPdfDeHtml(html);
-
-      if (acao === "baixar")
-        baixarBlob(blob, `Declaracao-${declaracao.nome.replace(/[^\w]+/g, "-")}.pdf`);
-      else imprimirBlob(blob);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha ao gerar o PDF.");
+      const pdf = await obterPdf(item);
+      if (acao === "baixar") baixarBlob(pdf, (item.nome || "documento").replace(/[\\/:*?"<>|]/g, "-") + ".pdf");
+      else imprimirBlob(pdf);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Falha ao gerar o PDF.");
     } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function baixarLote(itens: Declaracao[]) {
+    if (ocupado || !itens.length) return;
+    setOcupado(true);
+    try {
+      await baixarDocumentosEmLote(itens, recorte.semestre, "declaracoes", obterPdf, (item) => item.nome, setProgresso);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível baixar o pacote.");
+    } finally {
+      setProgresso("");
       setOcupado(false);
     }
   }
@@ -272,20 +290,24 @@ function DeclaracoesPage() {
         </p>
       </div>
 
-      <div className="surface-card flex items-center gap-2 p-2">
-        <Search className="ml-2 size-4 text-muted-foreground" />
-        <Input
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder="Pesquisar por preceptor, registro, campo de estágio ou e-mail"
-          className="border-0 shadow-none focus-visible:ring-0"
-        />
-      </div>
+      <BarraSemestre
+        busca={busca} atualizarBusca={setBusca} placeholder="Pesquisar por preceptor, registro, campo de estágio ou e-mail"
+        atual={recorte.atual} semestre={recorte.semestre} opcoes={recorte.opcoes} trocar={recorte.trocar}
+        total={recorte.itens.length} marcados={recorte.selecionados.length} ocupado={ocupado || isLoading}
+        progresso={progresso} baixarSemestre={() => void baixarLote(recorte.itens)}
+        baixarSelecionados={() => void baixarLote(recorte.selecionados)}
+      />
 
       <div className="surface-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <input type="checkbox" className="size-4 accent-primary" aria-label="Selecionar documentos visíveis"
+                  disabled={ocupado || !filtrados.length}
+                  checked={filtrados.length > 0 && filtrados.every((item) => recorte.marcados.has(item.id))}
+                  onChange={(e) => recorte.alternar(filtrados.map((item) => item.id), e.target.checked)} />
+              </TableHead>
               <TableHead>Preceptor(a)</TableHead>
               <TableHead className="hidden md:table-cell">Registro</TableHead>
               <TableHead className="hidden lg:table-cell">Campo de estágio</TableHead>
@@ -296,6 +318,11 @@ function DeclaracoesPage() {
           <TableBody>
             {filtrados.map((d) => (
               <TableRow key={d.id}>
+                <TableCell>
+                  <input type="checkbox" className="size-4 accent-primary" aria-label={"Selecionar " + d.nome}
+                    checked={recorte.marcados.has(d.id)} disabled={ocupado}
+                    onChange={(e) => recorte.alternar([d.id], e.target.checked)} />
+                </TableCell>
                 <TableCell className="font-medium">{d.nome}<AndamentoDocumento tipo="declaracoes" id={d.id}/></TableCell>
                 <TableCell className="hidden md:table-cell">{d.coren}</TableCell>
                 <TableCell className="hidden max-w-xs truncate lg:table-cell">
@@ -352,7 +379,7 @@ function DeclaracoesPage() {
             ))}
             {!isLoading && filtrados.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="py-12 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
                   Nenhuma declaração encontrada.
                 </TableCell>
               </TableRow>

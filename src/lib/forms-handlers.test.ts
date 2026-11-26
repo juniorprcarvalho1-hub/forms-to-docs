@@ -149,3 +149,23 @@ test("Preceptoria mantém a conferência de nomes de estagiários contraditório
  expect(r.status).toBe(422);
  expect(f.saved).toBeUndefined();
 });
+
+test("Preceptoria reconhece Início do estágio e Término do estágio do Google Forms",async()=>{
+ const f=fixture();
+ const r=await handleDeclaracoes(f.request({
+  "NOME COMPLETO":"Preceptor de teste","CURSO":"Fisioterapia",
+  "Início do estágio":"2026-08-03","Término do estágio":"2026-11-30",
+  "CARGA HORÁRIA":"360h","NOME DO ESTAGIÁRIO(A)":"Estudante de teste"
+ }),f.db,"token");
+ expect(r.status).toBe(200);
+ expect(f.saved.p_dados).toMatchObject({data_inicio:"2026-08-03",data_fim:"2026-11-30",carga_horaria:"360h"});
+});
+test("Preceptoria recusa término anterior ao início com os títulos novos",async()=>{
+ const f=fixture();
+ const r=await handleDeclaracoes(f.request({
+  "NOME COMPLETO":"Preceptor de teste","CURSO":"Psicologia",
+  "Início do estágio":"30/11/2026","Término do estágio":"03/08/2026"
+ }),f.db,"token");
+ expect(r.status).toBe(422);
+ expect(f.saved).toBeUndefined();
+});

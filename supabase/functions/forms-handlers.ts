@@ -290,8 +290,8 @@ if(modulosError) throw Error('Lookup unavailable');
           hospital: campoCad
             ? String(campoCad.nome_oficial || campoCad.nome_formulario)
             : campoForm,
-          data_inicio: texto("datainicio", "datadeinicio", "inicio", "periodoinicio", "datadeiniciodoestagio", "datainiciodoestagio"),
-          data_fim: texto("datafim", "datadefim", "fim", "periodofim", "termino", "datadetermino", "datadeterminodoestagio", "datadefimdoestagio", "datafinaldoestagio"),
+          data_inicio: texto("datainicio", "datadeinicio", "inicio", "periodoinicio", "datadeiniciodoestagio", "datainiciodoestagio", "iniciodoestagio"),
+          data_fim: texto("datafim", "datadefim", "fim", "periodofim", "termino", "datadetermino", "datadeterminodoestagio", "datadefimdoestagio", "datafinaldoestagio", "terminodoestagio", "fimdoestagio"),
           carga_horaria:
             texto("cargahoraria", "cargahorariadoestagio", "cargahorariatotal", "totaldehoras") || String(campoCad?.carga_horaria ?? "") || String(cfg["padrao_carga_horaria"] ?? ""),
           alunos: texto("alunos", "nomedosalunos", "nomedoaluno", "nomedoaalunoa", "nomedaaluna", "nomesdosalunos", "estudantes", "discentes", "nomedoestagiario", "nomedoestagiarioa", "nomedoaestagiarioa", "nomedaestagiaria", "nomecompletodoestagiario", "nomecompletodoestagiarioa"),

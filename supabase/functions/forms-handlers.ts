@@ -294,7 +294,7 @@ if(modulosError) throw Error('Lookup unavailable');
           data_fim: texto("datafim", "datadefim", "fim", "periodofim", "termino", "datadetermino", "datadeterminodoestagio", "datadefimdoestagio", "datafinaldoestagio"),
           carga_horaria:
             texto("cargahoraria", "cargahorariadoestagio", "cargahorariatotal", "totaldehoras") || String(campoCad?.carga_horaria ?? "") || String(cfg["padrao_carga_horaria"] ?? ""),
-          alunos: texto("alunos", "nomedosalunos", "nomedoaluno", "nomedoaalunoa", "nomedaaluna", "nomesdosalunos", "estudantes", "discentes"),
+          alunos: texto("alunos", "nomedosalunos", "nomedoaluno", "nomedoaalunoa", "nomedaaluna", "nomesdosalunos", "estudantes", "discentes", "nomedoestagiario", "nomedoestagiarioa", "nomedoaestagiarioa", "nomedaestagiaria", "nomecompletodoestagiario", "nomecompletodoestagiarioa"),
           email: texto("emaildopreceptor", "emaildopreceptora", "emaildoapreceptor", "emaildoapreceptora", "enderecodeemaildopreceptor", "enderecodeemaildopreceptora") || texto("email"),
           origem: "google_forms",
         };

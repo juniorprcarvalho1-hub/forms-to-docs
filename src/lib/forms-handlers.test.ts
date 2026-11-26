@@ -117,3 +117,35 @@ test("ofício mantém o destinatário explícito de formulários antigos",async(
  expect(r.status).toBe(200);
  expect(f.saved.p_dados.destinatario).toBe("Aos responsáveis");
 });
+
+for (const [curso,chave] of [["ENFERMAGEM","enfermagem"],["FISIOTERAPIA","fisioterapia"],["NUTRIÇÃO","nutricao"],["PSICOLOGIA","psicologia"]]) {
+ test("Preceptoria mapeia as perguntas do formulário individual de "+curso,async()=>{
+  const f=fixture();
+  const r=await handleDeclaracoes(f.request({
+   "NOME COMPLETO":"Preceptor de teste",
+   "CURSO":curso,
+   "NÚMERO DE REGISTRO NO CONSELHO":"12345",
+   "E-MAIL":"preceptor@example.com",
+   "FUNÇÃO":"Supervisor(a) de Campo",
+   "CARGA HORÁRIA":"360h",
+   "NOME DO ESTAGIÁRIO(A)":"Estudante de teste",
+   "DATA DE INÍCIO":"01/08/2026",
+   "DATA DE FIM":"30/11/2026"
+  }),f.db,"token");
+  expect(r.status).toBe(200);
+  expect(f.saved.p_dados).toMatchObject({
+   nome:"Preceptor de teste",modelo_chave:chave,coren:"12345",
+   email:"preceptor@example.com",carga_horaria:"360h",alunos:"Estudante de teste",
+   data_inicio:"2026-08-01",data_fim:"2026-11-30"
+  });
+ });
+}
+test("Preceptoria mantém a conferência de nomes de estagiários contraditórios",async()=>{
+ const f=fixture();
+ const r=await handleDeclaracoes(f.request({
+  "NOME COMPLETO":"Preceptor de teste","CURSO":"Fisioterapia",
+  "NOME DO ESTAGIÁRIO(A)":"Estudante Um","Nome do aluno":"Estudante Dois"
+ }),f.db,"token");
+ expect(r.status).toBe(422);
+ expect(f.saved).toBeUndefined();
+});

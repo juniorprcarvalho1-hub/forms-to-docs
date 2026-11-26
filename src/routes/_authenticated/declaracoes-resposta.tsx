@@ -1,7 +1,7 @@
 import { BarraSemestre, useSemestreDocumentos, baixarDocumentosEmLote } from "@/components/BarraSemestre";
 import { listarPaginas } from "@/lib/semestre-documentos";
 import { salvarConteudoDocumental } from "@/lib/salvar-conteudo-documental";
-import {obterPdfArquivado} from "@/lib/automacao-arquivo";
+import { gerarPdfAtual } from "@/lib/pdf-atual";
 import {AndamentoDocumento} from "@/components/AndamentoDocumento";
 import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";
@@ -126,17 +126,15 @@ function DeclaracoesRespostaPage() {
     return montarDeclaracaoRespostaHtml(declaracao, modelos);
   }
 
-  async function obterPdf(item: DeclaracaoResposta): Promise<Blob> {
-    const arquivado = await obterPdfArquivado("declaracoes_resposta", item.id);
-    if (arquivado) return arquivado;
-    return gerarPdfDeHtml(await montarHtmlAtual(item));
+  async function obterPdf(item: DeclaracaoResposta, htmlVisualizado?: string): Promise<Blob> {
+    return gerarPdfAtual(() => montarHtmlAtual(item), gerarPdfDeHtml, htmlVisualizado);
   }
 
-  async function comPdf(item: DeclaracaoResposta, acao: "baixar" | "imprimir") {
+  async function comPdf(item: DeclaracaoResposta, acao: "baixar" | "imprimir", htmlVisualizado?: string) {
     if (ocupado) return;
     setOcupado(true);
     try {
-      const pdf = await obterPdf(item);
+      const pdf = await obterPdf(item, htmlVisualizado);
       if (acao === "baixar") baixarBlob(pdf, (item.estagiario || "documento").replace(/[\\/:*?"<>|]/g, "-") + ".pdf");
       else imprimirBlob(pdf);
     } catch (erro) {
@@ -369,10 +367,10 @@ function DeclaracoesRespostaPage() {
                 <Button variant="outline" onClick={() => enviarAoOrientador(aberto)} disabled={ocupado}>
                   <Mail className="size-4" /> Enviar ao orientador
                 </Button>
-                <Button variant="outline" onClick={() => comPdf(aberto, "imprimir")} disabled={ocupado}>
+                <Button variant="outline" onClick={() => comPdf(aberto, "imprimir", htmlAberto)} disabled={ocupado}>
                   <Printer className="size-4" /> Imprimir
                 </Button>
-                <Button onClick={() => comPdf(aberto, "baixar")} disabled={ocupado}>
+                <Button onClick={() => comPdf(aberto, "baixar", htmlAberto)} disabled={ocupado}>
                   <Download className="size-4" /> Baixar PDF
                 </Button>
               </div>

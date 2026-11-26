@@ -23,3 +23,12 @@ test("revalida imagem privada para o PDF e compartilha assinatura dentro do docu
 test("não envia o navegador para URL de assinatura de outro projeto",async()=>{
  await expect(resolverFontesImagens([legacy],origin,async()=>"https://example.invalid/logo.png")).rejects.toThrow();
 });
+
+test("logo azul de Psicologia tem endereço local fixo reconhecido",()=>{
+ for(const src of ["/brand/nupep-psicologia.jpg","https://sintegradocursosfacesf.com.br/brand/nupep-psicologia.jpg"])
+  expect(identificarImagemInstitucional(src,origin)).toEqual({kind:"local",src:"/brand/nupep-psicologia.jpg"});
+});
+test("logo de Psicologia não autoriza outras imagens nem outro domínio",()=>{
+ for(const src of ["/brand/outro.jpg","https://example.invalid/brand/nupep-psicologia.jpg","https://sintegradocursosfacesf.com.br/brand/nupep-psicologia.jpg?externo=1"])
+  expect(identificarImagemInstitucional(src,origin)).toBeNull();
+});

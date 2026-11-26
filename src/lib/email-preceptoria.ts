@@ -25,7 +25,7 @@ export function mensagemEmailPreceptoria(dados: DadosPreceptoria) {
     assunto: "DECLARAÇÃO DE PRECEPTORIA.",
     corpo: [
       `Prezado(a) ${dados.nome},`, "", mensagem, "", agradecimento, "", "Atenciosamente,", "",
-      "Equipe CELC/", "Nathaly Ferraz Queiroz Silva", "Coordenadora", clinica,
+      "Equipe CELC/", "Millena Marília Canário Cabral e Sousa", "Coordenadora", clinica,
       faculdade, credenciamento, psicologia, endereco, cadastro,
     ].join("\n"),
     corpo_html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#202124;line-height:1.4">
@@ -33,7 +33,7 @@ export function mensagemEmailPreceptoria(dados: DadosPreceptoria) {
       <p style="margin:0 0 18px">${mensagem}</p>
       <p style="margin:0 0 18px">${agradecimento}</p>
       <p style="margin:0 0 18px">Atenciosamente,</p>
-      <div>Equipe CELC/<br><strong style="color:#0000ff">Nathaly Ferraz Queiroz Silva<br>Coordenadora</strong><br>${clinica}</div>
+      <div>Equipe CELC/<br><strong style="color:#0000ff">Millena Marília Canário Cabral e Sousa<br>Coordenadora</strong><br>${clinica}</div>
       <div style="text-align:center">
         <div>${faculdade}</div>
         <div style="color:#8a4200;font-size:10px">${credenciamento}<br>${psicologia}</div>

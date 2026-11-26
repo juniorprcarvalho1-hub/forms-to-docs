@@ -1,7 +1,7 @@
 import { BarraSemestre, useSemestreDocumentos, baixarDocumentosEmLote } from "@/components/BarraSemestre";
 import { listarPaginas } from "@/lib/semestre-documentos";
 import { salvarConteudoDocumental } from "@/lib/salvar-conteudo-documental";
-import {obterPdfArquivado} from "@/lib/automacao-arquivo";
+import { gerarPdfAtual } from "@/lib/pdf-atual";
 import {AndamentoDocumento} from "@/components/AndamentoDocumento";
 import {caminhoPrivadoDocumento} from "@/lib/documento-path";
 import { createFileRoute } from "@tanstack/react-router";
@@ -134,20 +134,20 @@ function DeclaracoesPage() {
     }
   }
 
-  async function obterPdf(item: Declaracao): Promise<Blob> {
-    const arquivado = await obterPdfArquivado("declaracoes", item.id);
-    if (arquivado) return arquivado;
-    const fontes = await buscarFontesDeclaracaoAtuais();
-    const html = gerarHtmlComFontes(item, fontes.config, fontes.modelos);
-    if (!html) throw new Error(pendenciaDeclaracao(item) ?? "Não foi possível gerar a declaração.");
-    return gerarPdfDeHtml(html);
+  async function obterPdf(item: Declaracao, htmlVisualizado?: string): Promise<Blob> {
+    return gerarPdfAtual(async () => {
+      const fontes = await buscarFontesDeclaracaoAtuais();
+      const html = gerarHtmlComFontes(item, fontes.config, fontes.modelos);
+      if (!html) throw new Error(pendenciaDeclaracao(item) ?? "Não foi possível gerar a declaração.");
+      return html;
+    }, gerarPdfDeHtml, htmlVisualizado);
   }
 
-  async function comPdf(item: Declaracao, acao: "baixar" | "imprimir") {
+  async function comPdf(item: Declaracao, acao: "baixar" | "imprimir", htmlVisualizado?: string) {
     if (ocupado) return;
     setOcupado(true);
     try {
-      const pdf = await obterPdf(item);
+      const pdf = await obterPdf(item, htmlVisualizado);
       if (acao === "baixar") baixarBlob(pdf, (item.nome || "documento").replace(/[\\/:*?"<>|]/g, "-") + ".pdf");
       else imprimirBlob(pdf);
     } catch (erro) {
@@ -191,7 +191,7 @@ function DeclaracoesPage() {
       const fontes = await buscarFontesDeclaracaoAtuais();
       const html = gerarHtmlComFontes(declaracao, fontes.config, fontes.modelos);
       if (!html) throw new Error(pendenciaDeclaracao(declaracao) ?? "Não foi possível gerar a declaração.");
-      const blob = await obterPdfArquivado("declaracoes",declaracao.id) ?? await gerarPdfDeHtml(html);
+      const blob = await gerarPdfDeHtml(html);
 
       const arquivo = `Declaracao-${declaracao.nome.replace(/[^\w]+/g, "-")}.pdf`;
       let link: string | undefined;
@@ -425,12 +425,12 @@ function DeclaracoesPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => comPdf(aberto, "imprimir")}
+                  onClick={() => comPdf(aberto, "imprimir", htmlAberto)}
                   disabled={ocupado}
                 >
                   <Printer className="size-4" /> Imprimir
                 </Button>
-                <Button onClick={() => comPdf(aberto, "baixar")} disabled={ocupado}>
+                <Button onClick={() => comPdf(aberto, "baixar", htmlAberto)} disabled={ocupado}>
                   <Download className="size-4" /> Baixar PDF
                 </Button>
               </div>

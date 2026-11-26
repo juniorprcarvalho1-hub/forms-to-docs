@@ -27,6 +27,11 @@ jobs:
         run: |
           export CHROME_BIN="$(command -v google-chrome || command -v chromium)"
           bun verificar.ts
+      - name: Verificar edição de imagens em Chromium
+        working-directory: tests/renderizador
+        run: |
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium)"
+          bun verificar-editor.ts
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x

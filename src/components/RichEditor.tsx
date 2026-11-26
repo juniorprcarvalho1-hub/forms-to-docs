@@ -32,6 +32,7 @@ import { uploadArquivo, urlAssinada, prepararImagensInstitucionais } from "@/lib
 import { etiquetasParaTags, rotuloTag, tagsParaEtiquetas } from "@/lib/tags";
 import { identificarImagemInstitucional, normalizarReferenciasLegadas } from "@/lib/imagens-institucionais";
 import { SUPABASE_URL } from "@/lib/supabase-config";
+import { aplicarCaixaImagem, prepararImagemLivre, limitarImagem, alterarTamanhoImagem, type CaixaImagem, type LimitesPagina } from "@/lib/editor-imagem";
 
 type Props = {
   value: string;
@@ -57,7 +58,12 @@ const TAMANHOS: { label: string; value: string }[] = [
 ];
 
 function htmlCanonico(html: string) {
-  return normalizarReferenciasLegadas(etiquetasParaTags(html), SUPABASE_URL);
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html");
+  doc.querySelectorAll(".img-selecionada").forEach((img) => {
+    img.classList.remove("img-selecionada");
+    if (!img.getAttribute("class")) img.removeAttribute("class");
+  });
+  return normalizarReferenciasLegadas(etiquetasParaTags(doc.body.innerHTML), SUPABASE_URL);
 }
 
 function limparColagem(html: string) {
@@ -95,9 +101,19 @@ export function RichEditor({
 }: Props) {
   const areaRef = useRef<HTMLDivElement>(null);
   const selecaoRef = useRef<Range | null>(null);
+  const quadroRef = useRef<HTMLDivElement>(null);
+  const arrasteRef = useRef<{
+    img: HTMLImageElement; modo: "mover" | "tamanho"; pointerId: number;
+    x: number; y: number; antes: string;
+    livre?: { caixa: CaixaImagem; escala: number; limites: LimitesPagina };
+  } | null>(null);
+  const [caixaSelecionada, setCaixaSelecionada] = useState<CaixaImagem | null>(null);
+  const ultimoHtmlRef = useRef(value);
+  const historicoRef = useRef<{passado:string[];futuro:string[]}>({passado:[],futuro:[]});
   const [linkAberto, setLinkAberto] = useState(false);
   const [enderecoLink, setEnderecoLink] = useState("");
   const [imagemSelecionada, setImagemSelecionada] = useState<HTMLImageElement | null>(null);
+  const [painelImagemVisivel, setPainelImagemVisivel] = useState(false);
   const [larguraImagem, setLarguraImagem] = useState(240);
   const [deslocamentoX, setDeslocamentoX] = useState(0);
   const [deslocamentoY, setDeslocamentoY] = useState(0);
@@ -107,6 +123,9 @@ export function RichEditor({
     if (!area) return;
     if (htmlCanonico(area.innerHTML) !== htmlCanonico(value || "")) {
       selecaoRef.current = null;
+      selecionar(null);
+      ultimoHtmlRef.current = htmlCanonico(value || "");
+      historicoRef.current = {passado:[],futuro:[]};
       area.innerHTML = tagsParaEtiquetas(value || "", rotulos);
       void prepararImagensInstitucionais(area).catch(() => {});
     }
@@ -119,7 +138,14 @@ export function RichEditor({
       img.classList.remove("img-selecionada");
       if (!img.getAttribute("class")) img.removeAttribute("class");
     });
-    onChange(htmlCanonico(clone.innerHTML));
+    const html = htmlCanonico(clone.innerHTML);
+    if (html !== ultimoHtmlRef.current) {
+      historicoRef.current.passado.push(ultimoHtmlRef.current);
+      if (historicoRef.current.passado.length > 100) historicoRef.current.passado.shift();
+      historicoRef.current.futuro = [];
+      ultimoHtmlRef.current = html;
+      onChange(html);
+    }
   }, [onChange]);
 
   function guardarSelecao() {
@@ -151,6 +177,21 @@ export function RichEditor({
 
   function executar(nome: string, valor?: string) {
     if (disabled) return;
+    if (nome === "undo" || nome === "redo") {
+      const h = historicoRef.current;
+      const origem = nome === "undo" ? h.passado : h.futuro;
+      const destino = nome === "undo" ? h.futuro : h.passado;
+      const html = origem.pop();
+      if (html === undefined || !areaRef.current) return;
+      destino.push(ultimoHtmlRef.current);
+      ultimoHtmlRef.current = html;
+      selecionar(null);
+      selecaoRef.current = null;
+      areaRef.current.innerHTML = tagsParaEtiquetas(html, rotulos);
+      void prepararImagensInstitucionais(areaRef.current).catch(() => {});
+      onChange(html);
+      return;
+    }
     focarSelecao();
     comando(nome, valor);
     guardarSelecao();
@@ -191,7 +232,7 @@ export function RichEditor({
     emitir();
   }
 
-  async function inserirImagem(file: File) {
+  async function inserirImagem(file: File, substituir: HTMLImageElement | null = null) {
     try {
       if (disabled) return;
       if (!["image/png", "image/jpeg"].includes(file.type)) throw new Error("Escolha uma imagem PNG ou JPEG.");
@@ -199,6 +240,14 @@ export function RichEditor({
       const path = `conteudo/${Date.now()}-${file.name.replace(/[^\w.-]+/g, "-")}`;
       await uploadArquivo(path, file);
       const url = await urlAssinada(path, 60 * 60 * 24 * 365);
+      if (substituir && areaRef.current?.contains(substituir)) {
+        substituir.src = url;
+        substituir.style.objectFit = "contain";
+        substituir.alt = file.name.replace(/\.[^.]+$/, "");
+        emitir();
+        selecionar(substituir);
+        return;
+      }
       focarSelecao();
       comando(
         "insertHTML",
@@ -210,14 +259,16 @@ export function RichEditor({
     }
   }
 
-  function selecionar(img: HTMLImageElement | null) {
+  function selecionar(img: HTMLImageElement | null, mostrarPainel = true) {
     areaRef.current
       ?.querySelectorAll("img.img-selecionada")
       .forEach((i) => i.classList.remove("img-selecionada"));
     if (img) img.classList.add("img-selecionada");
     setImagemSelecionada(img);
+    setPainelImagemVisivel(Boolean(img) && mostrarPainel);
+    atualizarCaixa(img);
     if (img) {
-      setLarguraImagem(Math.round(img.getBoundingClientRect().width) || 240);
+      setLarguraImagem(img.offsetWidth || 240);
       const estilo = getComputedStyle(img);
       setDeslocamentoX(parseInt(estilo.left, 10) || 0);
       setDeslocamentoY(parseInt(estilo.top, 10) || 0);
@@ -230,55 +281,126 @@ export function RichEditor({
     else selecionar(null);
   }
 
+  function atualizarCaixa(img: HTMLImageElement | null = imagemSelecionada) {
+    const quadro = quadroRef.current;
+    if (!img || !quadro || !areaRef.current?.contains(img)) {
+      setCaixaSelecionada(null);
+      return;
+    }
+    const r = img.getBoundingClientRect(), q = quadro.getBoundingClientRect();
+    const escala = q.width / Math.max(1, quadro.offsetWidth);
+    setCaixaSelecionada({x:(r.left-q.left)/escala,y:(r.top-q.top)/escala,width:r.width/escala,height:r.height/escala});
+  }
+
+  function aplicar(img: HTMLImageElement, caixa: CaixaImagem) {
+    aplicarCaixaImagem(img, caixa);
+    setLarguraImagem(Math.round(caixa.width));
+    setDeslocamentoX(Math.round(caixa.x));
+    setDeslocamentoY(Math.round(caixa.y));
+    atualizarCaixa(img);
+  }
+
   function ajustarImagem(px: number) {
-    if (!imagemSelecionada) return;
-    setLarguraImagem(px);
-    imagemSelecionada.style.width = `${px}px`;
-    imagemSelecionada.style.height = "auto";
-    imagemSelecionada.style.maxWidth = "100%";
+    if (!imagemSelecionada || !areaRef.current || !Number.isFinite(px) || px <= 0) return;
+    const livre = prepararImagemLivre(imagemSelecionada, areaRef.current);
+    aplicar(imagemSelecionada, alterarTamanhoImagem(livre.caixa, px, livre.limites));
     emitir();
   }
 
   function alinharImagem(valor: "left" | "center" | "right") {
-    if (!imagemSelecionada) return;
-    imagemSelecionada.style.float = "";
-    imagemSelecionada.style.display = "block";
-    imagemSelecionada.style.marginLeft = valor === "left" ? "0" : "auto";
-    imagemSelecionada.style.marginRight = valor === "right" ? "0" : "auto";
+    if (!imagemSelecionada || !areaRef.current) return;
+    const livre = prepararImagemLivre(imagemSelecionada, areaRef.current);
+    const x = valor === "left" ? 0 : (livre.limites.width-livre.caixa.width)/(valor === "center" ? 2 : 1);
+    aplicar(imagemSelecionada, limitarImagem(livre.caixa, x-livre.caixa.x, 0, 1, livre.limites));
     emitir();
   }
 
   function flutuarImagem(valor: "left" | "right" | "none") {
     if (!imagemSelecionada) return;
-    if (valor === "none") {
-      imagemSelecionada.style.float = "";
-      imagemSelecionada.style.display = "inline-block";
-      imagemSelecionada.style.margin = "";
-    } else {
-      imagemSelecionada.style.display = "inline";
-      imagemSelecionada.style.float = valor;
-      imagemSelecionada.style.margin = valor === "left" ? "0 12px 8px 0" : "0 0 8px 12px";
-    }
+    Object.assign(imagemSelecionada.style,{position:"",left:"",top:"",right:"",bottom:"",maxWidth:"100%"});
+    imagemSelecionada.style.float = valor === "none" ? "" : valor;
+    imagemSelecionada.style.display = valor === "none" ? "inline-block" : "inline";
+    imagemSelecionada.style.margin = valor === "left" ? "0 12px 8px 0" : valor === "right" ? "0 0 8px 12px" : "";
+    atualizarCaixa();
     emitir();
   }
 
   function moverImagem(eixo: "x" | "y", px: number) {
-    if (!imagemSelecionada) return;
-    if (getComputedStyle(imagemSelecionada).position !== "absolute") {
-      imagemSelecionada.style.position = "relative";
-    }
-    if (eixo === "x") {
-      setDeslocamentoX(px);
-      imagemSelecionada.style.left = `${px}px`;
-    } else {
-      setDeslocamentoY(px);
-      imagemSelecionada.style.top = `${px}px`;
-    }
+    if (!imagemSelecionada || !areaRef.current || !Number.isFinite(px)) return;
+    const livre = prepararImagemLivre(imagemSelecionada, areaRef.current);
+    aplicar(imagemSelecionada, limitarImagem(livre.caixa,eixo === "x" ? px-livre.caixa.x : 0,eixo === "y" ? px-livre.caixa.y : 0,1,livre.limites));
     emitir();
+  }
+
+  function iniciarArraste(e: React.PointerEvent, modo: "mover" | "tamanho" = "mover") {
+    if (disabled || e.button !== 0 || !areaRef.current || !quadroRef.current) return;
+    const img = modo === "tamanho" ? imagemSelecionada : e.target instanceof HTMLImageElement ? e.target : null;
+    if (!img || !areaRef.current.contains(img)) return;
+    e.preventDefault();
+    selecionar(img, Boolean(imagemSelecionada));
+    areaRef.current.focus({preventScroll:true});
+    arrasteRef.current = {img,modo,pointerId:e.pointerId,x:e.clientX,y:e.clientY,antes:areaRef.current.innerHTML};
+    quadroRef.current.setPointerCapture(e.pointerId);
+  }
+
+  function arrastar(e: React.PointerEvent) {
+    const a = arrasteRef.current;
+    if (!a || a.pointerId !== e.pointerId || !areaRef.current || disabled) return;
+    const dx=e.clientX-a.x,dy=e.clientY-a.y;
+    if (!a.livre && Math.hypot(dx,dy)<3) return;
+    if (!a.livre) a.livre=prepararImagemLivre(a.img,areaRef.current);
+    const {caixa,escala,limites}=a.livre;
+    if (a.modo === "mover") aplicar(a.img,limitarImagem(caixa,dx,dy,escala,limites));
+    else {
+      const porY=dy*caixa.width/Math.max(1,caixa.height);
+      const delta=Math.abs(dx)>=Math.abs(porY)?dx:porY;
+      aplicar(a.img,alterarTamanhoImagem(caixa,caixa.width+delta/escala,limites));
+    }
+  }
+
+  function terminarArraste(e: React.PointerEvent, cancelar = false) {
+    const a=arrasteRef.current;
+    if (!a || a.pointerId !== e.pointerId) return;
+    arrasteRef.current=null;
+    if (quadroRef.current?.hasPointerCapture(e.pointerId)) quadroRef.current.releasePointerCapture(e.pointerId);
+    if (cancelar && areaRef.current) {
+      areaRef.current.innerHTML=a.antes;
+      selecionar(null);
+    } else {
+      setPainelImagemVisivel(true);
+      if (a.livre) emitir();
+    }
+  }
+
+  function teclaEditor(e: React.KeyboardEvent) {
+    if (disabled) return;
+    if (e.key === "Escape" && arrasteRef.current && areaRef.current) {
+      const a=arrasteRef.current;arrasteRef.current=null;
+      if(quadroRef.current?.hasPointerCapture(a.pointerId))quadroRef.current.releasePointerCapture(a.pointerId);
+      areaRef.current.innerHTML=a.antes;selecionar(null);e.preventDefault();return;
+    }
+    if ((e.ctrlKey || e.metaKey) && ["z","y"].includes(e.key.toLowerCase())) {
+      e.preventDefault();
+      executar(e.key.toLowerCase()==="y" || e.shiftKey ? "redo" : "undo");
+      return;
+    }
+    if (!imagemSelecionada || e.ctrlKey || e.metaKey || e.altKey) return;
+    const direcoes:Record<string,[number,number]>={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
+    const direcao=direcoes[e.key];
+    if (direcao && areaRef.current) {
+      e.preventDefault();
+      const livre=prepararImagemLivre(imagemSelecionada,areaRef.current),passo=e.shiftKey?10:1;
+      aplicar(imagemSelecionada,limitarImagem(livre.caixa,direcao[0]*passo,direcao[1]*passo,1,livre.limites));
+      emitir();
+    } else if (e.key === "Delete") {
+      e.preventDefault();
+      imagemSelecionada.remove();selecionar(null);emitir();
+    }
   }
 
   return (
     <div className={cn("overflow-hidden rounded-lg border bg-card", className)}>
+      <style>{'[data-editor-documento]:not([data-editor-desabilitado]) img { cursor: move; touch-action: none; }'}</style>
       <fieldset disabled={disabled} className="flex flex-wrap items-center gap-1 border-b bg-muted/40 p-2" aria-label="Formatação do documento">
         <select
           aria-label="Fonte"
@@ -441,7 +563,7 @@ export function RichEditor({
         </div>
       )}
 
-      {imagemSelecionada && !disabled && (
+      {imagemSelecionada && painelImagemVisivel && !disabled && (
         <div className="space-y-3 border-b bg-accent/40 px-3 py-3">
           <div className="flex flex-wrap items-center gap-3">
             <Label className="text-xs">Largura</Label>
@@ -456,8 +578,9 @@ export function RichEditor({
             <Input
               type="number"
               className="h-8 w-24"
+              aria-label="Largura da imagem"
               min={20}
-              max={1200}
+              max={794}
               value={larguraImagem}
               onChange={(e) => ajustarImagem(Number(e.target.value) || larguraImagem)}
             />
@@ -501,47 +624,39 @@ export function RichEditor({
             </Button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Label className="text-xs">Ajuste fino horizontal ({deslocamentoX}px)</Label>
-            <Slider
-              className="w-32"
-              min={-300}
-              max={300}
-              step={2}
-              value={[deslocamentoX]}
-              onValueChange={(v) => moverImagem("x", v[0] ?? deslocamentoX)}
-            />
-            <Label className="text-xs">Vertical ({deslocamentoY}px)</Label>
-            <Slider
-              className="w-32"
-              min={-300}
-              max={300}
-              step={2}
-              value={[deslocamentoY]}
-              onValueChange={(v) => moverImagem("y", v[0] ?? deslocamentoY)}
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                imagemSelecionada.remove();
-                selecionar(null);
-                emitir();
-              }}
-            >
-              Remover
-            </Button>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="space-y-1 text-xs">Horizontal (px)
+              <Input aria-label="Posição horizontal da imagem" type="number" className="h-8 w-28" min={0} value={deslocamentoX}
+                onChange={(e) => moverImagem("x", Number(e.target.value))} />
+            </label>
+            <label className="space-y-1 text-xs">Vertical (px)
+              <Input aria-label="Posição vertical da imagem" type="number" className="h-8 w-28" min={0} value={deslocamentoY}
+                onChange={(e) => moverImagem("y", Number(e.target.value))} />
+            </label>
+            <Button type="button" size="sm" variant="outline" onClick={() => {
+              if (!areaRef.current) return;
+              const livre = prepararImagemLivre(imagemSelecionada, areaRef.current);
+              aplicar(imagemSelecionada, livre.caixa);emitir();
+            }}>Livre na página</Button>
+            <label className="inline-flex h-8 cursor-pointer items-center rounded-md border bg-background px-3 text-xs font-medium">
+              Trocar imagem
+              <input aria-label="Trocar imagem selecionada" type="file" accept="image/png,image/jpeg" className="hidden"
+                onChange={(e) => { const file=e.target.files?.[0];if(file)void inserirImagem(file,imagemSelecionada);e.target.value=""; }} />
+            </label>
+            <Button type="button" size="sm" variant="ghost" onClick={() => {
+              imagemSelecionada.remove();selecionar(null);emitir();
+            }}>Remover</Button>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Você também pode arrastar a imagem para qualquer ponto do texto. Adicione quantas
-            imagens quiser pelo botão “Imagem”.
+            Arraste a imagem para mover. Use o canto para redimensionar ou as setas para ajustar a posição; Shift + seta move 10 px.
           </p>
         </div>
       )}
 
       <div className="bg-muted/30 p-4">
         <EscalaA4>
+          <div ref={quadroRef} className="relative" onPointerMove={arrastar} onKeyDown={teclaEditor}
+            onPointerUp={(e) => terminarArraste(e)} onPointerCancel={(e) => terminarArraste(e, true)}>
           <div
             ref={areaRef}
             contentEditable={!disabled}
@@ -550,10 +665,14 @@ export function RichEditor({
             aria-multiline="true"
             aria-label={placeholder ?? "Editor de texto"}
             data-placeholder={placeholder}
+            data-editor-documento=""
+            data-editor-desabilitado={disabled || undefined}
             onInput={() => { guardarSelecao(); emitir(); }}
             onMouseUp={guardarSelecao}
             onKeyUp={guardarSelecao}
             onClick={aoClicar}
+            onPointerDown={(e) => iniciarArraste(e)}
+            onDragStart={(e) => { if (e.target instanceof HTMLImageElement) e.preventDefault(); }}
             onPaste={(e) => {
               e.preventDefault();
               guardarSelecao();
@@ -564,6 +683,20 @@ export function RichEditor({
             style={{ minHeight }}
             className="prose-oficio pagina-a4 shadow-sm outline-none"
           />
+          {caixaSelecionada && imagemSelecionada && !disabled && (
+            <div aria-hidden={false} style={{
+              position:"absolute",left:caixaSelecionada.x,top:caixaSelecionada.y,
+              width:caixaSelecionada.width,height:caixaSelecionada.height,
+              border:"1px solid #88181d",pointerEvents:"none",
+            }}>
+              <button type="button" aria-label="Redimensionar imagem" title="Arraste para redimensionar"
+                onPointerDown={(e) => iniciarArraste(e,"tamanho")}
+                style={{position:"absolute",right:-7,bottom:-7,width:14,height:14,padding:0,
+                  background:"#88181d",border:"2px solid white",borderRadius:2,
+                  cursor:"nwse-resize",pointerEvents:"auto",touchAction:"none"}} />
+            </div>
+          )}
+          </div>
         </EscalaA4>
       </div>
     </div>

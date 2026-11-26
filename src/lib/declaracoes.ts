@@ -150,9 +150,19 @@ export function pendenciaDeclaracao(declaracao: Declaracao): string | null {
 }
 
 /** A lista do Forms usa ponto e vírgula, vírgula ou uma linha por estudante. */
+function nomesEstudantes(alunos: string): string[] {
+  return String(alunos ?? "").split(/[;\n,]+/).map(nome => nome.trim().replace(/\s+/g, " ")).filter(Boolean);
+}
+
+/** Não deduz gênero pelo nome; usa a forma inclusiva quando o formulário não o informa. */
 export function referenciaEstudantes(alunos: string): string {
-  const nomes = String(alunos ?? "").split(/[;\n,]+/).map(nome => nome.trim()).filter(Boolean);
-  return nomes.length > 1 ? "a estudantes" : "a estudante";
+  return nomesEstudantes(alunos).length > 1 ? "aos(às) alunos(as)" : "ao(à) aluno(a)";
+}
+
+export function formatarNomesEstudantes(alunos: string): string {
+  const nomes = nomesEstudantes(alunos);
+  if (nomes.length < 2) return nomes[0] ?? "";
+  return nomes.slice(0, -1).join(", ") + " e " + nomes[nomes.length - 1];
 }
 
 /** Documento final da declaração já com os campos do formulário substituídos. */
@@ -190,7 +200,7 @@ export function montarDeclaracaoHtml(
     carga_horaria: modeloNovo
       ? (declaracao.carga_horaria ?? "").trim().replace(/\s*(?:horas?|h)\.?$/i, "")
       : (declaracao.carga_horaria ?? ""),
-    alunos: declaracao.alunos ?? "",
+    alunos: formatarNomesEstudantes(declaracao.alunos),
     referencia_alunos: referenciaEstudantes(declaracao.alunos),
     data_emissao: modeloNovo
       ? emissao.replace(/ de ([a-zç]+)/i, (_, mes: string) => " de " + mes[0]!.toUpperCase() + mes.slice(1))

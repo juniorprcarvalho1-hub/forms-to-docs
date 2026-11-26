@@ -169,3 +169,10 @@ test("Preceptoria recusa término anterior ao início com os títulos novos",asy
  expect(r.status).toBe(422);
  expect(f.saved).toBeUndefined();
 });
+
+test("Preceptoria reconhece a grafia Iníco do estágio do formulário existente",async()=>{
+ const f=fixture();
+ const r=await handleDeclaracoes(f.request({"NOME COMPLETO":"Preceptor Teste","CURSO":"Fisioterapia","Iníco do estágio":"12/11/2026","Término do estágio":"30/11/2026"}),f.db,"token");
+ expect(r.status).toBe(200);
+ expect(f.saved.p_dados).toMatchObject({data_inicio:"2026-11-12",data_fim:"2026-11-30"});
+});

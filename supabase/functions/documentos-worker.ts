@@ -1,3 +1,4 @@
+import {tipoImagemLocalInstitucional} from "../../src/lib/imagens-institucionais.ts";
 import {createClient} from "npm:@supabase/supabase-js@2.112.3";
 import {handleWorkerRequest} from "./automacao-worker-http.ts";
 import {processarDocumento,type DocumentoJob} from "../../src/lib/automacao-processador.ts";
@@ -16,9 +17,10 @@ async function ler(path:string){const {data,error}=await db.storage.from("oficio
 function cf(){return {accountId:Deno.env.get("CLOUDFLARE_ACCOUNT_ID"),token:Deno.env.get("CLOUDFLARE_BROWSER_TOKEN")};}
 async function imagens(html:string){return incorporarImagensAutomacao(html,URL_SUPA,async ref=>{
  if(ref.kind==="storage"){const {data,error}=await db.storage.from("oficios").download(ref.path);if(error||!data||data.size>2000000)throw new ErroAutomacao("imagem_indisponivel");return{bytes:new Uint8Array(await data.arrayBuffer()),mime:data.type};}
- const response=await fetch("https://sintegradocursosfacesf.com.br/brand/facesf.png",{redirect:"error",signal:AbortSignal.timeout(15000)});
+ const mime=tipoImagemLocalInstitucional(ref.src);if(!mime)throw new ErroAutomacao("imagem_invalida");
+ const response=await fetch("https://sintegradocursosfacesf.com.br"+ref.src,{redirect:"error",signal:AbortSignal.timeout(15000)});
  if(!response.ok)throw new ErroAutomacao("imagem_indisponivel");
- return{bytes:await lerBytesLimitados(response,2000000),mime:"image/png"};
+ return{bytes:await lerBytesLimitados(response,2000000),mime};
 });}
 async function processar(job:DocumentoJob){
  let hash:string|null=null;

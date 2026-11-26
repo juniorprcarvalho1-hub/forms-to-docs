@@ -4,10 +4,18 @@ const LEGACY_MARCA="/__l5e/assets-v1/16f1a583-6782-48a0-947f-09226a225692/facesf
 export function caminhoImagemInstitucionalPermitido(path:unknown):path is string{
  return typeof path==="string"&&path.length<=256&&/^conteudo\/[a-z0-9_.-]+\.(png|jpe?g|gif|webp|avif)$/i.test(path);
 }
+/** Somente arquivos estáticos institucionais conhecidos podem ser carregados fora do Storage. */
+export function tipoImagemLocalInstitucional(path:string):"image/png"|"image/jpeg"|null{
+ return path==="/brand/facesf.png"?"image/png":path==="/brand/nupep-psicologia.jpg"?"image/jpeg":null;
+}
 export function identificarImagemInstitucional(src:string,origin:string):ReferenciaImagem|null{
+ if(tipoImagemLocalInstitucional(src))return{kind:"local",src};
  if(src.split("?")[0]===LEGACY_MARCA)return{kind:"local",src:"/brand/facesf.png"};
  try{
   const url=new URL(src);
+  if(!url.username&&!url.password&&!url.search&&!url.hash&&
+     ["https://sintegradocursosfacesf.com.br","https://forms-to-docs.lovable.app"].includes(url.origin)&&tipoImagemLocalInstitucional(url.pathname))
+   return{kind:"local",src:url.pathname};
   if(url.username||url.password||url.hash||(url.origin!==LEGACY_ORIGIN&&url.origin!==new URL(origin).origin))return null;
   const match=url.pathname.match(/^\/storage\/v1\/object\/(?:sign|public|authenticated)\/oficios\/(.+)$/);
   if(!match)return null;

@@ -20,3 +20,13 @@ test("ofício baixa o fecho e centraliza as linhas do rodapé", () => {
  expect(html).toContain('<div style="padding-top: 2mm;"><p style="text-align:center">Atenciosamente,</p></div><p>Coordenadora</p>');
  expect(html).toContain('<div data-rodape-oficio="" style="padding-top: 2mm; text-align: center;"><blockquote style="margin: 0;"><div style="text-align: center;">Rodapé</div>');
 });
+
+test("logo azul de Psicologia é incorporada ao PDF com o JPEG original",async()=>{
+ let chamadas=0;
+ const bytes=new Uint8Array(await Bun.file(new URL("../../public/brand/nupep-psicologia.jpg",import.meta.url)).arrayBuffer());
+ const html=await incorporarImagensAutomacao('<img src="/brand/nupep-psicologia.jpg"><img src="https://sintegradocursosfacesf.com.br/brand/nupep-psicologia.jpg">',"https://auxsyadqijcjngmujagx.supabase.co",async ref=>{
+  expect(ref).toEqual({kind:"local",src:"/brand/nupep-psicologia.jpg"});
+  chamadas++;return {bytes,mime:"image/jpeg"};
+ });
+ expect(chamadas).toBe(1);expect(html).toContain("data:image/jpeg;base64,");expect(bytes.length).toBe(93153);
+});

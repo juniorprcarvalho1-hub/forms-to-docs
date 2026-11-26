@@ -57,8 +57,7 @@ export async function incorporarImagensAutomacao(html:string,origin:string,load:
  const cache=new Map<string,Promise<string>>();
  await Promise.all(imgs.map(async img=>{
   const src=img.getAttribute("src")??"";
-  let ref:ReferenciaImagem|null=src==="/brand/facesf.png"?{kind:"local",src}:identificarImagemInstitucional(src,origin);
-  try{const u=new URL(src);if(u.origin==="https://sintegradocursosfacesf.com.br"&&u.pathname==="/brand/facesf.png"&&!u.search&&!u.hash)ref={kind:"local",src:"/brand/facesf.png"};}catch{}
+  const ref:ReferenciaImagem|null=identificarImagemInstitucional(src,origin);
   if(!ref)throw new ErroAutomacao("imagem_invalida");
   const key=ref.kind==="storage"?"storage:"+ref.path:"local:"+ref.src;
   if(!cache.has(key)){const captured=ref;cache.set(key,(async()=>{

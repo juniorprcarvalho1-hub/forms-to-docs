@@ -136,6 +136,7 @@ export const TAGS_DECLARACAO = [
   "{{data_fim}}",
   "{{carga_horaria}}",
   "{{alunos}}",
+  "{{referencia_alunos}}",
   "{{data_emissao}}",
   "{{cidade}}",
 ];
@@ -146,6 +147,12 @@ export function pendenciaDeclaracao(declaracao: Declaracao): string | null {
   if (!mapa)
     return `Curso "${declaracao.curso || "não informado"}" não consta na tabela de cursos (Enfermagem, Fisioterapia, Nutrição, Psicologia). Corrija o curso antes de gerar a declaração.`;
   return null;
+}
+
+/** A lista do Forms usa ponto e vírgula, vírgula ou uma linha por estudante. */
+export function referenciaEstudantes(alunos: string): string {
+  const nomes = String(alunos ?? "").split(/[;\n,]+/).map(nome => nome.trim()).filter(Boolean);
+  return nomes.length > 1 ? "a estudantes" : "a estudante";
 }
 
 /** Documento final da declaração já com os campos do formulário substituídos. */
@@ -161,7 +168,8 @@ export function montarDeclaracaoHtml(
   if (!info) throw new Error(pendenciaDeclaracao(declaracao) ?? "Curso inválido.");
 
   const doCurso = modelos.find((m) => m.chave === chave)?.modelo_html;
-  const modelo = (doCurso ?? config.modelo_declaracao_html ?? "").trim();
+  const modelo = (doCurso ?? config.modelo_declaracao_html ?? "").trim()
+    .replace(/junto\s+a\s+(?=(?:<strong>\s*)?\{\{alunos\}\})/gi, "junto {{referencia_alunos}} ");
   const modeloNovo = modelo.includes("preceptoria-a4");
   const dataCurta = (data: string) =>
     String(data ?? "").replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$3/$2/$1");
@@ -183,6 +191,7 @@ export function montarDeclaracaoHtml(
       ? (declaracao.carga_horaria ?? "").trim().replace(/\s*(?:horas?|h)\.?$/i, "")
       : (declaracao.carga_horaria ?? ""),
     alunos: declaracao.alunos ?? "",
+    referencia_alunos: referenciaEstudantes(declaracao.alunos),
     data_emissao: modeloNovo
       ? emissao.replace(/ de ([a-zç]+)/i, (_, mes: string) => " de " + mes[0]!.toUpperCase() + mes.slice(1))
       : emissao,

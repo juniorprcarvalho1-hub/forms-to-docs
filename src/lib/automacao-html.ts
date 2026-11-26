@@ -21,7 +21,7 @@ export function montarHtmlAutomacao(tipo:TipoDocumento,snapshot:SnapshotDocument
  const modelo=snapshot.modelos.find(m=>m["chave"]===d["modelo_chave"]);
  if(!modelo||typeof modelo["modelo_html"]!=="string"||!modelo["modelo_html"].trim())throw new ErroAutomacao("modelo_ausente");
  const texto=[tipo==="oficios"?c["cabecalho_html"]:"",modelo["modelo_html"],tipo==="oficios"?c["rodape_html"]:""].filter(Boolean).join("");
- const calculados=new Set(["conselho","departamento","nucleo","portaria"]);
+ const calculados=new Set(["conselho","departamento","nucleo","portaria",...(tipo==="declaracoes"?["referencia_alunos"]:[])]);
  for(const tag of texto.matchAll(/\{\{([^}]+)\}\}/g)){
   const k=tag[1]!;
   if(calculados.has(k))continue;

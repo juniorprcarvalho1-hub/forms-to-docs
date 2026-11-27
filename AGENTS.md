@@ -19,3 +19,5 @@
 - Keep durable memory limited to sanitized technical decisions. Never store patient records, secrets, tokens, or credentials in agent memory.
 - Token savings must not skip required tests, security checks, or deployment verification.
 - Database activation remains pending until an administrator applies both migrations described in `docs/IMPORTACOES.md`.
+
+- Manual and worker Preceptoria emails share the message builder in email-preceptoria.ts while retaining their existing subjects and transports, to prevent divergent institutional text; mailto supports plain text only.
